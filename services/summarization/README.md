@@ -1,11 +1,12 @@
 # Summarization Service
 
-This service orchestrates file ingestion and summarization. The Step Function defined in `template.yaml` first invokes the **FileIngestionStateMachine** from the separate file ingestion service, then generates summaries and finally merges them back with the original PDF.
-
-It invokes two Lambdas from this package:
-
-- **file-summary** – receives pre-generated summaries, creates a summary PDF and uploads the merged result to S3.
-- **summarize-worker** – dequeues summarization tasks and sends results back to the Step Function.
+This service orchestrates document processing and summarization. The Step
+Function defined in `template.yaml` begins by invoking the
+`FileIngestionStateMachine` from the **file-ingestion** stack. Once the uploaded
+file has been prepared, the workflow runs the prompts, generates summaries and
+merges them with the original PDF using the **file-assembly** service. The same
+state machine is also triggered from the **knowledge-base** ingestion pipeline
+when uploading new documents.
 
 Details of the state machine, including the parallel `run_prompts` map state, are documented in [docs/summarization_workflow.md](../../docs/summarization_workflow.md).
 
@@ -14,7 +15,7 @@ Details of the state machine, including the parallel `run_prompts` map state, ar
 The SAM template exposes a few parameters which become environment variables for the Lambdas:
 
 - `FileIngestionStateMachineArn` – ARN of the file ingestion workflow invoked at the start of the state machine.
-- `RagSummaryFunctionArn` – ARN of the RAG retrieval summary Lambda used by `file-summary`.
+- `RagSummaryFunctionArn` – ARN of the RAG retrieval summary Lambda.
 - `RunPromptsConcurrency` – number of prompts processed in parallel by the `run_prompts` map state.
 - `StatusPollSeconds` – number of seconds the Step Function waits before polling for upload status again.
 - The service now provisions an SQS queue consumed by a worker Lambda. `RunPromptsConcurrency` controls how many messages are sent in parallel.
