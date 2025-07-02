@@ -19,24 +19,15 @@ Modified By: Koushik Sinha
 
 from __future__ import annotations
 
-import json
-import logging
 from common_utils import configure_logger
-import urllib.parse
 import re
 import os
 from io import BytesIO
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Union
 from services.summarization.models import SummaryEvent
 from datetime import datetime
 
 import boto3
-import httpx
-from httpx import Timeout, HTTPStatusError
-try:  # optional for minimal test env
-    from httpx import TimeoutException, RequestError
-except Exception:  # pragma: no cover - fallback when httpx isn't fully available
-    TimeoutException = RequestError = Exception
 try:
     from botocore.exceptions import ClientError, BotoCoreError
 except ModuleNotFoundError:  # pragma: no cover - fallback for minimal env
@@ -67,109 +58,6 @@ logger = configure_logger(__name__)
 _s3_client = boto3.client("s3")
 
 
-def chat_with_collection(
-    token: str,
-    model: str,
-    prompt: str,
-    system_msg:str,
-    collection_id: str,
-) -> Dict[str, Any]:
-    """
-    Send prompt to summarization service and return JSON response.
-
-    Expected response JSON schema:
-    {
-      "choices": [
-         {
-           "message": {"role": "assistant", "content": "<text>"},
-           ...other fields...
-         }
-      ],
-      "usage": { ... }
-    }
-
-    Args:
-        token: Bearer token for auth.
-        model: Model identifier.
-        prompt: User prompt text.
-        system_msg: system prompt text.
-        collection_id: File-collection ID.
-
-    Returns:
-        Parsed JSON with "choices" key.
-
-    Raises:
-        HTTPStatusError: On non-2xx HTTP status.
-        RuntimeError: On missing summarization URL.
-    """
-    prefix = get_environment_prefix()
-    url = get_values_from_ssm(f"{prefix}/AMERITAS_CHAT_SUMMARIZATION_URL")
-    if not url:
-        raise RuntimeError("Summarization URL missing in SSM")
-
-    payload = {
-        "model": model,
-        "messages": [{"role": "system", "content": system_msg},{"role": "user", "content": prompt}],
-        "files": [{"type": "collection", "id": collection_id}],
-    }
-    try:
-        with httpx.Client(verify="AMERITASISSUING1-CA.crt", timeout=None) as client:
-            response = client.post(
-                url,
-                json=payload,
-                headers={
-                    "Authorization": f"Bearer {token}",
-                    "Content-Type": "application/json",
-                },
-            )
-
-            response.raise_for_status()
-            return response.json()
-
-    except HTTPStatusError as exc:
-        logger.error(
-            "Summarization call failed [%d]: %s",
-            exc.response.status_code,
-            exc.response.text,
-        )
-        raise RuntimeError("Summarization service returned an error") from exc
-    except TimeoutException as exc:
-        logger.exception("Summarization service timed out")
-        raise RuntimeError("Summarization service timed out") from exc
-    except RequestError as exc:
-        logger.exception("HTTP request to summarization service failed")
-        raise RuntimeError("Unable to reach summarization service") from exc
-    except Exception as exc:
-        logger.exception("Unexpected error in chat_with_collection")
-        raise RuntimeError("Unexpected error during summarization request") from exc
-
-
-def read_prompts_from_json(file_path: str) -> Optional[List[Dict[str, Any]]]:
-    """
-    Load a list of prompt dicts from a JSON file.
-
-    Expected format:
-    [
-      {"query": "<prompt text>"},
-      ...
-    ]
-
-    Args:
-        file_path: Local filesystem path.
-
-    Returns:
-        List of prompt dicts, or None on error.
-    """
-    try:
-        with open(file_path, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except FileNotFoundError:
-        logger.exception("Prompts file not found: %s", file_path)
-    except json.JSONDecodeError:
-        logger.exception("Invalid JSON in prompts file: %s", file_path)
-    except Exception:
-        logger.exception("Unexpected error reading prompts")
-    return None
 
 
 def format_summary_content(raw: str) -> List[Union[str, List[List[str]]]]:
