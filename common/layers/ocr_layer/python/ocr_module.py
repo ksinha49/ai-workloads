@@ -1,5 +1,4 @@
 import io
-import logging
 from statistics import median
 
 import fitz  # PyMuPDF
@@ -9,8 +8,9 @@ import cv2
 import numpy as np
 import httpx
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+from common_utils import configure_logger
+
+logger = configure_logger(__name__)
 
 __all__ = [
     "extract_text_from_pdf",

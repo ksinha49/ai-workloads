@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.7] - 2025-07-02
+### Added
+- Dataclass models for Lambda events and responses documented in `docs/event_schemas.md`.
+- Async invocation via SQS for router, invocation and knowledge-base services.
+### Changed
+- Logging initialized with `configure_logger` across modules.
+- Improved error handling and structured responses.
+### Fixed
+- Structured error responses for S3 and Lambda invocation failures.
+
 ## [1.0.6] - 2025-07-01
 ### Added
 - Detailed logging utilities across services for consistent diagnostics.

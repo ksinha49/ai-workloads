@@ -3,6 +3,7 @@ __author__ = "Koushik Sinha"
 __version__ = "1.0.0"
 __modified_by__ = "Koushik Sinha"
 
+from .logging_utils import configure_logger
 from .get_ssm import (
     get_values_from_ssm,
     get_environment_prefix,
@@ -12,7 +13,6 @@ from .get_ssm import (
 from .milvus_client import MilvusClient, VectorItem, SearchResult, GetResult
 from .elasticsearch_client import ElasticsearchClient
 from .entity_extraction import extract_entities
-from .logging_utils import configure_logger
 
 __all__ = [
     "get_values_from_ssm",

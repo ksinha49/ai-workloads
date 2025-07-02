@@ -2,7 +2,11 @@ import json
 import importlib.util
 import os
 import io
+import sys
 import pytest
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+from services.file_ingestion.models import FileProcessingEvent, ProcessingStatusEvent
+from services.summarization.models import SummaryEvent
 
 
 def load_lambda(name, path):
@@ -12,24 +16,13 @@ def load_lambda(name, path):
     return module
 
 
-def _make_fake_invoke(calls):
-    class FakePayload:
-        def __init__(self, data):
-            self._data = data
+def _make_fake_send(calls):
+    class FakeSQS:
+        def send_message(self, QueueUrl=None, MessageBody=None):
+            calls.append(json.loads(MessageBody))
+            return {"MessageId": "1"}
 
-        def read(self):
-            return json.dumps(self._data).encode("utf-8")
-
-    class FakeLambda:
-        def invoke(self, FunctionName=None, Payload=None):
-            data = json.loads(Payload)
-            calls.append((FunctionName, data))
-            reply = {
-                "reply": "bedrock" if data.get("backend") == "bedrock" else "ollama"
-            }
-            return {"Payload": FakePayload(reply)}
-
-    return FakeLambda()
+    return FakeSQS()
 
 
 def test_office_extractor(monkeypatch, s3_stub, validate_schema, config):
@@ -710,55 +703,57 @@ def test_llm_router_choose_backend(monkeypatch):
 
 
 def test_llm_router_lambda_handler(monkeypatch):
-    monkeypatch.setenv("LLM_INVOCATION_FUNCTION", "invoke")
+    monkeypatch.setenv("INVOCATION_QUEUE_URL", "url")
     monkeypatch.setenv("PROMPT_COMPLEXITY_THRESHOLD", "3")
     calls = []
     monkeypatch.setattr(
-        sys.modules["boto3"], "client", lambda name: _make_fake_invoke(calls)
+        sys.modules["boto3"], "client", lambda name: _make_fake_send(calls)
     )
     module = load_lambda(
         "llm_router_lambda", "services/llm-router/router-lambda/app.py"
     )
-    module.lambda_client = sys.modules["boto3"].client("lambda")
+    module.sqs_client = sys.modules["boto3"].client("sqs")
 
     event1 = {"body": json.dumps({"prompt": "short text"})}
     out1 = module.lambda_handler(event1, {})
     body1 = json.loads(out1["body"])
     assert body1["backend"] == "ollama"
-    assert body1["reply"] == "ollama"
-    assert calls[0][1]["backend"] == "ollama"
+    assert body1["queued"] is True
+    assert calls[0]["backend"] == "ollama"
 
     event2 = {"body": json.dumps({"prompt": "one two three four"})}
     out2 = module.lambda_handler(event2, {})
     body2 = json.loads(out2["body"])
     assert body2["backend"] == "bedrock"
-    assert body2["reply"] == "bedrock"
-    assert calls[1][1]["backend"] == "bedrock"
+    assert body2["queued"] is True
+    assert calls[1]["backend"] == "bedrock"
 
 
 def test_llm_router_lambda_handler_backend_override(monkeypatch):
-    monkeypatch.setenv("LLM_INVOCATION_FUNCTION", "invoke")
+    monkeypatch.setenv("INVOCATION_QUEUE_URL", "url")
     monkeypatch.setenv("PROMPT_COMPLEXITY_THRESHOLD", "3")
     calls = []
     monkeypatch.setattr(
-        sys.modules["boto3"], "client", lambda name: _make_fake_invoke(calls)
+        sys.modules["boto3"], "client", lambda name: _make_fake_send(calls)
     )
     module = load_lambda(
         "llm_router_lambda_override", "services/llm-router/router-lambda/app.py"
     )
-    module.lambda_client = sys.modules["boto3"].client("lambda")
+    module.sqs_client = sys.modules["boto3"].client("sqs")
 
     event = {"body": json.dumps({"prompt": "short text", "backend": "bedrock"})}
     out = module.lambda_handler(event, {})
     body = json.loads(out["body"])
     assert body["backend"] == "bedrock"
-    assert calls[0][1]["backend"] == "bedrock"
+    assert body["queued"] is True
+    assert calls[0]["backend"] == "bedrock"
 
     event2 = {"body": json.dumps({"prompt": "one two three four", "backend": "ollama"})}
     out2 = module.lambda_handler(event2, {})
     body2 = json.loads(out2["body"])
     assert body2["backend"] == "ollama"
-    assert calls[1][1]["backend"] == "ollama"
+    assert body2["queued"] is True
+    assert calls[1]["backend"] == "ollama"
 
 
 def test_llm_router_choose_backend_default(monkeypatch):
@@ -773,29 +768,31 @@ def test_llm_router_choose_backend_default(monkeypatch):
 
 
 def test_llm_router_lambda_handler_default(monkeypatch):
-    monkeypatch.setenv("LLM_INVOCATION_FUNCTION", "invoke")
+    monkeypatch.setenv("INVOCATION_QUEUE_URL", "url")
     monkeypatch.delenv("PROMPT_COMPLEXITY_THRESHOLD", raising=False)
     calls = []
     monkeypatch.setattr(
-        sys.modules["boto3"], "client", lambda name: _make_fake_invoke(calls)
+        sys.modules["boto3"], "client", lambda name: _make_fake_send(calls)
     )
     module = load_lambda(
         "llm_router_lambda_default", "services/llm-router/router-lambda/app.py"
     )
-    module.lambda_client = sys.modules["boto3"].client("lambda")
+    module.sqs_client = sys.modules["boto3"].client("sqs")
 
     event1 = {"body": json.dumps({"prompt": "short text"})}
     out1 = module.lambda_handler(event1, {})
     body1 = json.loads(out1["body"])
     assert body1["backend"] == "ollama"
-    assert calls[0][1]["backend"] == "ollama"
+    assert body1["queued"] is True
+    assert calls[0]["backend"] == "ollama"
 
     long_prompt = " ".join(["w"] * 25)
     event2 = {"body": json.dumps({"prompt": long_prompt})}
     out2 = module.lambda_handler(event2, {})
     body2 = json.loads(out2["body"])
     assert body2["backend"] == "bedrock"
-    assert calls[1][1]["backend"] == "bedrock"
+    assert body2["queued"] is True
+    assert calls[1]["backend"] == "bedrock"
 
 
 def test_summarize_with_context_router(monkeypatch, config):
@@ -835,7 +832,10 @@ def test_summarize_with_context_router(monkeypatch, config):
 
     monkeypatch.setattr(module, "forward_to_routellm", fake_forward)
 
-    out = module.lambda_handler({"query": "hi", "model": "phi", "temperature": 0.2}, {})
+    out = module.lambda_handler(
+        {"query": "hi", "model": "phi", "temperature": 0.2, "collection_name": "c"},
+        {}
+    )
     sent_payload = fake_invoke.calls[0]
     assert "embedding" in sent_payload
     assert isinstance(sent_payload["embedding"], list)
@@ -844,6 +844,7 @@ def test_summarize_with_context_router(monkeypatch, config):
         "model": "phi",
         "temperature": 0.2,
         "context": "ctx",
+        "collection_name": "c",
     }
     assert out["summary"] == {"text": "ok"}
 
@@ -908,7 +909,7 @@ def test_summarize_with_rerank(monkeypatch, config):
     module._MODEL_MAP["sbert"] = module._sbert_embed
     monkeypatch.setattr(module, "forward_to_routellm", lambda p: {"text": p["context"]})
 
-    out = module.lambda_handler({"query": "hi"}, {})
+    out = module.lambda_handler({"query": "hi", "collection_name": "c"}, {})
     assert fake_invoke.rerank["query"] == "hi"
     assert out["summary"] == {"text": "t2"}
 
@@ -1036,17 +1037,49 @@ def test_vector_search_entity_filter(monkeypatch, config):
     ]
 
 
+def test_vector_search_guid_filter(monkeypatch, config):
+    config["/parameters/aio/ameritasAI/SERVER_ENV"] = "dev"
+    import types, sys
+
+    dummy = types.ModuleType("pymilvus")
+    dummy.Collection = type("Coll", (), {"__init__": lambda self, *a, **k: None})
+    dummy.connections = types.SimpleNamespace(connect=lambda alias, host, port: None)
+    monkeypatch.setitem(sys.modules, "pymilvus", dummy)
+    import common_utils.milvus_client as mc
+
+    monkeypatch.setattr(mc, "Collection", dummy.Collection, raising=False)
+    monkeypatch.setattr(mc, "connections", dummy.connections, raising=False)
+
+    module = load_lambda(
+        "vector_search_guid", "services/vector-db/vector-search-lambda/app.py"
+    )
+
+    def fake_search(self, embedding, top_k=5):
+        meta1 = {"file_guid": "g1", "file_name": "a"}
+        meta2 = {"file_guid": "g2", "file_name": "b"}
+        return [
+            type("R", (), {"id": 1, "score": 0.1, "metadata": meta1}),
+            type("R", (), {"id": 2, "score": 0.2, "metadata": meta2}),
+        ]
+
+    monkeypatch.setattr(module, "client", type("C", (), {"search": fake_search})())
+    res = module.lambda_handler({"embedding": [0.1], "file_guid": "g2"}, {})
+    assert len(res["matches"]) == 1 and res["matches"][0]["metadata"]["file_guid"] == "g2"
+
+
 def test_file_processing_passthrough(monkeypatch):
     module = load_lambda(
-        "file_proc2", "services/summarization/file-processing-lambda/app.py"
+        "file_proc2", "services/file-ingestion/file-processing-lambda/app.py"
     )
     monkeypatch.setattr(module, "copy_file_to_idp", lambda b, k: "s3://dest/key")
-    event = {
-        "file": "s3://bucket/test.pdf",
-        "ingest_params": {"chunk_size": 2},
-    }
+    event = FileProcessingEvent(
+        file="s3://bucket/test.pdf",
+        ingest_params={"chunk_size": 2},
+        collection_name="c",
+    )
     out = module.process_files(event, {})
     assert out["ingest_params"] == {"chunk_size": 2}
+    assert out["collection_name"] == "c"
 
 
 def test_summary_lambda_forwards(monkeypatch):
@@ -1076,14 +1109,99 @@ def test_summary_lambda_forwards(monkeypatch):
     monkeypatch.setattr(module, "create_summary_pdf", fake_create)
     monkeypatch.setattr(module, "upload_buffer_to_s3", fake_upload)
 
-    event = {
-        "collection_name": "c",
-        "statusCode": 200,
-        "organic_bucket": "b",
-        "organic_bucket_key": "extracted/x.pdf",
-        "summaries": [{"Title": "T", "content": "ok"}],
-    }
+    event = SummaryEvent(
+        collection_name="c",
+        statusCode=200,
+        organic_bucket="b",
+        organic_bucket_key="extracted/x.pdf",
+        summaries=[{"Title": "T", "content": "ok"}],
+    )
     module.lambda_handler(event, {})
     assert captured["summaries"] == [("T", "ok")]
     assert captured["bucket"] == "b"
     assert captured["key"] == "summary/x.pdf"
+
+
+def test_processing_status(monkeypatch, s3_stub, config):
+    prefix = "/parameters/aio/ameritasAI/dev"
+    config["/parameters/aio/ameritasAI/SERVER_ENV"] = "dev"
+    config[f"{prefix}/IDP_BUCKET"] = "bucket"
+    config[f"{prefix}/TEXT_DOC_PREFIX"] = "text-docs/"
+    module = load_lambda(
+        "status_lambda", "services/file-ingestion/file-processing-status-lambda/app.py"
+    )
+    monkeypatch.setattr(module, "s3_client", s3_stub)
+    s3_stub.objects[("bucket", "text-docs/doc.json")] = b"x"
+    event = ProcessingStatusEvent(document_id="doc")
+    resp = module.lambda_handler(event, {})
+    assert resp["statusCode"] == 200
+    assert resp["body"]["fileupload_status"] == "COMPLETE"
+
+
+def test_text_chunk_guid_metadata(config):
+    config["/parameters/aio/ameritasAI/SERVER_ENV"] = "dev"
+    module = load_lambda("chunk_guid", "services/rag-ingestion/text-chunk-lambda/app.py")
+    event = {"text": "hello world", "file_guid": "abc", "file_name": "f.pdf"}
+    out = module.lambda_handler(event, {})
+    md = out["chunks"][0]["metadata"]
+    assert md["file_guid"] == "abc" and md["file_name"] == "f.pdf"
+
+
+def test_embed_propagates_guid(config):
+    config["/parameters/aio/ameritasAI/SERVER_ENV"] = "dev"
+    module = load_lambda("embed_guid", "services/rag-ingestion/embed-lambda/app.py")
+    module._MODEL_MAP["sbert"] = lambda t: [0.0]
+    event = {"chunks": [{"text": "x", "metadata": {}}], "file_guid": "g", "file_name": "n"}
+    out = module.lambda_handler(event, {})
+    assert out["metadatas"][0]["file_guid"] == "g" and out["metadatas"][0]["file_name"] == "n"
+
+
+def test_milvus_insert_adds_guid(monkeypatch, config):
+    config["/parameters/aio/ameritasAI/SERVER_ENV"] = "dev"
+    import types, sys
+
+    dummy = types.ModuleType("pymilvus")
+    dummy.Collection = type("Coll", (), {"__init__": lambda self, *a, **k: None})
+    dummy.connections = types.SimpleNamespace(connect=lambda alias, host, port: None)
+    monkeypatch.setitem(sys.modules, "pymilvus", dummy)
+    import common_utils.milvus_client as mc
+
+    monkeypatch.setattr(mc, "Collection", dummy.Collection, raising=False)
+    monkeypatch.setattr(mc, "connections", dummy.connections, raising=False)
+
+    module = load_lambda("milvus_ins", "services/vector-db/milvus-insert-lambda/app.py")
+    monkeypatch.setattr(module, "client", type("C", (), {"insert": lambda s, i, upsert=True: len(i)})())
+    event = {"embeddings": [[0.1]], "metadatas": [{}], "file_guid": "g", "file_name": "n"}
+    res = module.lambda_handler(event, {})
+    assert res["inserted"] == 1
+
+
+def test_vector_search_guid_filter(monkeypatch, config):
+    config["/parameters/aio/ameritasAI/SERVER_ENV"] = "dev"
+    import types, sys
+
+    dummy = types.ModuleType("pymilvus")
+    dummy.Collection = type("Coll", (), {"__init__": lambda self, *a, **k: None})
+    dummy.connections = types.SimpleNamespace(connect=lambda alias, host, port: None)
+    monkeypatch.setitem(sys.modules, "pymilvus", dummy)
+    import common_utils.milvus_client as mc
+
+    monkeypatch.setattr(mc, "Collection", dummy.Collection, raising=False)
+    monkeypatch.setattr(mc, "connections", dummy.connections, raising=False)
+
+    module = load_lambda(
+        "vector_search_guid", "services/vector-db/vector-search-lambda/app.py"
+    )
+
+    def fake_search(self, embedding, top_k=5):
+        meta1 = {"file_guid": "g1", "file_name": "a"}
+        meta2 = {"file_guid": "g2", "file_name": "b"}
+        return [
+            type("R", (), {"id": 1, "score": 0.1, "metadata": meta1}),
+            type("R", (), {"id": 2, "score": 0.2, "metadata": meta2}),
+        ]
+
+    monkeypatch.setattr(module, "client", type("C", (), {"search": fake_search})())
+    res = module.lambda_handler({"embedding": [0.1], "file_guid": "g2"}, {})
+    assert len(res["matches"]) == 1
+    assert res["matches"][0]["metadata"]["file_guid"] == "g2"

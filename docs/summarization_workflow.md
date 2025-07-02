@@ -4,7 +4,7 @@ This document describes the multi-step AWS Step Functions state machine that orc
 
 ## Map State
 
-The `run_prompts` state uses the [Map](https://docs.aws.amazon.com/step-functions/latest/dg/amazon-states-language-map-state.html) state type to execute the summarization Lambda for each prompt. Items are taken from the `$.body.prompts` array in the execution input, and the results are collected in `$.run_prompts`.
+The `run_prompts` state uses the [Map](https://docs.aws.amazon.com/step-functions/latest/dg/amazon-states-language-map-state.html) state type to send each prompt to an SQS queue. Worker Lambdas consume these messages, invoke the summarization logic and return the results using task tokens. The summaries are collected in `$.run_prompts`.
 
 Concurrency is controlled via the `MaxConcurrency` field in `template.yaml`:
 
@@ -15,7 +15,24 @@ run_prompts:
   ResultPath: $.run_prompts
   MaxConcurrency: 10
   Iterator:
-    ...
+    StartAt: summarize
+    States:
+      summarize:
+        Type: Task
+        Resource: arn:aws:states:::sqs:sendMessage.waitForTaskToken
+        Parameters:
+          QueueUrl: <queue-url>
+          MessageBody:
+            token.$: $$.Task.Token
+            query.$: $$Map.Item.Value.query
+            Title.$: $$Map.Item.Value.Title
+        Next: add_title
+      add_title:
+        Type: Pass
+        Parameters:
+          Title.$: $.Title
+          content.$: $.summary
+        End: true
 ```
 
 Change the value of `MaxConcurrency` to adjust how many prompts are processed in parallel.

@@ -9,10 +9,11 @@ __modified_by__ = "Koushik Sinha"
 
 import os
 import re
-import logging
 from typing import Iterable, List
 
-logger = logging.getLogger(__name__)
+from common_utils import configure_logger
+
+logger = configure_logger(__name__)
 
 _NLP = None
 

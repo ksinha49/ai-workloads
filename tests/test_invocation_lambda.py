@@ -372,10 +372,13 @@ def test_failed_endpoint_skipped(monkeypatch):
     import llm_invocation.backends as backends_mod
     monkeypatch.setattr(backends_mod.httpx, 'post', fake_post)
 
-    with pytest.raises(backends_mod.httpx.HTTPStatusError):
-        module.lambda_handler({'backend': 'ollama', 'prompt': 'x'}, {})
-
     out = module.lambda_handler({'backend': 'ollama', 'prompt': 'x'}, {})
-    assert out['endpoint'] == 'http://o2'
+    assert out == {
+        'statusCode': 500,
+        'body': {'error': '500: err'},
+    }
+
+    out2 = module.lambda_handler({'backend': 'ollama', 'prompt': 'x'}, {})
+    assert out2['endpoint'] == 'http://o2'
     assert calls == ['http://o1', 'http://o2']
 

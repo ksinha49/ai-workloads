@@ -59,15 +59,18 @@ extraction, generates summaries and merges them back with the original PDF.
 
 #### llm-router
 Routes prompts to Amazon Bedrock or local Ollama using heuristic, predictive and
-cascading strategies.
+cascading strategies. Requests are now queued on SQS so backend invocation
+happens asynchronously.
 
 #### llm-invocation
 Forwards OpenAI-style requests to the chosen LLM backend with configurable
-generation parameters.
+generation parameters. The handler consumes events from the router's queue and
+uses dataclass models for type‑safe payloads.
 
 #### knowledge-base
 Provides a lightweight API to ingest short text documents and query them using
-the retrieval and summarization stack.
+the retrieval and summarization stack. Query requests are also published to the
+summarization queue for asynchronous processing.
 
 ## Repository Structure
 
@@ -208,3 +211,4 @@ Additional documentation is available in the `docs/` directory:
 - [docs/router_configuration.md](docs/router_configuration.md)
 - [docs/summarization_workflow.md](docs/summarization_workflow.md)
 - [docs/knowledge_rag_usage.md](docs/knowledge_rag_usage.md)
+- [docs/event_schemas.md](docs/event_schemas.md)

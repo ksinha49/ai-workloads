@@ -121,5 +121,5 @@ Resources:
       Location: services/knowledge-base/template.yaml
       Parameters:
         IngestionStateMachineArn: !GetAtt RagIngestionService.Outputs.IngestionStateMachineArn
-        SummarizeFunctionArn: !GetAtt RagRetrievalService.Outputs.SummarizeWithContextFunctionArn
+        SummarizeQueueUrl: !GetAtt SummarizationService.Outputs.SummaryQueueUrl
 
