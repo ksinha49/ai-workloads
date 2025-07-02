@@ -53,3 +53,7 @@ step so the retrieval service can search the specified Milvus collection.
 If ``collection_name`` is omitted, the workflow returns a
 ``400`` response and the Step Function execution fails.
 
+## File GUID
+
+A unique `file_guid` is generated during the file-processing step. This value flows through the ingestion workflow so each chunk and embedding can be traced back to the original document.
+

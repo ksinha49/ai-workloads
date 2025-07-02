@@ -39,7 +39,7 @@ The Lambdas expect the following variables:
 
 ### Required request fields
 
-Both `/kb/ingest` and `/kb/query` must include a `collection_name` parameter so the service knows which Milvus collection to target. The `file_guid` output by the summarization workflow also propagates through ingestion and can be supplied to `/kb/query` to restrict results to a specific document. See the [summarization README](../summarization/README.md#file_guid) for additional context.
+Both `/kb/ingest` and `/kb/query` must include a `collection_name` parameter so the service knows which Milvus collection to target. The `file_guid` output by the summarization workflow also propagates through ingestion and can be supplied to `/kb/query` to restrict results to a specific document. See the [summarization README](../summarization/README.md#file-guid) for additional context.
 
 ## Deployment
 
