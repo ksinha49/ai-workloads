@@ -18,6 +18,8 @@ RAG ingestion and retrieval components. When ingesting documents you may include
 
 - `IngestionStateMachineArn` – ARN of the ingestion workflow from the
   `rag-ingestion` stack.
+- `FileIngestionStateMachineArn` – ARN of the file ingestion workflow
+  started before the main ingestion state machine.
 - `SummarizeQueueUrl` – URL of the SQS queue consumed by the summarization worker from the `summarization` stack.
 The query Lambda now publishes requests to this queue so processing happens asynchronously.
  - `KnowledgeBaseName` – optional name tag for the knowledge base.
@@ -40,5 +42,6 @@ sam deploy \
   --stack-name knowledge-base \
   --parameter-overrides \
     IngestionStateMachineArn=<arn> \
+    FileIngestionStateMachineArn=<arn> \
     SummarizeQueueUrl=<url>
 ```

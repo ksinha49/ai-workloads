@@ -28,24 +28,25 @@ def load_lambda(name, path):
 
 
 def test_kb_ingest(monkeypatch):
-    calls = {}
+    calls = []
     class FakeSFN:
         def start_execution(self, stateMachineArn=None, input=None):
-            calls['arn'] = stateMachineArn
-            calls['input'] = json.loads(input)
+            calls.append((stateMachineArn, json.loads(input)))
             return {}
     import boto3
     _stub_botocore(monkeypatch)
     monkeypatch.setattr(boto3, 'client', lambda name: FakeSFN())
     monkeypatch.setenv("STATE_MACHINE_ARN", "arn")
+    monkeypatch.setenv("FILE_INGESTION_STATE_MACHINE_ARN", "filearn")
     module = load_lambda('ingest', 'services/knowledge-base/ingest-lambda/app.py')
     module.sfn = FakeSFN()
     out = module.lambda_handler({'text': 't', 'docType': 'pdf', 'department': 'HR'}, {})
     assert out['started'] is True
-    assert calls['arn'] == 'arn'
-    assert calls['input']['text'] == 't'
-    assert calls['input']['docType'] == 'pdf'
-    assert calls['input']['metadata']['department'] == 'HR'
+    assert calls[0][0] == 'filearn'
+    assert calls[1][0] == 'arn'
+    assert calls[1][1]['text'] == 't'
+    assert calls[1][1]['docType'] == 'pdf'
+    assert calls[1][1]['metadata']['department'] == 'HR'
 
 
 def test_kb_ingest_missing_arn(monkeypatch):
@@ -56,28 +57,52 @@ def test_kb_ingest_missing_arn(monkeypatch):
         pass
 
     monkeypatch.setattr(boto3, 'client', lambda name: FakeSFN())
+    monkeypatch.setenv('FILE_INGESTION_STATE_MACHINE_ARN', 'filearn')
     monkeypatch.delenv('STATE_MACHINE_ARN', raising=False)
     with pytest.raises(RuntimeError):
         load_lambda('ingest_noenv', 'services/knowledge-base/ingest-lambda/app.py')
 
 
-def test_kb_ingest_error(monkeypatch):
-    calls = {}
+def test_kb_ingest_missing_file_arn(monkeypatch):
+    import boto3
+    _stub_botocore(monkeypatch)
 
     class FakeSFN:
+        pass
+
+    monkeypatch.setattr(boto3, 'client', lambda name: FakeSFN())
+    monkeypatch.setenv('STATE_MACHINE_ARN', 'arn')
+    monkeypatch.delenv('FILE_INGESTION_STATE_MACHINE_ARN', raising=False)
+    with pytest.raises(RuntimeError):
+        load_lambda('ingest_noenv2', 'services/knowledge-base/ingest-lambda/app.py')
+
+
+def test_kb_ingest_error(monkeypatch):
+    calls = []
+
+    class FakeSFN:
+        def __init__(self):
+            self.count = 0
+
         def start_execution(self, stateMachineArn=None, input=None):
-            calls['arn'] = stateMachineArn
+            self.count += 1
+            calls.append(stateMachineArn)
+            if self.count == 1:
+                return {}
             raise ClientError({'Error': {'Code': '400', 'Message': 'bad'}}, 'start_execution')
 
     import boto3
     ClientError = _stub_botocore(monkeypatch)
     monkeypatch.setattr(boto3, 'client', lambda name: FakeSFN())
     monkeypatch.setenv('STATE_MACHINE_ARN', 'arn')
+    monkeypatch.setenv('FILE_INGESTION_STATE_MACHINE_ARN', 'filearn')
     module = load_lambda('ingest_err', 'services/knowledge-base/ingest-lambda/app.py')
     module.sfn = FakeSFN()
     out = module.lambda_handler({'text': 't'}, {})
     assert out['started'] is False
     assert 'bad' in out['error']
+    assert calls[0] == 'filearn'
+    assert calls[1] == 'arn'
 
 
 def test_kb_query(monkeypatch):

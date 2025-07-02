@@ -5,6 +5,8 @@ Description: Simple knowledge base ingestion and query Lambdas.
 Parameters:
   IngestionStateMachineArn:
     Type: String
+  FileIngestionStateMachineArn:
+    Type: String
   SummarizeQueueUrl:
     Type: String
   KnowledgeBaseName:
@@ -26,6 +28,7 @@ Resources:
       Environment:
         Variables:
           STATE_MACHINE_ARN: !Ref IngestionStateMachineArn
+          FILE_INGESTION_STATE_MACHINE_ARN: !Ref FileIngestionStateMachineArn
           KNOWLEDGE_BASE_NAME: !Ref KnowledgeBaseName
 
   QueryFunction:

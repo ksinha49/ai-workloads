@@ -20,6 +20,12 @@ STATE_MACHINE_ARN = os.environ.get("STATE_MACHINE_ARN")
 if not STATE_MACHINE_ARN:
     raise RuntimeError("STATE_MACHINE_ARN not configured")
 
+FILE_INGESTION_STATE_MACHINE_ARN = os.environ.get(
+    "FILE_INGESTION_STATE_MACHINE_ARN"
+)
+if not FILE_INGESTION_STATE_MACHINE_ARN:
+    raise RuntimeError("FILE_INGESTION_STATE_MACHINE_ARN not configured")
+
 sfn = boto3.client("stepfunctions")
 
 
@@ -35,6 +41,15 @@ def lambda_handler(event: dict, context: object) -> dict:
     text = event.get("text")
     if not text:
         return {"started": False}
+
+    try:
+        sfn.start_execution(
+            stateMachineArn=FILE_INGESTION_STATE_MACHINE_ARN,
+            input=json.dumps(event),
+        )
+    except ClientError as exc:
+        logger.error("Failed to start file ingestion state machine: %s", exc)
+        return {"started": False, "error": str(exc)}
 
     payload = {"text": text}
     doc_type = event.get("docType") or event.get("type")
