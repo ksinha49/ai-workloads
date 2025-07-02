@@ -6,6 +6,13 @@ This service copies uploaded files to the IDP bucket and polls for text extracti
 - **file-processing-status-lambda** – checks S3 for the text document and updates `fileupload_status`.
 - **FileIngestionStateMachine** – orchestrates both Lambdas and then triggers the ingestion workflow.
 
+## External Callers
+
+The `FileIngestionStateMachine` is invoked by other stacks before they begin
+processing a document. The summarization state machine starts this workflow to
+prepare files for summarization, and the knowledge-base ingestion service reuses
+it when uploading documents to the vector database.
+
 ## Parameters
 
 `template.yaml` exposes these parameters:
