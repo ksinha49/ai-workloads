@@ -206,6 +206,13 @@ environment. The table below summarises the most common variables.
 - `LLM_INVOCATION_FUNCTION` – Lambda used to invoke the chosen backend.
 - `STRONG_MODEL_ID` / `WEAK_MODEL_ID` – model identifiers for routing.
 
+### Knowledge Base
+
+- `FILE_INGESTION_STATE_MACHINE_ARN` – ARN of the file ingestion workflow started before the main ingestion state machine.
+- `STATE_MACHINE_ARN` – ARN of the main ingestion workflow.
+- `SUMMARY_QUEUE_URL` – queue URL consumed by the query Lambda.
+- `KNOWLEDGE_BASE_NAME` – optional name tag.
+
 ## Deployment
 
 Deploy a service with `sam deploy --template-file services/<service>/template.yaml --stack-name <name>` and provide any required parameters. See each service's README for details.

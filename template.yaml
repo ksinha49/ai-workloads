@@ -130,6 +130,7 @@ Resources:
       Location: services/knowledge-base/template.yaml
       Parameters:
         IngestionStateMachineArn: !GetAtt RagIngestionService.Outputs.IngestionStateMachineArn
+        FileIngestionStateMachineArn: !GetAtt FileIngestionService.Outputs.FileIngestionStateMachineArn
         SummarizeQueueUrl: !GetAtt SummarizationService.Outputs.SummaryQueueUrl
 
 Outputs:
