@@ -1,0 +1,6 @@
+{
+  "Description": "OCR layer with PyMuPDF, EasyOCR and PaddleOCR",
+  "CompatibleRuntimes": ["python3.13"],
+  "LicenseInfo": "MIT",
+  "Retain": false
+}

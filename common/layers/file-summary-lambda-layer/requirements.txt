@@ -1,0 +1,4 @@
+fpdf2==2.8.2
+Unidecode
+httpx==0.28.1
+boto3==1.35.53

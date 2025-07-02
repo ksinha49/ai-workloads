@@ -1,0 +1,125 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Parent SAM template that includes individual service stacks.
+
+Parameters:
+  MilvusHost:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /rag/milvus/host
+  MilvusPort:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /rag/milvus/port
+  MilvusCollection:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /rag/milvus/collection
+  ElasticsearchUrl:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /rag/elasticsearch/url
+  ElasticsearchIndexPrefix:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /rag/elasticsearch/index
+  BedrockOpenAIEndpoint:
+    Type: String
+    Default: ''
+  BedrockApiKey:
+    Type: String
+    Default: ''
+  OllamaEndpoint:
+    Type: String
+    Default: ''
+  OllamaDefaultModel:
+    Type: String
+    Default: ''
+  PromptComplexityThreshold:
+    Type: String
+    Default: '20'
+  LlmInvocationFunctionName:
+    Type: String
+    Default: ''
+
+Resources:
+  IDPService:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: services/idp/template.yaml
+
+  SummarizationService:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: services/summarization/template.yaml
+      Parameters:
+        FileAssembleFunctionArn: !GetAtt FileAssemblyService.Outputs.FileAssembleFunctionArn
+
+  FileAssemblyService:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: services/file-assembly/template.yaml
+
+  ZipProcessingService:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: services/zip-processing/template.yaml
+      Parameters:
+        FileProcessingStepFunctionArn: !GetAtt SummarizationService.Outputs.FileProcessingStepFunctionArn
+
+  VectorDBService:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: services/vector-db/template.yaml
+      Parameters:
+        MilvusHost: !Ref MilvusHost
+        MilvusPort: !Ref MilvusPort
+        MilvusCollection: !Ref MilvusCollection
+        ElasticsearchUrl: !Ref ElasticsearchUrl
+        ElasticsearchIndexPrefix: !Ref ElasticsearchIndexPrefix
+
+  RagIngestionService:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: services/rag-ingestion/template.yaml
+      Parameters:
+        MilvusInsertFunctionArn: !GetAtt VectorDBService.Outputs.MilvusInsertFunctionArn
+        MilvusDeleteFunctionArn: !GetAtt VectorDBService.Outputs.MilvusDeleteFunctionArn
+        MilvusUpdateFunctionArn: !GetAtt VectorDBService.Outputs.MilvusUpdateFunctionArn
+        MilvusCreateCollectionFunctionArn: !GetAtt VectorDBService.Outputs.MilvusCreateCollectionFunctionArn
+        MilvusDropCollectionFunctionArn: !GetAtt VectorDBService.Outputs.MilvusDropCollectionFunctionArn
+        BucketName: !GetAtt IDPService.Outputs.BucketName
+        TextDocPrefix: !GetAtt IDPService.Outputs.TextDocPrefix
+
+  RagRetrievalService:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: services/rag-retrieval/template.yaml
+      Parameters:
+        VectorSearchFunctionArn: !GetAtt VectorDBService.Outputs.VectorSearchFunctionArn
+
+  LLMInvocationService:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: services/llm-invocation/template.yaml
+      Parameters:
+        BedrockOpenAIEndpoint: !Ref BedrockOpenAIEndpoint
+        BedrockApiKey: !Ref BedrockApiKey
+        OllamaEndpoint: !Ref OllamaEndpoint
+        OllamaDefaultModel: !Ref OllamaDefaultModel
+
+  LLMRouterService:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: services/llm-router/template.yaml
+      Parameters:
+        BedrockOpenAIEndpoint: !Ref BedrockOpenAIEndpoint
+        BedrockApiKey: !Ref BedrockApiKey
+        OllamaEndpoint: !Ref OllamaEndpoint
+        OllamaDefaultModel: !Ref OllamaDefaultModel
+        PromptComplexityThreshold: !Ref PromptComplexityThreshold
+        LlmInvocationFunctionName: !GetAtt LLMInvocationService.Outputs.InvokeLLMLambdaArn
+
+  KnowledgeBaseService:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: services/knowledge-base/template.yaml
+      Parameters:
+        IngestionStateMachineArn: !GetAtt RagIngestionService.Outputs.IngestionStateMachineArn
+        SummarizeFunctionArn: !GetAtt RagRetrievalService.Outputs.SummarizeWithContextFunctionArn
+

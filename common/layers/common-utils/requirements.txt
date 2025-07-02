@@ -1,0 +1,2 @@
+boto3==1.35.53
+elasticsearch==8.12.0

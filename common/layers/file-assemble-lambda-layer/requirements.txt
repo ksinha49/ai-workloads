@@ -1,0 +1,4 @@
+PyPDF2==3.0.1
+boto3==1.35.53
+fpdf2==2.8.2
+Unidecode

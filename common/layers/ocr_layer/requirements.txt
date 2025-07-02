@@ -1,0 +1,7 @@
+PyMuPDF
+EasyOCR
+torch
+opencv-python-headless
+numpy
+paddleocr
+httpx==0.28.1

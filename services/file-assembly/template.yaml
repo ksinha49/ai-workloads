@@ -1,0 +1,74 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Lambda to assemble summary and original files.
+
+Globals:
+  Function:
+    Timeout: 3
+    Tracing: Active
+    Runtime: python3.13
+    Architectures:
+      - x86_64
+    LoggingConfig:
+      LogFormat: JSON
+
+Parameters:
+  AWSAccountName:
+    Type: String
+    Description: AWS Account Name
+  LambdaSubnet1ID:
+    Type: String
+    Description: Subnet ID for Lambda function
+  LambdaSubnet2ID:
+    Type: String
+    Description: Subnet ID for Lambda function
+  LambdaSecurityGroupID1:
+    Type: String
+    Description: Security Group ID for Lambda functions
+  LambdaSecurityGroupID2:
+    Type: String
+    Description: Security Group ID for Lambda functions
+  LambdaIAMRoleARN:
+    Type: String
+    Description: IAM Role ARN for Lambda functions
+
+Resources:
+  FileAssembleLambdaLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: !Sub '${AWSAccountName}-${AWS::StackName}-file-assemble-lambda-layer'
+      Description: Layer for file assemble Lambda
+      ContentUri: ../../common/layers/file-assemble-lambda-layer/
+      RetentionPolicy: Delete
+      CompatibleRuntimes:
+        - python3.13
+
+  FileAssembleLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub '${AWSAccountName}-${AWS::StackName}-file-assemble'
+      Handler: app.lambda_handler
+      Runtime: python3.13
+      CodeUri: ./file-assemble-lambda/
+      Role: !Ref LambdaIAMRoleARN
+      MemorySize: 1024
+      Timeout: 600
+      EphemeralStorage:
+        Size: 2068
+      Layers:
+        - !Ref FileAssembleLambdaLayer
+      VpcConfig:
+        SecurityGroupIds:
+          - !Ref LambdaSecurityGroupID1
+          - !Ref LambdaSecurityGroupID2
+        SubnetIds:
+          - !Ref LambdaSubnet1ID
+          - !Ref LambdaSubnet2ID
+      Environment:
+        Variables:
+          AWS_ACCOUNT_NAME: !Ref AWSAccountName
+
+Outputs:
+  FileAssembleFunctionArn:
+    Description: ARN of the file assemble Lambda
+    Value: !GetAtt FileAssembleLambdaFunction.Arn

@@ -1,0 +1,373 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: SAM template with separate Lambda and Layer resources and dynamic names to generate the APS zip files summarization. 
+
+Globals:
+  Function:
+    Timeout: 3
+    Tracing: Active
+    Runtime: python3.13
+    Architectures:
+      - x86_64
+    LoggingConfig:
+      LogFormat: JSON
+
+Parameters:
+  AWSAccountName:
+    Type: String
+    Description: AWS Account Name
+
+  LambdaSubnet1ID:
+    Type: String
+    Description: Subnet ID for Lambda function
+
+  LambdaSubnet2ID:
+    Type: String
+    Description: Subnet ID for Lambda function
+
+  LambdaSecurityGroupID1:
+    Type: String
+    Description: Security Group ID for Lambda functions
+  LambdaSecurityGroupID2:
+    Type: String
+    Description: Security Group ID for Lambda functions
+  LambdaIAMRoleARN:
+    Type: String
+    Description: IAM Role ARN for Lambda functions
+  
+  FileProcessingStepFunctionIAMRole:
+    Type: String
+    Description: IAM role ARN for step functions
+
+  IDPBucketName:
+    Type: String
+    Description: IDP bucket where files are ingested
+
+  IDPRawPrefix:
+    Type: String
+    Default: raw/
+    Description: RAW prefix within the IDP bucket
+
+  IngestionStateMachineArn:
+    Type: String
+    Description: ARN of the RAG ingestion Step Function
+
+  RagSummaryFunctionArn:
+    Type: String
+    Description: ARN of the RAG retrieval summary Lambda
+
+  FileAssembleFunctionArn:
+    Type: String
+    Description: ARN of the file assemble Lambda
+
+Resources:
+  # Layers - each defined separately
+
+
+  FileProcessingLambdaLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: !Sub '${AWSAccountName}-${AWS::StackName}-file-processing-layer'
+      Description: Layer for file processing Lambda
+      ContentUri: ../../common/layers/file-processing-lambda-layer/
+      RetentionPolicy: Delete
+      CompatibleRuntimes:
+        - python3.13
+
+  FileProcessingStatusLambdaLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: !Sub '${AWSAccountName}-${AWS::StackName}-file-processing-status-layer'
+      Description: Layer for file processing status Lambda
+      ContentUri: ../../common/layers/file-processing-status-lambda-layer/
+      RetentionPolicy: Delete
+      CompatibleRuntimes:
+        - python3.13
+
+  FileSummaryLambdaLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: !Sub '${AWSAccountName}-${AWS::StackName}-file-summary-layer'
+      Description: Layer for file summary Lambda
+      ContentUri: ../../common/layers/file-summary-lambda-layer/
+      RetentionPolicy: Delete
+      CompatibleRuntimes:
+        - python3.13
+
+
+
+  # Lambdas - each defined separately
+
+
+  FileProcessingLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub '${AWSAccountName}-${AWS::StackName}-file-processing'
+      Handler: app.lambda_handler
+      Runtime: python3.13
+      CodeUri: ./file-processing-lambda/
+      Role: !Ref LambdaIAMRoleARN
+      MemorySize: 1024                
+      Timeout: 720                      
+      EphemeralStorage:
+        Size: 2068  
+      Layers:
+        - !Ref FileProcessingLambdaLayer
+      VpcConfig:
+        SecurityGroupIds:
+          - !Ref LambdaSecurityGroupID1 
+          - !Ref LambdaSecurityGroupID2
+        SubnetIds:
+          - !Ref LambdaSubnet1ID
+          - !Ref LambdaSubnet2ID
+        Environment:
+          Variables:
+            AWS_ACCOUNT_NAME: !Ref AWSAccountName
+            IDP_BUCKET: !Ref IDPBucketName
+            RAW_PREFIX: !Ref IDPRawPrefix
+
+  FileProcessingLambdaS3Policy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Sub '${AWSAccountName}-${AWS::StackName}-file-processing-s3'
+      Roles:
+        - !Select [1, !Split ['/', !Ref LambdaIAMRoleARN]]
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - s3:PutObject
+            Resource: !Sub 'arn:aws:s3:::${IDPBucketName}/*'
+
+  FileProcessingStatusLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub '${AWSAccountName}-${AWS::StackName}-file-processing-status'
+      Handler: app.lambda_handler
+      Runtime: python3.13
+      CodeUri: ./file-processing-status-lambda/
+      Role: !Ref LambdaIAMRoleARN
+      MemorySize: 1024
+      Timeout: 480
+      EphemeralStorage:
+        Size: 2068  
+      Layers:
+        - !Ref FileProcessingStatusLambdaLayer
+      VpcConfig:
+        SecurityGroupIds:
+          - !Ref LambdaSecurityGroupID1 
+          - !Ref LambdaSecurityGroupID2
+        SubnetIds:
+          - !Ref LambdaSubnet1ID
+          - !Ref LambdaSubnet2ID
+      Environment:
+        Variables:
+          AWS_ACCOUNT_NAME: !Ref AWSAccountName
+
+  FileProcessingStatusLambdaPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Sub '${AWSAccountName}-${AWS::StackName}-file-processing-status'
+      Roles:
+        - !Select [1, !Split ['/', !Ref LambdaIAMRoleARN]]
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - s3:GetObject
+            Resource: !Sub 'arn:aws:s3:::${IDPBucketName}/*'
+
+  FileSummaryInvokePolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Sub '${AWSAccountName}-${AWS::StackName}-file-summary-invoke'
+      Roles:
+        - !Select [1, !Split ['/', !Ref LambdaIAMRoleARN]]
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - lambda:InvokeFunction
+            Resource: !Ref RagSummaryFunctionArn
+
+  FileSummaryLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub '${AWSAccountName}-${AWS::StackName}-file-summary'
+      Handler: app.lambda_handler
+      Runtime: python3.13
+      CodeUri: ./file-summary-lambda/
+      Role: !Ref LambdaIAMRoleARN
+      MemorySize: 1024                
+      Timeout: 720                      
+      EphemeralStorage:
+        Size: 2068  
+      Layers:
+        - !Ref FileSummaryLambdaLayer
+      VpcConfig:
+        SecurityGroupIds:
+          - !Ref LambdaSecurityGroupID1 
+          - !Ref LambdaSecurityGroupID2
+        SubnetIds:
+          - !Ref LambdaSubnet1ID
+          - !Ref LambdaSubnet2ID
+      Environment:
+        Variables:
+          AWS_ACCOUNT_NAME: !Ref AWSAccountName
+          RAG_SUMMARY_FUNCTION_ARN: !Ref RagSummaryFunctionArn
+
+  FileProcessingSFInvokePolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Sub '${AWSAccountName}-${AWS::StackName}-file-processing-sf-invoke'
+      Roles:
+        - !Select [1, !Split ['/', !Ref FileProcessingStepFunctionIAMRole]]
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - states:StartExecution
+            Resource: !Ref IngestionStateMachineArn
+
+
+
+  FileProcessingStepFunction:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      Definition:
+        Comment: A description of my state machine
+        StartAt: file_processing
+        States:
+          file_processing:
+            Type: Task
+            Resource: arn:aws:states:::lambda:invoke
+            Output: '{% $states.result.Payload %}'
+            Arguments:
+              FunctionName: !GetAtt FileProcessingLambdaFunction.Arn
+              Payload: '{% $states.input %}'
+            Retry:
+              - ErrorEquals:
+                  - States.TaskFailed
+                  - Lambda.ServiceException
+                  - Lambda.AWSLambdaException
+                  - Lambda.SdkClientException
+                  - Lambda.TooManyRequestsException
+                IntervalSeconds: 1
+                MaxAttempts: 3
+                BackoffRate: 2
+                JitterStrategy: FULL
+            Next: Wait
+          Wait:
+            Type: Wait
+            Seconds: 200
+            Next: FileUploadStatus
+          FileUploadStatus:
+            Type: Task
+            Resource: arn:aws:states:::lambda:invoke
+            Output: '{% $states.result.Payload %}'
+            Arguments:
+              FunctionName: !GetAtt FileProcessingStatusLambdaFunction.Arn
+              Payload: '{% $states.input %}'
+            Retry:
+              - ErrorEquals:
+                  - States.TaskFailed
+                  - Lambda.ServiceException
+                  - Lambda.AWSLambdaException
+                  - Lambda.SdkClientException
+                  - Lambda.TooManyRequestsException
+                IntervalSeconds: 1
+                MaxAttempts: 3
+                BackoffRate: 2
+                JitterStrategy: FULL
+            Next: Choice
+          Choice:
+            Type: Choice
+            Choices:
+              - Next: Wait
+                Condition: '{% $not(($states.input.body.fileupload_status) = ("COMPLETE")) %}'
+            Default: start_ingestion
+          start_ingestion:
+            Type: Task
+            Resource: arn:aws:states:::states:startExecution.sync
+            Parameters:
+              StateMachineArn: !Ref IngestionStateMachineArn
+              Input: '{% {"documentId": $states.input.body.document_id, "ingest_params": $states.input.body.ingest_params} %}'
+            Next: run_prompts
+          run_prompts:
+            Type: Map
+            ItemsPath: $.body.prompts
+            ResultPath: $.run_prompts
+            MaxConcurrency: 10
+            Iterator:
+              StartAt: summarize
+              States:
+                summarize:
+                  Type: Task
+                  Resource: arn:aws:states:::lambda:invoke
+                  Output: '{% $states.result.Payload.summary.choices[0].message.content %}'
+                  Arguments:
+                    FunctionName: !Ref RagSummaryFunctionArn
+                    Payload: '{% {"query": $$Map.Item.Value.query, "retrieve_params": $states.input.body.retrieve_params, "router_params": $states.input.body.router_params, "llm_params": $states.input.body.llm_params} %}'
+                  Next: add_title
+                add_title:
+                  Type: Pass
+                  Parameters:
+                    Title.$: $$Map.Item.Value.Title
+                    content.$: $
+                  End: true
+            Next: file_summary
+          file_summary:
+            Type: Task
+            Resource: arn:aws:states:::lambda:invoke
+            Output: '{% $states.result.Payload %}'
+            Arguments:
+              FunctionName: !GetAtt FileSummaryLambdaFunction.Arn
+              Payload: '{% $merge([$states.input, {"summaries": $.run_prompts}]) %}'
+            Retry:
+              - ErrorEquals:
+                  - States.TaskFailed
+                  - Lambda.ServiceException
+                  - Lambda.AWSLambdaException
+                  - Lambda.SdkClientException
+                  - Lambda.TooManyRequestsException
+                IntervalSeconds: 1
+                MaxAttempts: 3
+                BackoffRate: 2
+                JitterStrategy: FULL
+            Next: file_assemble
+          file_assemble:
+            Type: Task
+            Resource: arn:aws:states:::lambda:invoke
+            Output: '{% $states.result.Payload %}'
+            Arguments:
+              FunctionName: !Ref FileAssembleFunctionArn
+              Payload: '{% $states.input %}'
+            Retry:
+              - ErrorEquals:
+                  - States.TaskFailed
+                  - Lambda.ServiceException
+                  - Lambda.AWSLambdaException
+                  - Lambda.SdkClientException
+                  - Lambda.TooManyRequestsException
+                IntervalSeconds: 1
+                MaxAttempts: 3
+                BackoffRate: 2
+                JitterStrategy: FULL
+            End: true
+        QueryLanguage: JSONata
+      Name: !Sub '${AWSAccountName}-${AWS::StackName}-file-processing-sf'
+      Type: STANDARD
+      Role: !Ref FileProcessingStepFunctionIAMRole
+      Logging:
+        Level: 'OFF'
+        IncludeExecutionData: false
+
+Outputs:
+  FileProcessingStepFunctionArn:
+    Description: ARN of the file processing state machine
+    Value: !Ref FileProcessingStepFunction
+ 

@@ -1,0 +1,117 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Lambda to invoke Bedrock or Ollama models.
+
+Parameters:
+  BedrockOpenAIEndpoint:
+    Type: String
+    Default: ''
+  BedrockApiKey:
+    Type: String
+    Default: ''
+  BedrockTemperature:
+    Type: String
+    Default: ''
+  BedrockNumCtx:
+    Type: String
+    Default: ''
+  BedrockMaxTokens:
+    Type: String
+    Default: ''
+  BedrockTopP:
+    Type: String
+    Default: ''
+  BedrockTopK:
+    Type: String
+    Default: ''
+  BedrockMaxTokensToSample:
+    Type: String
+    Default: ''
+  OllamaEndpoint:
+    Type: String
+    Default: ''
+  OllamaDefaultModel:
+    Type: String
+    Default: ''
+  OllamaNumCtx:
+    Type: String
+    Default: ''
+  OllamaRepeatLastN:
+    Type: String
+    Default: ''
+  OllamaRepeatPenalty:
+    Type: String
+    Default: ''
+  OllamaTemperature:
+    Type: String
+    Default: ''
+  OllamaSeed:
+    Type: String
+    Default: ''
+  OllamaStop:
+    Type: String
+    Default: ''
+  OllamaNumPredict:
+    Type: String
+    Default: ''
+  OllamaTopK:
+    Type: String
+    Default: ''
+  OllamaTopP:
+    Type: String
+    Default: ''
+  OllamaMinP:
+    Type: String
+    Default: ''
+
+Globals:
+  Function:
+    Handler: app.lambda_handler
+    Runtime: python3.13
+    Timeout: 60
+    MemorySize: 512
+
+Resources:
+  LlmInvocationLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: llm-invocation-layer
+      Description: Helpers for invoking LLMs
+      ContentUri: ../../common/layers/llm-invocation-layer/
+      CompatibleRuntimes:
+        - python3.13
+      RetentionPolicy: Delete
+  InvokeLLMLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: invoke-lambda/app.lambda_handler
+      CodeUri: ./
+      Layers:
+        - !Ref LlmInvocationLayer
+      Environment:
+        Variables:
+          BEDROCK_OPENAI_ENDPOINTS: !Ref BedrockOpenAIEndpoint
+          BEDROCK_API_KEY: !Ref BedrockApiKey
+          BEDROCK_TEMPERATURE: !Ref BedrockTemperature
+          BEDROCK_NUM_CTX: !Ref BedrockNumCtx
+          BEDROCK_MAX_TOKENS: !Ref BedrockMaxTokens
+          BEDROCK_TOP_P: !Ref BedrockTopP
+          BEDROCK_TOP_K: !Ref BedrockTopK
+          BEDROCK_MAX_TOKENS_TO_SAMPLE: !Ref BedrockMaxTokensToSample
+          OLLAMA_ENDPOINTS: !Ref OllamaEndpoint
+          OLLAMA_DEFAULT_MODEL: !Ref OllamaDefaultModel
+          OLLAMA_NUM_CTX: !Ref OllamaNumCtx
+          OLLAMA_REPEAT_LAST_N: !Ref OllamaRepeatLastN
+          OLLAMA_REPEAT_PENALTY: !Ref OllamaRepeatPenalty
+          OLLAMA_TEMPERATURE: !Ref OllamaTemperature
+          OLLAMA_SEED: !Ref OllamaSeed
+          OLLAMA_STOP: !Ref OllamaStop
+          OLLAMA_NUM_PREDICT: !Ref OllamaNumPredict
+          OLLAMA_TOP_K: !Ref OllamaTopK
+          OLLAMA_TOP_P: !Ref OllamaTopP
+          OLLAMA_MIN_P: !Ref OllamaMinP
+
+Outputs:
+  InvokeLLMLambdaArn:
+    Description: ARN of the invocation lambda
+    Value: !GetAtt InvokeLLMLambda.Arn

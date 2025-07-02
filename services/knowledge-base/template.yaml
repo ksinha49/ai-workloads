@@ -1,0 +1,52 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Simple knowledge base ingestion and query Lambdas.
+
+Parameters:
+  IngestionStateMachineArn:
+    Type: String
+  SummarizeFunctionArn:
+    Type: String
+  KnowledgeBaseName:
+    Type: String
+    Default: 'kb'
+
+Globals:
+  Function:
+    Handler: app.lambda_handler
+    Runtime: python3.13
+    Timeout: 60
+    MemorySize: 512
+
+Resources:
+  IngestFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./ingest-lambda/
+      Environment:
+        Variables:
+          STATE_MACHINE_ARN: !Ref IngestionStateMachineArn
+          KNOWLEDGE_BASE_NAME: !Ref KnowledgeBaseName
+
+  QueryFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./query-lambda/
+      Environment:
+        Variables:
+          SUMMARY_FUNCTION_ARN: !Ref SummarizeFunctionArn
+          KNOWLEDGE_BASE_NAME: !Ref KnowledgeBaseName
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /kb/query
+            Method: post
+
+Outputs:
+  IngestFunctionArn:
+    Description: ARN of the knowledge base ingest Lambda
+    Value: !GetAtt IngestFunction.Arn
+  QueryFunctionArn:
+    Description: ARN of the knowledge base query Lambda
+    Value: !GetAtt QueryFunction.Arn
