@@ -1,0 +1,211 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Lambdas and Step Function to handle ZIP extraction and assembly.
+
+Globals:
+  Function:
+    Timeout: 3
+    Tracing: Active
+    Runtime: python3.13
+    Architectures:
+      - x86_64
+    LoggingConfig:
+      LogFormat: JSON
+
+Parameters:
+  AWSAccountName:
+    Type: String
+    Description: AWS Account Name
+
+  LambdaSubnet1ID:
+    Type: String
+    Description: Subnet ID for Lambda function
+
+  LambdaSubnet2ID:
+    Type: String
+    Description: Subnet ID for Lambda function
+
+  LambdaSecurityGroupID1:
+    Type: String
+    Description: Security Group ID for Lambda functions
+  LambdaSecurityGroupID2:
+    Type: String
+    Description: Security Group ID for Lambda functions
+
+  LambdaIAMRoleARN:
+    Type: String
+    Description: IAM Role ARN for Lambda functions
+
+  FileProcessingStepFunctionArn:
+    Type: String
+    Description: ARN of the per-file processing state machine
+
+  FileProcessingStepFunctionIAMRole:
+    Type: String
+    Description: IAM role ARN for Step Functions
+
+  FileProcessingEmailId:
+    Type: String
+    Description: Email for SNS notifications
+
+Resources:
+  ZipExtractLambdaLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: !Sub '${AWSAccountName}-${AWS::StackName}-zip-extract-layer'
+      Description: Layer for zip extract Lambda
+      ContentUri: ../../common/layers/zip-extract-lambda-layer/
+      RetentionPolicy: Delete
+      CompatibleRuntimes:
+        - python3.13
+
+  ZipfileCreationLambdaLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: !Sub '${AWSAccountName}-${AWS::StackName}-zipfile-creation-layer'
+      Description: Layer for zipfile creation Lambda
+      ContentUri: ../../common/layers/zip-creation-lambda-layer/
+      RetentionPolicy: Delete
+      CompatibleRuntimes:
+        - python3.13
+
+  ZipExtractLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub '${AWSAccountName}-${AWS::StackName}-zip-extract'
+      Handler: app.lambda_handler
+      Runtime: python3.13
+      CodeUri: ./zip-extract-lambda/
+      Role: !Ref LambdaIAMRoleARN
+      MemorySize: 1024
+      Timeout: 720
+      EphemeralStorage:
+        Size: 2068
+      Layers:
+        - !Ref ZipExtractLambdaLayer
+      VpcConfig:
+        SecurityGroupIds:
+          - !Ref LambdaSecurityGroupID1
+          - !Ref LambdaSecurityGroupID2
+        SubnetIds:
+          - !Ref LambdaSubnet1ID
+          - !Ref LambdaSubnet2ID
+      Environment:
+        Variables:
+          AWS_ACCOUNT_NAME: !Ref AWSAccountName
+
+  ZipfileCreationLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub '${AWSAccountName}-${AWS::StackName}-zipfile-creation'
+      Handler: app.lambda_handler
+      Runtime: python3.13
+      CodeUri: ./zip-creation-lambda/
+      Role: !Ref LambdaIAMRoleARN
+      MemorySize: 1024
+      Timeout: 720
+      EphemeralStorage:
+        Size: 2068
+      Layers:
+        - !Ref ZipfileCreationLambdaLayer
+      VpcConfig:
+        SecurityGroupIds:
+          - !Ref LambdaSecurityGroupID1
+          - !Ref LambdaSecurityGroupID2
+        SubnetIds:
+          - !Ref LambdaSubnet1ID
+          - !Ref LambdaSubnet2ID
+      Environment:
+        Variables:
+          AWS_ACCOUNT_NAME: !Ref AWSAccountName
+
+  FileProcessingNotificationTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub ${AWSAccountName}-${AWS::StackName}-SNS-TOPIC
+      Subscription:
+        - Endpoint: !Ref FileProcessingEmailId
+          Protocol: email
+
+  ZipFileProcessingStepFunction:
+    Type: AWS::Serverless::StateMachine
+    DependsOn: FileProcessingNotificationTopic
+    Properties:
+      Definition:
+        Comment: >-
+          Orchestrate ZIP → extract PDFs → per-file processing (with error
+          handling) → re-zip
+        StartAt: ExtractZip
+        States:
+          ExtractZip:
+            Type: Task
+            Resource: !GetAtt ZipExtractLambdaFunction.Arn
+            ResultPath: $
+            Next: CheckZipExtractStatus
+          CheckZipExtractStatus:
+            Type: Choice
+            Choices:
+              - Next: AssembleZip
+                Not:
+                  Variable: $.statusCode
+                  NumericEquals: 200
+            Default: ProcessAllPdfs
+          ProcessAllPdfs:
+            Type: Map
+            ItemsPath: $.pdfFiles
+            ResultPath: $.files
+            MaxConcurrency: 5
+            Iterator:
+              StartAt: ProcessSinglePdf
+              States:
+                ProcessSinglePdf:
+                  Type: Task
+                  Resource: arn:aws:states:::states:startExecution.sync
+                  Parameters:
+                    StateMachineArn: !Ref FileProcessingStepFunctionArn
+                    Input.$: $
+                  ResultPath: $.processedFiles
+                  Catch:
+                    - ErrorEquals:
+                        - States.ALL
+                      ResultPath: $.processedFiles
+                      Next: HandleFileError
+                  End: true
+                HandleFileError:
+                  Type: Pass
+                  End: true
+            Next: AssembleZip
+          AssembleZip:
+            Next: CheckZipFileProcessingStatus
+            Resource: !GetAtt ZipfileCreationLambdaFunction.Arn
+            Type: Task
+          CheckZipFileProcessingStatus:
+            Type: Choice
+            Choices:
+              - Next: FormatMessage
+                Not:
+                  Variable: $.status
+                  StringEquals: '200'
+            Default: Pass
+          FormatMessage:
+            Parameters:
+              Message.$: States.Format('{}', $.unprocessedFiles)
+            Type: Pass
+            Next: SendToSNS
+          SendToSNS:
+            Parameters:
+              Message.$: $.Message
+              Subject: APS - Summary Failure Report
+              TopicArn: !GetAtt FileProcessingNotificationTopic.TopicArn
+            Resource: arn:aws:states:::sns:publish
+            Type: Task
+            End: true
+          Pass:
+            Type: Pass
+            End: true
+      Name: !Sub '${AWSAccountName}-${AWS::StackName}-zip-file-processing-sf'
+      Type: STANDARD
+      Role: !Ref FileProcessingStepFunctionIAMRole
+      Logging:
+        Level: 'OFF'
+        IncludeExecutionData: false
