@@ -40,11 +40,15 @@ def test_kb_ingest(monkeypatch):
     monkeypatch.setenv("FILE_INGESTION_STATE_MACHINE_ARN", "filearn")
     module = load_lambda('ingest', 'services/knowledge-base/ingest-lambda/app.py')
     module.sfn = FakeSFN()
-    out = module.lambda_handler({'text': 't', 'docType': 'pdf', 'department': 'HR'}, {})
+    out = module.lambda_handler(
+        {'text': 't', 'docType': 'pdf', 'department': 'HR', 'collection_name': 'c'},
+        {}
+    )
     assert out['started'] is True
     assert calls[0][0] == 'filearn'
     assert calls[1][0] == 'arn'
     assert calls[1][1]['text'] == 't'
+    assert calls[1][1]['collection_name'] == 'c'
     assert calls[1][1]['docType'] == 'pdf'
     assert calls[1][1]['metadata']['department'] == 'HR'
 
@@ -98,7 +102,7 @@ def test_kb_ingest_error(monkeypatch):
     monkeypatch.setenv('FILE_INGESTION_STATE_MACHINE_ARN', 'filearn')
     module = load_lambda('ingest_err', 'services/knowledge-base/ingest-lambda/app.py')
     module.sfn = FakeSFN()
-    out = module.lambda_handler({'text': 't'}, {})
+    out = module.lambda_handler({'text': 't', 'collection_name': 'c'}, {})
     assert out['started'] is False
     assert 'bad' in out['error']
     assert calls[0] == 'filearn'

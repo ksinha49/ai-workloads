@@ -42,6 +42,11 @@ def lambda_handler(event: dict, context: object) -> dict:
     if not text:
         return {"started": False}
 
+    collection_name = event.get("collection_name")
+    if not collection_name:
+        logger.error("collection_name missing from request")
+        return {"started": False}
+
     try:
         sfn.start_execution(
             stateMachineArn=FILE_INGESTION_STATE_MACHINE_ARN,
@@ -51,7 +56,7 @@ def lambda_handler(event: dict, context: object) -> dict:
         logger.error("Failed to start file ingestion state machine: %s", exc)
         return {"started": False, "error": str(exc)}
 
-    payload = {"text": text}
+    payload = {"text": text, "collection_name": collection_name}
     doc_type = event.get("docType") or event.get("type")
     metadata = {}
     if doc_type:
