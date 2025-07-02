@@ -97,7 +97,6 @@ Resources:
       Environment:
         Variables:
           AWS_ACCOUNT_NAME: !Ref AWSAccountName
-          RAG_SUMMARY_FUNCTION_ARN: !Ref RagSummaryFunctionArn
 
   SummarizeWorkerFunction:
     Type: AWS::Serverless::Function
