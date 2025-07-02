@@ -7,6 +7,8 @@ Enterprise AI Services is a collection of AWS Lambda microservices for building 
 The repository includes the following directories under `services/`:
 
 - `file-assembly` – merges summary pages with the original PDF
+- `file-ingestion` – copies files to the IDP bucket and polls for text
+  extraction status
 - `idp` – Intelligent Document Processing pipeline (classification, OCR and text extraction)
 - `zip-processing` – extracts PDFs from uploaded archives and assembles new ZIPs
 - `rag-ingestion` – chunks text and generates embeddings stored in Milvus
@@ -24,6 +26,10 @@ Shared dependencies are packaged as layers in `common/layers/`.
 #### file-assembly
 Merges summary pages produced by the summarization workflow back into the
 original PDF and uploads the result to S3.
+
+#### file-ingestion
+Copies files to the IDP bucket and waits for text extraction before starting
+RAG ingestion.
 
 #### idp
 Implements the Intelligent Document Processing pipeline with steps for
@@ -54,8 +60,9 @@ Lambdas invoke whichever search function name is stored in the
 from pure vector search to hybrid search.
 
 #### summarization
-Step Function workflow that copies a file to the IDP bucket, waits for text
-extraction, generates summaries and merges them back with the original PDF.
+Step Function workflow that depends on the `file-ingestion` stack to copy a
+file to the IDP bucket and wait for text extraction. It then generates
+summaries and merges them back with the original PDF.
 
 #### llm-router
 Routes prompts to Amazon Bedrock or local Ollama using heuristic, predictive and

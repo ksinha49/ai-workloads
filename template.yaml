@@ -49,6 +49,7 @@ Resources:
       Location: services/summarization/template.yaml
       Parameters:
         FileAssembleFunctionArn: !GetAtt FileAssemblyService.Outputs.FileAssembleFunctionArn
+        FileIngestionStateMachineArn: !GetAtt FileIngestionService.Outputs.FileIngestionStateMachineArn
 
   FileAssemblyService:
     Type: AWS::Serverless::Application
@@ -86,6 +87,14 @@ Resources:
         BucketName: !GetAtt IDPService.Outputs.BucketName
         TextDocPrefix: !GetAtt IDPService.Outputs.TextDocPrefix
 
+  FileIngestionService:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: services/file-ingestion/template.yaml
+      Parameters:
+        IngestionStateMachineArn: !GetAtt RagIngestionService.Outputs.IngestionStateMachineArn
+        IDPBucketName: !GetAtt IDPService.Outputs.BucketName
+
   RagRetrievalService:
     Type: AWS::Serverless::Application
     Properties:
@@ -122,4 +131,9 @@ Resources:
       Parameters:
         IngestionStateMachineArn: !GetAtt RagIngestionService.Outputs.IngestionStateMachineArn
         SummarizeQueueUrl: !GetAtt SummarizationService.Outputs.SummaryQueueUrl
+
+Outputs:
+  FileIngestionStateMachineArn:
+    Description: ARN of the file ingestion state machine
+    Value: !GetAtt FileIngestionService.Outputs.FileIngestionStateMachineArn
 
