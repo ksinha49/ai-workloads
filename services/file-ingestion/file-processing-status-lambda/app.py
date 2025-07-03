@@ -18,7 +18,17 @@ import boto3
 import logging
 from common_utils import configure_logger
 import os
-from services.file_ingestion.models import ProcessingStatusEvent
+import importlib.util
+import sys
+
+_models_spec = importlib.util.spec_from_file_location(
+    "file_ingestion_models",
+    os.path.join(os.path.dirname(os.path.dirname(__file__)), "models.py"),
+)
+_models = importlib.util.module_from_spec(_models_spec)
+sys.modules[_models_spec.name] = _models
+_models_spec.loader.exec_module(_models)
+ProcessingStatusEvent = _models.ProcessingStatusEvent
 from common_utils.get_ssm import (
     get_values_from_ssm,
     get_environment_prefix,

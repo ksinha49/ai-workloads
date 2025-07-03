@@ -13,7 +13,7 @@ _models_spec = importlib.util.spec_from_file_location(
     ),
 )
 _models = importlib.util.module_from_spec(_models_spec)
-sys.modules["file_ingestion_models"] = _models
+sys.modules[_models_spec.name] = _models
 _models_spec.loader.exec_module(_models)
 FileProcessingEvent = _models.FileProcessingEvent
 ProcessingStatusEvent = _models.ProcessingStatusEvent
