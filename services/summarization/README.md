@@ -66,3 +66,27 @@ stored in the prompt engine. When present, the worker Lambda sends
 `prompt_id` and an optional `variables` dictionary to the engine before invoking
 the summarization logic.
 
+## `system_prompt`
+
+Include model parameters under ``body.llm_params`` when starting a Step
+Function execution. To supply a system prompt for the LLM add a
+``system_prompt`` entry, e.g.:
+
+```json
+{
+  "body": {
+    "prompts": [
+      {"query": "Summary query"}
+    ],
+    "llm_params": {
+      "system_prompt": "<prompt text>"
+    }
+  }
+}
+```
+
+An example prompt is available in
+[`file-summary-lambda/system_prompt.json`](file-summary-lambda/system_prompt.json).
+The queue worker passes ``llm_params`` to the ``llm-invocation`` Lambda which
+forwards ``system_prompt`` to the selected backend.
+
