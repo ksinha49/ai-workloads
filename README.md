@@ -226,5 +226,6 @@ Additional documentation is available in the `docs/` directory:
 - [docs/idp_output_format.md](docs/idp_output_format.md)
 - [docs/router_configuration.md](docs/router_configuration.md)
 - [docs/summarization_workflow.md](docs/summarization_workflow.md)
+- [docs/prompt_engine.md](docs/prompt_engine.md)
 - [docs/knowledge_rag_usage.md](docs/knowledge_rag_usage.md)
 - [docs/event_schemas.md](docs/event_schemas.md)
