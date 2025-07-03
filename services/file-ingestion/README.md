@@ -6,6 +6,10 @@ This service copies uploaded files to the IDP bucket and polls for text extracti
 - **file-processing-status-lambda** – checks S3 for the text document and updates `fileupload_status`.
 - **FileIngestionStateMachine** – orchestrates both Lambdas and then triggers the ingestion workflow.
 
+The dataclasses `FileProcessingEvent` and `ProcessingStatusEvent` used by these
+Lambdas are provided by the shared `common-utils` layer so they can be imported
+simply with ``from models import FileProcessingEvent``.
+
 ## External Callers
 
 The `FileIngestionStateMachine` is invoked by other stacks before they begin
