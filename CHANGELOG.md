@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.8] - 2025-07-03
+### Added
+- Introduction of the Prompt Engine service and SQS-based prompt handling.
+- Support for `workflow_id` and `system_prompt` in summarization.
+- Universal chunking strategy with configurable mapping.
+- Configurable re-rank provider and additional retrieval parameters.
+- File GUID tracking, ingestion parameter validation, and removal of obsolete code and services.
+
 ## [1.0.7] - 2025-07-02
 ### Added
 - Dataclass models for Lambda events and responses documented in `docs/event_schemas.md`.
