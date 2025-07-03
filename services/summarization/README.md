@@ -19,6 +19,7 @@ The SAM template exposes a few parameters which become environment variables for
 - `FileAssembleFunctionArn` – ARN of the file assembly Lambda used to merge summaries with the original PDF.
 - `RunPromptsConcurrency` – number of prompts processed in parallel by the `run_prompts` map state.
 - The service now provisions an SQS queue consumed by a worker Lambda. `RunPromptsConcurrency` controls how many messages are sent in parallel.
+- `PromptEngineEndpoint` – optional URL of the prompt engine service used for templated prompts.
 
 
 ## Deployment
@@ -33,7 +34,8 @@ sam deploy \
     FileIngestionStateMachineArn=<arn> \
     RagSummaryFunctionArn=<arn> \
     FileAssembleFunctionArn=<arn> \
-    RunPromptsConcurrency=10
+    RunPromptsConcurrency=10 \
+    PromptEngineEndpoint=<engine-url>
 ```
 
 The Step Function definition and Lambda code are located in this directory.  See the root `README.md` for additional context.
@@ -56,4 +58,11 @@ If ``collection_name`` is omitted, the workflow returns a
 ## File GUID
 
 A unique `file_guid` is generated during the file-processing step. This value flows through the ingestion workflow so each chunk and embedding can be traced back to the original document.
+
+## Prompt templates
+
+Each entry in `body.prompts` may specify a `prompt_id` that refers to a template
+stored in the prompt engine. When present, the worker Lambda sends
+`prompt_id` and an optional `variables` dictionary to the engine before invoking
+the summarization logic.
 
