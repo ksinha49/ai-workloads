@@ -34,6 +34,9 @@ class FakeTable:
         self.items = items or []
 
     def scan(self, *a, **k):
+        expr = k.get("FilterExpression")
+        if isinstance(expr, Attr) and hasattr(expr, "val"):
+            return {"Items": [i for i in self.items if i.get(expr.name) == expr.val]}
         return {"Items": self.items}
 
     def get_item(self, Key=None):
@@ -126,3 +129,19 @@ def test_router_failure(monkeypatch):
     module = load_lambda("engine_route", "services/prompt-engine/prompt-engine-lambda/app.py")
     out = module.lambda_handler({"prompt_id": "p1"}, {})
     assert "net" in out["error"]
+
+
+def test_get_workflow_prompts(monkeypatch):
+    items = [
+        {"id": "system_prompt:1", "prompt_id": "system_prompt", "version": "1", "template": "s", "workflow_id": "sys"},
+        {"id": "p1:1", "prompt_id": "p1", "version": "1", "template": "x", "workflow_id": "wf"},
+        {"id": "p2:1", "prompt_id": "p2", "version": "1", "template": "y", "workflow_id": "wf"},
+    ]
+    table = FakeTable(items)
+    monkeypatch.setattr(sys.modules["boto3"], "resource", lambda name: FakeResource(table), raising=False)
+    monkeypatch.setenv("PROMPT_LIBRARY_TABLE", "tbl")
+    monkeypatch.setenv("ROUTER_ENDPOINT", "http://router")
+
+    module = load_lambda("engine_wf", "services/prompt-engine/prompt-engine-lambda/app.py")
+    result = module.lambda_handler({"workflow_id": "wf"}, {})
+    assert result == items

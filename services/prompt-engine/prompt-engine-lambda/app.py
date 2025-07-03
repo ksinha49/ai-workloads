@@ -50,6 +50,18 @@ def _get_latest_version(prompt_id: str) -> Dict[str, Any]:
     return items[0]
 
 
+def _fetch_workflow_prompts(workflow_id: str) -> list[Dict[str, Any]]:
+    """Return all prompt items belonging to ``workflow_id`` plus the system prompt."""
+    resp = _table.scan(FilterExpression=Attr("workflow_id").eq(workflow_id))
+    items = resp.get("Items", [])
+    try:
+        system_prompt = _fetch_prompt("system_prompt")
+        items.insert(0, system_prompt)
+    except Exception:  # pragma: no cover - missing system prompt
+        logger.exception("System prompt not found")
+    return items
+
+
 def _fetch_prompt(prompt_id: str, version: str | None = None) -> Dict[str, Any]:
     if version:
         key = {"id": f"{prompt_id}:{version}"}
@@ -75,6 +87,14 @@ def _call_router(payload: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def _process_event(event: Dict[str, Any]) -> Dict[str, Any]:
+    workflow_id = event.get("workflow_id")
+    if workflow_id:
+        try:
+            return _fetch_workflow_prompts(workflow_id)
+        except Exception as exc:  # pragma: no cover - runtime issues
+            logger.exception("Error fetching workflow prompts")
+            return {"error": str(exc)}
+
     prompt_id = event.get("prompt_id")
     if not prompt_id:
         return {"error": "prompt_id missing"}

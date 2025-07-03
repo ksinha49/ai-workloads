@@ -131,6 +131,27 @@ Resources:
             Queue: !GetAtt SummaryQueue.Arn
             BatchSize: 1
 
+  LoadPromptsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub '${AWSAccountName}-${AWS::StackName}-load-prompts'
+      Handler: app.lambda_handler
+      Runtime: python3.13
+      CodeUri: ./load-prompts-lambda/
+      Role: !Ref LambdaIAMRoleARN
+      Timeout: 60
+      VpcConfig:
+        SecurityGroupIds:
+          - !Ref LambdaSecurityGroupID1
+          - !Ref LambdaSecurityGroupID2
+        SubnetIds:
+          - !Ref LambdaSubnet1ID
+          - !Ref LambdaSubnet2ID
+      Environment:
+        Variables:
+          PROMPT_ENGINE_ENDPOINT: !Ref PromptEngineEndpoint
+          SYSTEM_WORKFLOW_ID: sys
+
   WorkerSQSPolicy:
     Type: AWS::IAM::Policy
     Properties:
@@ -146,6 +167,22 @@ Resources:
               - sqs:DeleteMessage
               - sqs:GetQueueAttributes
             Resource: !GetAtt SummaryQueue.Arn
+
+  LoadPromptsDynamoPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Sub '${AWSAccountName}-${AWS::StackName}-load-prompts-dynamo'
+      Roles:
+        - !Select [1, !Split ['/', !Ref LambdaIAMRoleARN]]
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - dynamodb:GetItem
+              - dynamodb:Scan
+              - dynamodb:Query
+            Resource: '*'
 
   WorkerSFCallbackPolicy:
     Type: AWS::IAM::Policy
@@ -203,6 +240,22 @@ Resources:
             Parameters:
               StateMachineArn: !Ref FileIngestionStateMachineArn
               Input: '{% $states.input %}'
+            Next: check_workflow
+          check_workflow:
+            Type: Choice
+            Choices:
+              - Variable: $.body.workflow_id
+                IsPresent: true
+                Next: load_prompts
+            Default: run_prompts
+          load_prompts:
+            Type: Task
+            Resource: arn:aws:states:::lambda:invoke
+            Output: '{% $merge([$states.input.body, $states.result.Payload]) %}'
+            Arguments:
+              FunctionName: !GetAtt LoadPromptsFunction.Arn
+              Payload: '{% {"workflow_id": $states.input.body.workflow_id} %}'
+            ResultPath: $.body
             Next: run_prompts
           run_prompts:
             Type: Map
