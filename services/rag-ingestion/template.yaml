@@ -27,10 +27,21 @@ Globals:
     MemorySize: 512
 
 Resources:
+  ChunkingLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: chunking-layer
+      Description: Utilities for advanced chunking
+      ContentUri: ../../common/layers/chunking-layer/
+      CompatibleRuntimes:
+        - python3.13
+      RetentionPolicy: Delete
   TextChunkFunction:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: ./text-chunk-lambda/
+      Layers:
+        - !Ref ChunkingLayer
 
   EmbedFunction:
     Type: AWS::Serverless::Function

@@ -26,6 +26,8 @@ The Lambdas read configuration from AWS Systems Manager Parameter Store or envir
 
 - `CHUNK_SIZE` – maximum characters per chunk (default `1000`)
 - `CHUNK_OVERLAP` – overlap between successive chunks (default `100`)
+- `CHUNK_STRATEGY` – chunking strategy (`simple` or `universal`)
+- `CHUNK_STRATEGY_MAP` – JSON mapping of document types to strategies
 - `EXTRACT_ENTITIES` – set to `true` to store entity metadata for each chunk
 - `EMBED_MODEL` – default embedding model (`"sbert"`)
 - `EMBED_MODEL_MAP` – JSON mapping of document types to models
