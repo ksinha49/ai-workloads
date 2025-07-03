@@ -33,7 +33,7 @@ def _process_event(event: Dict[str, Any]) -> Dict[str, Any]:
 
         return {"prompts": prompts, "llm_params": {"system_prompt": system_prompt}}
 
-      except Exception as exc:  # pragma: no cover - network failure
+    except Exception as exc:  # pragma: no cover - network failure
         logger.exception("Prompt engine request failed")
         return {"error": str(exc)}
 

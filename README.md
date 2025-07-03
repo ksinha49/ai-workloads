@@ -15,6 +15,7 @@ The repository includes the following directories under `services/`:
 - `vector-db` – manages Milvus collections and search Lambdas
 - `rag-retrieval` – retrieval functions and API endpoints for summarization or entity extraction
 - `summarization` – Step Function workflow orchestrating file processing and summary generation
+- `prompt-engine` – renders templates from DynamoDB and forwards them to the router
 - `llm-router` – routes prompts via heuristic, predictive and cascading strategies to Amazon Bedrock or local Ollama
 - `llm-invocation` – forwards OpenAI-style requests to a specific LLM backend
 - `knowledge-base` – ingest text snippets and query them through the retrieval stack
@@ -63,6 +64,10 @@ from pure vector search to hybrid search.
 Step Function workflow that depends on the `file-ingestion` stack to copy a
 file to the IDP bucket and wait for text extraction. It then generates
 summaries and merges them back with the original PDF.
+
+#### prompt-engine
+Loads templates from a DynamoDB table, renders them with the provided variables
+and forwards the final prompt to the router service.
 
 #### llm-router
 Routes prompts to Amazon Bedrock or local Ollama using heuristic, predictive and
