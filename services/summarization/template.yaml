@@ -56,6 +56,11 @@ Parameters:
     Default: 10
     Description: MaxConcurrency for the run_prompts map state
 
+  PromptEngineEndpoint:
+    Type: String
+    Default: ""
+    Description: URL of the Prompt Engine service
+
 
 Resources:
   SummaryQueue:
@@ -118,6 +123,7 @@ Resources:
       Environment:
         Variables:
           RAG_SUMMARY_FUNCTION_ARN: !Ref RagSummaryFunctionArn
+          PROMPT_ENGINE_ENDPOINT: !Ref PromptEngineEndpoint
       Events:
         Queue:
           Type: SQS
@@ -215,6 +221,8 @@ Resources:
                       token.$: $$.Task.Token
                       query.$: $$Map.Item.Value.query
                       Title.$: $$Map.Item.Value.Title
+                      prompt_id.$: $$Map.Item.Value.prompt_id
+                      variables.$: $$Map.Item.Value.variables
                       retrieve_params.$: $states.input.body.retrieve_params
                       router_params.$: $states.input.body.router_params
                       llm_params.$: $states.input.body.llm_params

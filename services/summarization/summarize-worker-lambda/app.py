@@ -15,6 +15,7 @@ lambda_client = boto3.client("lambda")
 sf_client = boto3.client("stepfunctions")
 
 SUMMARY_FUNCTION_ARN = os.environ.get("RAG_SUMMARY_FUNCTION_ARN")
+PROMPT_ENGINE_ENDPOINT = os.environ.get("PROMPT_ENGINE_ENDPOINT")
 
 
 def _process_record(record: Dict[str, Any]) -> None:
@@ -26,6 +27,16 @@ def _process_record(record: Dict[str, Any]) -> None:
         "router_params": body.get("router_params"),
         "llm_params": body.get("llm_params"),
     }
+    if PROMPT_ENGINE_ENDPOINT and body.get("prompt_id"):
+        engine_payload = {"prompt_id": body.get("prompt_id")}
+        if "variables" in body:
+            engine_payload["variables"] = body.get("variables")
+        try:
+            import httpx
+
+            httpx.post(PROMPT_ENGINE_ENDPOINT, json=engine_payload).raise_for_status()
+        except Exception:  # pragma: no cover - network failure
+            logger.exception("Prompt engine request failed")
     if body.get("collection_name") is None:
         logger.error("collection_name missing from message")
         if token:
