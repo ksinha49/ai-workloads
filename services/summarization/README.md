@@ -68,6 +68,24 @@ the summarization logic. The engine renders the template and forwards it to the
 LLM router, but the queue worker ignores the response – the original
 ``query`` value is still passed to ``RAG_SUMMARY_FUNCTION_ARN`` unchanged.
 
+## `workflow_id`
+
+Instead of providing the prompts list directly you can specify a ``workflow_id``
+which references a stored set of prompts. The Step Function invokes the
+``load-prompts`` Lambda to fetch the list from the Prompt Engine before running
+the summaries.
+
+Example execution input:
+
+```json
+{
+  "body": {
+    "workflow_id": "aps",
+    "collection_name": "my-collection"
+  }
+}
+```
+
 ## `system_prompt`
 
 Include model parameters under ``body.llm_params`` when starting a Step

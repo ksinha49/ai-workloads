@@ -11,6 +11,7 @@ Entries in the table include at minimum the following attributes:
   "id": "summary-v1:1",
   "prompt_id": "summary-v1",
   "version": "1",
+  "workflow_id": "my-workflow",
   "template": "Summarize the following text: {text}"
 }
 ```

@@ -39,10 +39,11 @@ Change the value of `MaxConcurrency` to adjust how many prompts are processed in
 
 ## Providing the Prompts List
 
-The Step Function expects a list of prompt objects under `body.prompts` when the execution starts. Each object should contain at least a `query` string and optional `Title` used by later steps. The list can be supplied in two ways:
+The Step Function expects a list of prompt objects under `body.prompts` when the execution starts. Each object should contain at least a `query` string and optional `Title` used by later steps. The list can be supplied in three ways:
 
 1. **Execution input** – Pass the `prompts` array directly in the `StartExecution` payload.
 2. **S3 object** – Store the prompts JSON in S3 and include the bucket/key in the input. A Lambda (not shown here) can load the file and inject the array into `body.prompts` before the `Map` state runs.
+3. **Workflow ID** – Provide a `workflow_id` value. The `load_prompts` state retrieves all prompts tagged with this ID from the Prompt Engine and populates `body.prompts` automatically.
 
 ## Role of `file-summary-lambda`
 
@@ -75,6 +76,21 @@ Model parameters are provided under `body.llm_params`. To control the LLM's beha
     "llm_params": {
       "system_prompt": "<prompt text>"
     }
+  }
+}
+```
+
+### Using `workflow_id`
+
+Instead of a `prompts` array you can provide a `workflow_id` referencing a saved
+collection of prompts. The state machine will fetch the list from the Prompt
+Engine automatically:
+
+```json
+{
+  "body": {
+    "workflow_id": "aps",
+    "collection_name": "my-collection"
   }
 }
 ```
