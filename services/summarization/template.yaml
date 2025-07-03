@@ -150,6 +150,7 @@ Resources:
       Environment:
         Variables:
           PROMPT_ENGINE_ENDPOINT: !Ref PromptEngineEndpoint
+          SYSTEM_WORKFLOW_ID: sys
 
   WorkerSQSPolicy:
     Type: AWS::IAM::Policy
@@ -250,11 +251,13 @@ Resources:
           load_prompts:
             Type: Task
             Resource: arn:aws:states:::lambda:invoke
-            Output: '{% $states.result.Payload %}'
+
+            Output: '{% $merge([$states.input.body, $states.result.Payload]) %}'
             Arguments:
               FunctionName: !GetAtt LoadPromptsFunction.Arn
               Payload: '{% {"workflow_id": $states.input.body.workflow_id} %}'
-            ResultPath: $.body.prompts
+            ResultPath: $.body
+
             Next: run_prompts
           run_prompts:
             Type: Map

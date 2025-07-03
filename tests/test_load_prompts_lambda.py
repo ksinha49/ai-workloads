@@ -12,22 +12,36 @@ def load_lambda(name, path):
 
 def test_load_prompts(monkeypatch):
     monkeypatch.setenv("PROMPT_ENGINE_ENDPOINT", "http://engine")
-    sent = {}
+    monkeypatch.setenv("SYSTEM_WORKFLOW_ID", "sys")
+    sent = []
 
     class Resp:
+        def __init__(self, data):
+            self._data = data
+
         def raise_for_status(self):
             pass
+
         def json(self):
-            return [{"query": "q"}]
+            return self._data
 
     def fake_post(url, json=None):
-        sent["url"] = url
-        sent["json"] = json
-        return Resp()
+        sent.append({"url": url, "json": json})
+        if json.get("workflow_id") == "aps":
+            return Resp([{"query": "q"}])
+        else:
+            return Resp([{"template": "s"}])
+
 
     monkeypatch.setattr(sys.modules["httpx"], "post", fake_post)
 
     module = load_lambda("load", "services/summarization/load-prompts-lambda/app.py")
     out = module.lambda_handler({"workflow_id": "aps"}, {})
-    assert sent == {"url": "http://engine", "json": {"workflow_id": "aps"}}
-    assert out["prompts"] == [{"query": "q"}]
+    assert sent == [
+        {"url": "http://engine", "json": {"workflow_id": "aps"}},
+        {"url": "http://engine", "json": {"workflow_id": "sys"}},
+    ]
+    assert out == {
+        "prompts": [{"query": "q"}],
+        "llm_params": {"system_prompt": "s"},
+    }

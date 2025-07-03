@@ -51,9 +51,16 @@ def _get_latest_version(prompt_id: str) -> Dict[str, Any]:
 
 
 def _fetch_workflow_prompts(workflow_id: str) -> list[Dict[str, Any]]:
-    """Return all prompt items belonging to ``workflow_id``."""
+
+    """Return all prompt items belonging to ``workflow_id`` plus the system prompt."""
     resp = _table.scan(FilterExpression=Attr("workflow_id").eq(workflow_id))
-    return resp.get("Items", [])
+    items = resp.get("Items", [])
+    try:
+        system_prompt = _fetch_prompt("system_prompt")
+        items.insert(0, system_prompt)
+    except Exception:  # pragma: no cover - missing system prompt
+        logger.exception("System prompt not found")
+    return items
 
 
 def _fetch_prompt(prompt_id: str, version: str | None = None) -> Dict[str, Any]:
