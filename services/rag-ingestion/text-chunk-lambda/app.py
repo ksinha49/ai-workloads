@@ -9,6 +9,7 @@ import os
 import json
 import logging
 from common_utils import configure_logger
+from chunking import UniversalFileChunker
 
 from typing import Any, Dict, List
 
@@ -37,6 +38,14 @@ try:
 except ValueError:
     logger.error("Invalid CHUNK_OVERLAP value - using default 100")
     DEFAULT_CHUNK_OVERLAP = 100
+DEFAULT_CHUNK_STRATEGY = (
+    get_config("CHUNK_STRATEGY") or os.environ.get("CHUNK_STRATEGY", "simple")
+)
+_MAP_RAW = get_config("CHUNK_STRATEGY_MAP") or os.environ.get("CHUNK_STRATEGY_MAP", "{}")
+try:
+    DEFAULT_CHUNK_STRATEGY_MAP = json.loads(_MAP_RAW) if _MAP_RAW else {}
+except json.JSONDecodeError:
+    DEFAULT_CHUNK_STRATEGY_MAP = {}
 EXTRACT_ENTITIES = (
     get_config("EXTRACT_ENTITIES") or os.environ.get("EXTRACT_ENTITIES", "false")
 ).lower() == "true"
@@ -66,6 +75,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     metadata = event.get("metadata", {})
     file_guid = event.get("file_guid")
     file_name = event.get("file_name")
+
     chunk_size = event.get("chunk_size", DEFAULT_CHUNK_SIZE)
     try:
         chunk_size = int(chunk_size)
@@ -87,7 +97,24 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             DEFAULT_CHUNK_OVERLAP,
         )
         overlap = DEFAULT_CHUNK_OVERLAP
-    chunks = chunk_text(text, chunk_size, overlap)
+
+    strategy = event.get("chunkStrategy", DEFAULT_CHUNK_STRATEGY)
+    map_raw = event.get("chunkStrategyMap")
+    try:
+        strategy_map = (
+            json.loads(map_raw) if map_raw else DEFAULT_CHUNK_STRATEGY_MAP
+        )
+    except json.JSONDecodeError:
+        strategy_map = DEFAULT_CHUNK_STRATEGY_MAP
+    resolved = strategy_map.get(doc_type, strategy)
+
+    if resolved == "universal":
+        file_chunks = UniversalFileChunker(chunk_size, overlap).chunk(
+            text, file_name
+        )
+        chunks = [fc.text for fc in file_chunks]
+    else:
+        chunks = chunk_text(text, chunk_size, overlap)
     chunk_list = []
     for c in chunks:
         meta = {**metadata}

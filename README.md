@@ -158,6 +158,8 @@ environment. The table below summarises the most common variables.
 
 - `CHUNK_SIZE` – characters per chunk.
 - `CHUNK_OVERLAP` – overlap between chunks.
+- `CHUNK_STRATEGY` – chunking strategy (`simple` or `universal`).
+- `CHUNK_STRATEGY_MAP` – JSON mapping of document types to strategies.
 - `EXTRACT_ENTITIES` – set to `true` to add entity metadata to chunks.
 - `EMBED_MODEL` – default embedding provider.
 - `EMBED_MODEL_MAP` – JSON mapping of document types to models.

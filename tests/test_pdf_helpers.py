@@ -1,7 +1,10 @@
 import importlib.util
 import importlib
 import io
+import os
+import sys
 from PyPDF2 import PdfReader
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 
 def load_module():

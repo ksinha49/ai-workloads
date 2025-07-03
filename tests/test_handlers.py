@@ -938,6 +938,35 @@ def test_text_chunk_event_overrides(monkeypatch, config):
     assert [c["text"] for c in out["chunks"]] == ["abc", "cde", "ef"]
 
 
+def test_text_chunk_strategy_override(monkeypatch, config):
+    config["/parameters/aio/ameritasAI/SERVER_ENV"] = "dev"
+    module = load_lambda("chunk_strategy", "services/rag-ingestion/text-chunk-lambda/app.py")
+
+    class FakeChunker:
+        def __init__(self, max_tokens=0, overlap=0):
+            pass
+
+        def chunk(self, text: str, file_name: str | None = None):
+            return [type("C", (), {"text": "univ"})]
+
+    monkeypatch.setattr(module, "UniversalFileChunker", FakeChunker)
+    out = module.lambda_handler({"text": "abc", "chunkStrategy": "universal"}, {})
+    assert [c["text"] for c in out["chunks"]] == ["univ"]
+
+
+def test_text_chunk_strategy_default(monkeypatch, config):
+    config["/parameters/aio/ameritasAI/SERVER_ENV"] = "dev"
+    module = load_lambda("chunk_strategy_default", "services/rag-ingestion/text-chunk-lambda/app.py")
+
+    class FakeChunker:
+        def __init__(self, *a, **k):
+            raise AssertionError("should not be called")
+
+    monkeypatch.setattr(module, "UniversalFileChunker", FakeChunker)
+    out = module.lambda_handler({"text": "abcd", "chunk_size": 2}, {})
+    assert [c["text"] for c in out["chunks"]] == ["ab", "cd"]
+
+
 def test_embed_event_override(monkeypatch, config):
     config["/parameters/aio/ameritasAI/SERVER_ENV"] = "dev"
     module = load_lambda("embed_override", "services/rag-ingestion/embed-lambda/app.py")
