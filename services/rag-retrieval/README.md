@@ -15,7 +15,7 @@ The retrieval logic calls the search Lambda defined by the `VECTOR_SEARCH_FUNCTI
 - **extract-entities-lambda/app.py** – `/extract-entities`
   - Sends the query and context to an entity extraction API.
 - **rerank-lambda/app.py** – _no direct API_
-  - Re-ranks search results using a cross-encoder model.
+  - Re-ranks search results using a configurable provider.
 
 ## Environment variables
 
@@ -30,6 +30,7 @@ The retrieval logic calls the search Lambda defined by the `VECTOR_SEARCH_FUNCTI
 - `OPENAI_EMBED_MODEL` – embedding model name for OpenAI.
 - `COHERE_API_KEY` – API key when using Cohere embeddings.
 - `CROSS_ENCODER_MODEL` – model name or S3 path for the cross-encoder.
+- `RERANK_PROVIDER` – rerank provider (`huggingface`, `cohere` or `nvidia`).
 - `VECTOR_SEARCH_CANDIDATES` – number of candidates retrieved before re-ranking.
 
 Values can be stored in Parameter Store and loaded with the shared `get_config` helper.

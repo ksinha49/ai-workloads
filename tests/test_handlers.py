@@ -862,6 +862,20 @@ def test_rerank_lambda(monkeypatch, config):
     assert "rerank_score" in out["matches"][0]
 
 
+def test_rerank_lambda_cohere(monkeypatch, config):
+    config["/parameters/aio/ameritasAI/SERVER_ENV"] = "dev"
+    monkeypatch.setenv("RERANK_PROVIDER", "cohere")
+    module = load_lambda("rerank_co", "services/rag-retrieval/rerank-lambda/app.py")
+    monkeypatch.setattr(module, "_cohere_rerank", lambda q, d: [0.8, 0.1])
+    module._PROVIDER_MAP["cohere"] = module._cohere_rerank
+    matches = [
+        {"id": 1, "metadata": {"text": "a"}},
+        {"id": 2, "metadata": {"text": "b"}},
+    ]
+    out = module.lambda_handler({"query": "x", "matches": matches, "top_k": 1}, {})
+    assert out["matches"][0]["id"] == 1
+
+
 def test_summarize_with_rerank(monkeypatch, config):
     prefix = "/parameters/aio/ameritasAI/dev"
     config["/parameters/aio/ameritasAI/SERVER_ENV"] = "dev"

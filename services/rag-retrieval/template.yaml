@@ -89,6 +89,7 @@ Resources:
         Variables:
           TOP_K: !Ref VectorSearchCandidates
           CROSS_ENCODER_MODEL: ''
+          RERANK_PROVIDER: ''
 
 Outputs:
   RerankFunctionArn:
