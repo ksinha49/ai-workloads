@@ -1,11 +1,11 @@
-"""Re-rank vector search results using a cross-encoder."""
+"""Re-rank vector search results using a configurable rerank provider."""
 
 from __future__ import annotations
 
 import os
 import logging
 from common_utils import configure_logger
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Callable
 import json
 
 from common_utils.get_ssm import get_config
@@ -21,8 +21,64 @@ TOP_K = int(get_config("TOP_K") or os.environ.get("TOP_K", "5"))
 DEFAULT_MODEL = get_config("CROSS_ENCODER_MODEL") or os.environ.get(
     "CROSS_ENCODER_MODEL", "cross-encoder/ms-marco-MiniLM-L-6-v2"
 )
+# RERANK_PROVIDER selects the rerank provider (e.g. cohere, nvidia).
+DEFAULT_PROVIDER = (
+    get_config("RERANK_PROVIDER") or os.environ.get("RERANK_PROVIDER", "huggingface")
+)
 
 _CE_MODEL = None
+
+
+def _hf_score_pairs(query: str, docs: List[str]) -> List[float]:
+    """Score using a HuggingFace cross encoder."""
+
+    model = _load_model()
+    if model is None:
+        return [0.0] * len(docs)
+    try:
+        scores = model.predict([(query, d) for d in docs])
+        if hasattr(scores, "tolist"):
+            scores = scores.tolist()
+        return [float(s) for s in scores]
+    except Exception:  # pragma: no cover - fallback when prediction fails
+        logger.exception("Cross encoder prediction failed")
+        return [0.0] * len(docs)
+
+
+def _cohere_rerank(query: str, docs: List[str]) -> List[float]:
+    """Score documents using the Cohere rerank API."""
+
+    import cohere  # type: ignore
+
+    api_key = get_config("COHERE_API_KEY", decrypt=True) or os.environ.get(
+        "COHERE_API_KEY"
+    )
+    client = cohere.Client(api_key)
+    try:
+        resp = client.rerank(query=query, documents=docs, top_n=len(docs))
+        return [float(r.relevance_score) for r in resp]
+    except Exception:  # pragma: no cover - network or dependency issues
+        logger.exception("Cohere rerank failed")
+        return [0.0] * len(docs)
+
+
+def _nvidia_rerank(query: str, docs: List[str]) -> List[float]:
+    """Score documents using an NVIDIA service."""
+
+    import httpx  # type: ignore
+
+    endpoint = os.environ.get("NVIDIA_RERANK_ENDPOINT")
+    api_key = os.environ.get("NVIDIA_API_KEY")
+    headers = {"Authorization": f"Bearer {api_key}"} if api_key else None
+    payload = {"query": query, "documents": docs}
+    try:
+        resp = httpx.post(endpoint, json=payload, headers=headers)
+        resp.raise_for_status()
+        data = resp.json()
+        return [float(s) for s in data.get("scores", [])]
+    except Exception:  # pragma: no cover - network or dependency issues
+        logger.exception("NVIDIA rerank failed")
+        return [0.0] * len(docs)
 
 
 def _load_model():
@@ -50,26 +106,25 @@ def _load_model():
     return _CE_MODEL
 
 
-def _score_pairs(query: str, docs: List[str]) -> List[float]:
-    """Score each document for *query* using the loaded cross encoder."""
+_PROVIDER_MAP: Dict[str, Callable[[str, List[str]], List[float]]] = {
+    "huggingface": _hf_score_pairs,
+    "cohere": _cohere_rerank,
+    "nvidia": _nvidia_rerank,
+}
 
-    model = _load_model()
-    if model is None:
-        return [0.0] * len(docs)
-    try:
-        scores = model.predict([(query, d) for d in docs])
-        if hasattr(scores, "tolist"):
-            scores = scores.tolist()
-        return [float(s) for s in scores]
-    except Exception:  # pragma: no cover - fallback when prediction fails
-        logger.exception("Cross encoder prediction failed")
-        return [0.0] * len(docs)
+
+def _score_pairs(query: str, docs: List[str]) -> List[float]:
+    """Score each document for *query* using the selected rerank provider."""
+
+    provider = DEFAULT_PROVIDER.lower()
+    score_fn = _PROVIDER_MAP.get(provider, _hf_score_pairs)
+    return score_fn(query, docs)
 
 
 def _process_event(event: Dict[str, Any]) -> Dict[str, Any]:
     """Re-rank vector search results.
 
-    1. Scores each match against the query using a cross-encoder model.
+    1. Scores each match against the query using the configured rerank provider.
     2. Sorts the matches by score and trims the list to ``top_k`` entries.
 
     Returns the re-ranked matches in descending order.
