@@ -64,7 +64,9 @@ A unique `file_guid` is generated during the file-processing step. This value fl
 Each entry in `body.prompts` may specify a `prompt_id` that refers to a template
 stored in the prompt engine. When present, the worker Lambda sends
 `prompt_id` and an optional `variables` dictionary to the engine before invoking
-the summarization logic.
+the summarization logic. The engine renders the template and forwards it to the
+LLM router, but the queue worker ignores the response – the original
+``query`` value is still passed to ``RAG_SUMMARY_FUNCTION_ARN`` unchanged.
 
 ## `system_prompt`
 

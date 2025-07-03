@@ -34,6 +34,10 @@ def _process_record(record: Dict[str, Any]) -> None:
         try:
             import httpx
 
+            # The prompt engine renders the template and forwards it to the
+            # router service.  The response is ignored here because
+            # `body["query"]` is passed unchanged to ``RAG_SUMMARY_FUNCTION_ARN``
+            # below.
             httpx.post(PROMPT_ENGINE_ENDPOINT, json=engine_payload).raise_for_status()
         except Exception:  # pragma: no cover - network failure
             logger.exception("Prompt engine request failed")
