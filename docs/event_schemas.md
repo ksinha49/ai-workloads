@@ -58,3 +58,97 @@ The IDP Lambdas are triggered by standard S3 events. Each event contains a list 
   "model": "llama2"
 }
 ```
+
+## File Ingestion Payload
+
+```json
+{
+  "file": "s3://bucket/path/doc.pdf",
+  "collection_name": "my-collection",
+  "ingest_params": {"chunk_size": 1000},
+  "retrieve_params": {"top_k": 5},
+  "router_params": {"backend": "bedrock"},
+  "llm_params": {"model": "llama2"}
+}
+```
+
+## Processing Status Payload
+
+```json
+{
+  "document_id": "abc123",
+  "collection_name": "my-collection"
+}
+```
+
+## Summarization Event
+
+```json
+{
+  "statusCode": 200,
+  "organic_bucket": "source-bucket",
+  "organic_bucket_key": "extracted/doc.pdf",
+  "collection_name": "my-collection",
+  "summaries": [{"Title": "Summary", "content": "text"}]
+}
+```
+
+## Summarization Workflow Input
+
+```json
+{
+  "body": {
+    "prompts": [{"query": "Summarize", "Title": "Summary"}],
+    "collection_name": "my-collection",
+    "llm_params": {"system_prompt": "<prompt text>"}
+  }
+}
+```
+
+## Vector Search Payload
+
+```json
+{
+  "embedding": [0.1, 0.2, 0.3],
+  "top_k": 5,
+  "collection_name": "my-collection",
+  "department": "corp",
+  "file_guid": "guid"
+}
+```
+
+## RAG Summarization Payload
+
+```json
+{
+  "collection_name": "my-collection",
+  "query": "Explain AI",
+  "retrieve_params": {"top_k": 5},
+  "router_params": {"backend": "bedrock"},
+  "llm_params": {"model": "llama2"}
+}
+```
+
+## Knowledge Base Ingest Request
+
+```json
+{
+  "text": "Document text",
+  "collection_name": "my-collection",
+  "docType": "pdf",
+  "department": "sales",
+  "team": "team1",
+  "user": "alice"
+}
+```
+
+## Knowledge Base Query Request
+
+```json
+{
+  "collection_name": "my-collection",
+  "query": "What is AI?",
+  "file_guid": "guid",
+  "department": "sales"
+}
+```
