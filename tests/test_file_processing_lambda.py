@@ -1,20 +1,8 @@
 import importlib.util
 import os, sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-
-_models_spec = importlib.util.spec_from_file_location(
-    "file_ingestion_models",
-    os.path.join(
-        os.path.dirname(os.path.dirname(__file__)),
-        "services",
-        "file-ingestion",
-        "models.py",
-    ),
-)
-_models = importlib.util.module_from_spec(_models_spec)
-sys.modules[_models_spec.name] = _models
-_models_spec.loader.exec_module(_models)
-FileProcessingEvent = _models.FileProcessingEvent
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(__file__)), 'common', 'layers', 'common-utils', 'python'))
+from models import FileProcessingEvent
 
 
 def load_lambda(name, path):
