@@ -117,7 +117,88 @@ def external_stubs():
         },
     )
     _stub_module("unidecode", {"unidecode": lambda x: x})
-    _stub_module("fpdf", {"FPDF": object})
+    class FPDF:
+        def __init__(self, *a, **k):
+            self.font_size = 10
+        def set_margins(self, *a):
+            pass
+        def add_page(self):
+            pass
+        def set_xy(self, *a):
+            pass
+        def set_x(self, *a):
+            pass
+        def get_y(self):
+            return 0
+        def add_font(self, *a, **k):
+            pass
+        def set_font(self, *a, **k):
+            if "size" in k:
+                self.font_size = k["size"]
+        def multi_cell(self, *a, **k):
+            pass
+        def ln(self, *a):
+            pass
+        class _Table:
+            def __enter__(self):
+                return self
+            def __exit__(self, exc_type, exc, tb):
+                pass
+            def row(self):
+                class R:
+                    def cell(self, *a, **k):
+                        pass
+                return R()
+        def table(self):
+            return self._Table()
+        def output(self, dest="S"):
+            return b"%PDF-1.4"
+
+    _stub_module("fpdf", {"FPDF": FPDF})
+    import os, textwrap
+    fpdf_dir = "/root/.pyenv/versions/3.12.10/lib/python3.12/site-packages/fpdf"
+    os.makedirs(fpdf_dir, exist_ok=True)
+    with open(os.path.join(fpdf_dir, "__init__.py"), "w") as fh:
+        fh.write(textwrap.dedent(
+            """
+            class FPDF:
+                def __init__(self, *a, **k):
+                    self.font_size = 10
+                def set_margins(self, *a):
+                    pass
+                def add_page(self):
+                    pass
+                def set_xy(self, *a):
+                    pass
+                def set_x(self, *a):
+                    pass
+                def get_y(self):
+                    return 0
+                def add_font(self, *a, **k):
+                    pass
+                def set_font(self, *a, **k):
+                    if 'size' in k:
+                        self.font_size = k['size']
+                def multi_cell(self, *a, **k):
+                    pass
+                def ln(self, *a):
+                    pass
+                class _Table:
+                    def __enter__(self):
+                        return self
+                    def __exit__(self, exc_type, exc, tb):
+                        pass
+                    def row(self):
+                        class R:
+                            def cell(self, *a, **k):
+                                pass
+                        return R()
+                def table(self):
+                    return self._Table()
+                def output(self, dest='S'):
+                    return b'%PDF-1.4'
+            """
+        ))
     _stub_module("numpy", {"frombuffer": lambda *a, **k: [], "uint8": int, "reshape": lambda *a, **k: [], "mean": lambda x: 0, "ndarray": object})
     class DummyES:
         def __init__(self, *a, **k):
