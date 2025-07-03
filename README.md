@@ -63,7 +63,11 @@ from pure vector search to hybrid search.
 #### summarization
 Step Function workflow that depends on the `file-ingestion` stack to copy a
 file to the IDP bucket and wait for text extraction. It then generates
-summaries and merges them back with the original PDF.
+summaries and merges them back with the original PDF. When a `workflow_id`
+is supplied the workflow fetches the corresponding prompt collection from the
+Prompt Engine and automatically loads the workflow's system prompt. The service
+accepts a `PromptEngineEndpoint` environment variable to override the engine URL.
+See [docs/summarization_workflow.md](docs/summarization_workflow.md) for details.
 
 #### prompt-engine
 Loads templates from a DynamoDB table, renders them with the provided variables
