@@ -1146,7 +1146,7 @@ def test_summary_lambda_forwards(monkeypatch):
         captured["summaries"] = summaries
         return io.BytesIO(b"d")
 
-    def fake_upload(buf, bucket, key):
+    def fake_upload(buf, bucket, key, content_type):
         captured["bucket"] = bucket
         captured["key"] = key
 
@@ -1164,6 +1164,42 @@ def test_summary_lambda_forwards(monkeypatch):
     assert captured["summaries"] == [("T", "ok")]
     assert captured["bucket"] == "b"
     assert captured["key"] == "summary/x.pdf"
+
+
+def test_summary_lambda_docx(monkeypatch):
+    import types, sys
+
+    sys.modules["unidecode"] = types.ModuleType("unidecode")
+    sys.modules["unidecode"].unidecode = lambda x: x
+
+    module = load_lambda(
+        "sum_lambda2", "services/summarization/file-summary-lambda/app.py"
+    )
+    captured = {}
+
+    def fake_create(summaries):
+        captured["summaries"] = summaries
+        return io.BytesIO(b"d")
+
+    def fake_upload(buf, bucket, key, content_type):
+        captured["bucket"] = bucket
+        captured["key"] = key
+
+    monkeypatch.setattr(module, "create_summary_docx", fake_create)
+    monkeypatch.setattr(module, "upload_buffer_to_s3", fake_upload)
+
+    event = SummaryEvent(
+        collection_name="c",
+        statusCode=200,
+        organic_bucket="b",
+        organic_bucket_key="extracted/x.pdf",
+        summaries=[{"Title": "T", "content": "ok"}],
+        output_format="docx",
+    )
+    module.lambda_handler(event, {})
+    assert captured["summaries"] == [("T", "ok")]
+    assert captured["bucket"] == "b"
+    assert captured["key"] == "summary/x.docx"
 
 
 def test_processing_status(monkeypatch, s3_stub, config):
