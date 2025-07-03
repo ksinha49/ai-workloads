@@ -10,6 +10,7 @@ from common_utils import configure_logger
 logger = configure_logger(__name__)
 
 PROMPT_ENGINE_ENDPOINT = os.environ.get("PROMPT_ENGINE_ENDPOINT")
+
 SYSTEM_WORKFLOW_ID = os.environ.get("SYSTEM_WORKFLOW_ID", "sys")
 
 
@@ -20,6 +21,7 @@ def _process_event(event: Dict[str, Any]) -> Dict[str, Any]:
     try:
         resp = httpx.post(PROMPT_ENGINE_ENDPOINT, json={"workflow_id": workflow_id})
         resp.raise_for_status()
+
         prompts = resp.json()
 
         sys_resp = httpx.post(PROMPT_ENGINE_ENDPOINT, json={"workflow_id": SYSTEM_WORKFLOW_ID})
@@ -30,7 +32,8 @@ def _process_event(event: Dict[str, Any]) -> Dict[str, Any]:
             system_prompt = sys_items[0].get("template", sys_items[0].get("system_prompt", ""))
 
         return {"prompts": prompts, "llm_params": {"system_prompt": system_prompt}}
-    except Exception as exc:  # pragma: no cover - network failure
+
+      except Exception as exc:  # pragma: no cover - network failure
         logger.exception("Prompt engine request failed")
         return {"error": str(exc)}
 

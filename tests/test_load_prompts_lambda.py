@@ -32,6 +32,7 @@ def test_load_prompts(monkeypatch):
         else:
             return Resp([{"template": "s"}])
 
+
     monkeypatch.setattr(sys.modules["httpx"], "post", fake_post)
 
     module = load_lambda("load", "services/summarization/load-prompts-lambda/app.py")

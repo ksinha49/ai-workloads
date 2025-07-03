@@ -251,11 +251,13 @@ Resources:
           load_prompts:
             Type: Task
             Resource: arn:aws:states:::lambda:invoke
+
             Output: '{% $merge([$states.input.body, $states.result.Payload]) %}'
             Arguments:
               FunctionName: !GetAtt LoadPromptsFunction.Arn
               Payload: '{% {"workflow_id": $states.input.body.workflow_id} %}'
             ResultPath: $.body
+
             Next: run_prompts
           run_prompts:
             Type: Map

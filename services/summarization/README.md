@@ -73,6 +73,7 @@ LLM router, but the queue worker ignores the response – the original
 Instead of providing the prompts list directly you can specify a ``workflow_id``
 which references a stored set of prompts. The Step Function invokes the
 ``load-prompts`` Lambda to fetch the list from the Prompt Engine before running
+
 the summaries. The same Lambda also loads the workflow's system prompt and
 populates ``body.llm_params.system_prompt`` automatically.
 

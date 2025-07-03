@@ -84,6 +84,7 @@ Model parameters are provided under `body.llm_params`. To control the LLM's beha
 
 Instead of a `prompts` array you can provide a `workflow_id` referencing a saved
 collection of prompts. The state machine will fetch the list from the Prompt
+
 Engine automatically and include the workflow's system prompt:
 
 ```json

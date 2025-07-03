@@ -51,6 +51,7 @@ def _get_latest_version(prompt_id: str) -> Dict[str, Any]:
 
 
 def _fetch_workflow_prompts(workflow_id: str) -> list[Dict[str, Any]]:
+
     """Return all prompt items belonging to ``workflow_id`` plus the system prompt."""
     resp = _table.scan(FilterExpression=Attr("workflow_id").eq(workflow_id))
     items = resp.get("Items", [])
