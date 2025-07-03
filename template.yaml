@@ -133,6 +133,11 @@ Resources:
         FileIngestionStateMachineArn: !GetAtt FileIngestionService.Outputs.FileIngestionStateMachineArn
         SummarizeQueueUrl: !GetAtt SummarizationService.Outputs.SummaryQueueUrl
 
+  PromptEngineService:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: services/prompt-engine/template.yaml
+
 Outputs:
   FileIngestionStateMachineArn:
     Description: ARN of the file ingestion state machine

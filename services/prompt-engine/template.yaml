@@ -1,0 +1,90 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Lambda that renders stored prompts and forwards them to the router.
+
+Parameters:
+  AWSAccountName:
+    Type: String
+    Description: AWS Account Name
+  LambdaSubnet1ID:
+    Type: String
+    Description: Subnet ID for Lambda function
+  LambdaSubnet2ID:
+    Type: String
+    Description: Subnet ID for Lambda function
+  LambdaSecurityGroupID1:
+    Type: String
+    Description: Security Group ID for Lambda functions
+  LambdaSecurityGroupID2:
+    Type: String
+    Description: Security Group ID for Lambda functions
+  LambdaIAMRoleARN:
+    Type: String
+    Description: IAM Role ARN for Lambda functions
+  TableName:
+    Type: String
+    Description: DynamoDB table storing prompt templates
+  RouterEndpoint:
+    Type: String
+    Description: URL of the router service
+
+Globals:
+  Function:
+    Handler: app.lambda_handler
+    Runtime: python3.13
+    Timeout: 60
+    MemorySize: 512
+
+Resources:
+  PromptLibraryTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Ref TableName
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
+
+  PromptEngineFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./prompt-engine-lambda/
+      Role: !Ref LambdaIAMRoleARN
+      VpcConfig:
+        SecurityGroupIds:
+          - !Ref LambdaSecurityGroupID1
+          - !Ref LambdaSecurityGroupID2
+        SubnetIds:
+          - !Ref LambdaSubnet1ID
+          - !Ref LambdaSubnet2ID
+      Environment:
+        Variables:
+          PROMPT_LIBRARY_TABLE: !Ref TableName
+          ROUTER_ENDPOINT: !Ref RouterEndpoint
+          AWS_ACCOUNT_NAME: !Ref AWSAccountName
+
+  PromptEnginePolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Sub '${AWSAccountName}-${AWS::StackName}-dynamo'
+      Roles:
+        - !Select [1, !Split ['/', !Ref LambdaIAMRoleARN]]
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - dynamodb:GetItem
+              - dynamodb:PutItem
+              - dynamodb:UpdateItem
+              - dynamodb:Scan
+              - dynamodb:Query
+            Resource: !GetAtt PromptLibraryTable.Arn
+
+Outputs:
+  PromptEngineFunctionArn:
+    Description: ARN of the prompt engine Lambda
+    Value: !GetAtt PromptEngineFunction.Arn
