@@ -198,6 +198,9 @@ environment. The table below summarises the most common variables.
 - `EMBED_MODEL` / `SBERT_MODEL` – embedding configuration.
 - `OPENAI_EMBED_MODEL` – OpenAI model name.
 - `COHERE_API_KEY` – Cohere API key.
+- `RERANK_FUNCTION` – optional Lambda used to re-rank search results.
+- `RERANK_PROVIDER` – provider for the re-ranking model.
+- `VECTOR_SEARCH_CANDIDATES` – number of search results retrieved before re-ranking.
 
 ### LLM Router and Invocation
 
