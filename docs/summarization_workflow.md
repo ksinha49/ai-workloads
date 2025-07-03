@@ -47,3 +47,34 @@ The Step Function expects a list of prompt objects under `body.prompts` when the
 ## Role of `file-summary-lambda`
 
 Previously this Lambda generated the summaries itself. The revised workflow delegates summarization to the `run_prompts` `Map` state. `file-summary-lambda` now receives the pre-generated summaries, builds a summary PDF, and uploads the merged file back to S3.
+
+## Prompt Engine Integration
+
+Each object in `body.prompts` may optionally include a `prompt_id` value. When present, the `summarize-worker-lambda` sends this identifier to the Prompt Engine before invoking the summarization logic. The engine loads the matching template from the DynamoDB table defined by the **prompt-engine** stack, substitutes any variables and forwards the rendered prompt to the router service. Only the side effect of calling the engine is required&mdash;the worker still passes the original `query` to the summarization Lambda.
+
+Example entry in `body.prompts`:
+
+```json
+{
+  "prompt_id": "Medical_Summary",
+  "Title": "Summary",
+  "variables": {"text": "<document text>"}
+}
+```
+
+Sample templates such as `aps_prompts.json` can be loaded into the prompt engine's DynamoDB table. Listing the corresponding `prompt_id`s in the execution input ensures the Step Function pushes each prompt to the queue where the worker contacts the engine.
+
+## Supplying a System Prompt
+
+Model parameters are provided under `body.llm_params`. To control the LLM's behaviour you can add a `system_prompt` entry. The queue worker forwards `llm_params` to the `llm-invocation` Lambda which applies the system prompt when calling the model. An example prompt is located in `file-summary-lambda/system_prompt.json`.
+
+```json
+{
+  "body": {
+    "prompts": [{"query": "Summary query"}],
+    "llm_params": {
+      "system_prompt": "<prompt text>"
+    }
+  }
+}
+```
