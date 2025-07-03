@@ -5,7 +5,21 @@ import io
 import sys
 import pytest
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-from services.file_ingestion.models import FileProcessingEvent, ProcessingStatusEvent
+
+_models_spec = importlib.util.spec_from_file_location(
+    "file_ingestion_models",
+    os.path.join(
+        os.path.dirname(os.path.dirname(__file__)),
+        "services",
+        "file-ingestion",
+        "models.py",
+    ),
+)
+_models = importlib.util.module_from_spec(_models_spec)
+sys.modules["file_ingestion_models"] = _models
+_models_spec.loader.exec_module(_models)
+FileProcessingEvent = _models.FileProcessingEvent
+ProcessingStatusEvent = _models.ProcessingStatusEvent
 from services.summarization.models import SummaryEvent
 
 
@@ -936,6 +950,35 @@ def test_text_chunk_event_overrides(monkeypatch, config):
     event = {"text": "abcdef", "chunk_size": 3, "chunk_overlap": 1}
     out = module.lambda_handler(event, {})
     assert [c["text"] for c in out["chunks"]] == ["abc", "cde", "ef"]
+
+
+def test_text_chunk_strategy_override(monkeypatch, config):
+    config["/parameters/aio/ameritasAI/SERVER_ENV"] = "dev"
+    module = load_lambda("chunk_strategy", "services/rag-ingestion/text-chunk-lambda/app.py")
+
+    class FakeChunker:
+        def __init__(self, max_tokens=0, overlap=0):
+            pass
+
+        def chunk(self, text: str, file_name: str | None = None):
+            return [type("C", (), {"text": "univ"})]
+
+    monkeypatch.setattr(module, "UniversalFileChunker", FakeChunker)
+    out = module.lambda_handler({"text": "abc", "chunkStrategy": "universal"}, {})
+    assert [c["text"] for c in out["chunks"]] == ["univ"]
+
+
+def test_text_chunk_strategy_default(monkeypatch, config):
+    config["/parameters/aio/ameritasAI/SERVER_ENV"] = "dev"
+    module = load_lambda("chunk_strategy_default", "services/rag-ingestion/text-chunk-lambda/app.py")
+
+    class FakeChunker:
+        def __init__(self, *a, **k):
+            raise AssertionError("should not be called")
+
+    monkeypatch.setattr(module, "UniversalFileChunker", FakeChunker)
+    out = module.lambda_handler({"text": "abcd", "chunk_size": 2}, {})
+    assert [c["text"] for c in out["chunks"]] == ["ab", "cd"]
 
 
 def test_embed_event_override(monkeypatch, config):

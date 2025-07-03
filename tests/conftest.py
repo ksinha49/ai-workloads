@@ -60,6 +60,18 @@ def _stub_module(name, attrs=None):
     sys.modules[name] = mod
     return mod
 
+class _DummyPage:
+    def extract_text(self):
+        return "APS Summary Hello World A 1"
+
+
+class _DummyReader:
+    def __init__(self, *a, **k):
+        self.pages = [_DummyPage()]
+
+
+_stub_module("PyPDF2", {"PdfReader": _DummyReader, "PdfWriter": object})
+
 @pytest.fixture(autouse=True)
 def external_stubs():
     _stub_module("fitz", {"open": lambda *a, **k: types.SimpleNamespace(page_count=1, __iter__=lambda self: [], __getitem__=lambda self, i: types.SimpleNamespace(get_text=lambda: ""), __enter__=lambda self: self, __exit__=lambda self, exc_type, exc, tb: None)})
@@ -85,7 +97,15 @@ def external_stubs():
         def ocr(self, img):
             return [([[0,0],[1,0],[1,1],[0,1]], ("pd", 0.8))]
     _stub_module("paddleocr", {"PaddleOCR": DummyPaddle})
-    _stub_module("PyPDF2", {"PdfReader": object, "PdfWriter": object})
+    class DummyPage:
+        def extract_text(self):
+            return ""
+
+    class DummyReader:
+        def __init__(self, *a, **k):
+            self.pages = [DummyPage()]
+
+    _stub_module("PyPDF2", {"PdfReader": DummyReader, "PdfWriter": object})
     _stub_module("httpx", {"post": lambda *a, **k: types.SimpleNamespace(json=lambda: {}, raise_for_status=lambda: None)})
     _stub_module(
         "ocr_module",
@@ -96,6 +116,8 @@ def external_stubs():
             "_perform_ocr": lambda reader, engine, img: ("text", 0.0),
         },
     )
+    _stub_module("unidecode", {"unidecode": lambda x: x})
+    _stub_module("fpdf", {"FPDF": object})
     _stub_module("numpy", {"frombuffer": lambda *a, **k: [], "uint8": int, "reshape": lambda *a, **k: [], "mean": lambda x: 0, "ndarray": object})
     class DummyES:
         def __init__(self, *a, **k):
@@ -107,6 +129,36 @@ def external_stubs():
         def search(self, **kw):
             return {"hits": {"hits": []}}
     _stub_module("elasticsearch", {"Elasticsearch": DummyES})
+    _stub_module("nbformat", {"reads": lambda s, as_version=4: types.SimpleNamespace(cells=[])})
+    _stub_module(
+        "pygments.lexers",
+        {"guess_lexer_for_filename": lambda fn, txt: types.SimpleNamespace(name="python")},
+    )
+    class DummyParser:
+        def set_language(self, lang):
+            pass
+
+        def parse(self, data):
+            return types.SimpleNamespace(root_node=types.SimpleNamespace(children=[]))
+
+    class DummyLanguage:
+        @staticmethod
+        def build_library(out, langs):
+            return out
+
+        def __init__(self, path, name):
+            pass
+
+    _stub_module("tree_sitter", {"Language": DummyLanguage, "Parser": DummyParser})
+    _stub_module("tree_sitter_languages", {})
+    class DummyEncoding:
+        def encode(self, text):
+            return list(range(len(text)))
+
+        def decode(self, tokens):
+            return "x" * len(tokens)
+
+    _stub_module("tiktoken", {"get_encoding": lambda n: DummyEncoding()})
     yield
 
 
@@ -121,6 +173,13 @@ def router_layer_path():
 def invocation_layer_path():
     import sys, os
     sys.path.insert(0, os.path.join(os.getcwd(), 'common/layers/llm-invocation-layer/python'))
+    yield
+
+
+@pytest.fixture(autouse=True)
+def chunking_layer_path():
+    import sys, os
+    sys.path.insert(0, os.path.join(os.getcwd(), 'common/layers/chunking-layer/python'))
     yield
 
 @pytest.fixture
