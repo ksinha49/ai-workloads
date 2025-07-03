@@ -36,3 +36,29 @@ sam deploy \
 Invoke the Lambda with a JSON payload referencing a template name and any
 variables required by that template. The function returns the response from the
 router service.
+
+### Example DynamoDB Item
+
+Templates are stored with a composite `id` formed from `prompt_id` and
+`version`. A minimal item looks like:
+
+```json
+{
+  "id": "summary-v1:1",
+  "prompt_id": "summary-v1",
+  "version": "1",
+  "template": "Summarize the following text: {text}"
+}
+```
+
+### Example invocation
+
+Send a payload containing the desired `prompt_id` and variables to render:
+
+```json
+{"prompt_id": "summary-v1", "variables": {"text": "example content"}}
+```
+
+The summarization workflow can also provide `prompt_id` and `variables` for each
+entry in `body.prompts`. The worker Lambda forwards this data to the prompt
+engine before generating the summary.
