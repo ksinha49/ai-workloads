@@ -41,6 +41,9 @@ from common_utils.get_ssm import (
     get_environment_prefix,
 )
 from fpdf import FPDF
+from docx import Document
+import json
+import xml.etree.ElementTree as ET
 from unidecode import unidecode
 
 FONT_PATH = os.path.join(os.path.dirname(__file__), "DejaVuSans.ttf")
@@ -251,26 +254,58 @@ def create_summary_pdf(summaries: List[str]) -> BytesIO:
     buf.seek(0)
     return buf
 
-def upload_buffer_to_s3(buffer: BytesIO, bucket: str, bucket_key: str) -> None:
-    """
-    Upload a summary PDF buffer to S3.
 
-    Args:
-        buffer: BytesIO with summary PDF data.
-        bucket: Destination S3 bucket.
-        key:    Destination S3 key.
-    """
+def create_summary_docx(summaries: List[tuple[str, str]]) -> BytesIO:
+    """Build a DOCX file containing the summaries."""
+
+    doc = Document()
+    for title, text in summaries:
+        if title != "NA":
+            doc.add_heading(title, level=1)
+        doc.add_paragraph(text)
+    buf = BytesIO()
+    doc.save(buf)
+    buf.seek(0)
+    return buf
+
+
+def create_summary_json(summaries: List[tuple[str, str]]) -> BytesIO:
+    """Serialize summaries to JSON."""
+
+    data = [{"Title": t, "content": c} for t, c in summaries]
+    buf = BytesIO(json.dumps(data).encode())
+    buf.seek(0)
+    return buf
+
+
+def create_summary_xml(summaries: List[tuple[str, str]]) -> BytesIO:
+    """Serialize summaries to XML."""
+
+    root = ET.Element("summaries")
+    for title, text in summaries:
+        s = ET.SubElement(root, "summary")
+        ET.SubElement(s, "title").text = title
+        ET.SubElement(s, "content").text = text
+    buf = BytesIO()
+    tree = ET.ElementTree(root)
+    tree.write(buf, encoding="utf-8", xml_declaration=True)
+    buf.seek(0)
+    return buf
+
+def upload_buffer_to_s3(buffer: BytesIO, bucket: str, bucket_key: str, content_type: str) -> None:
+    """Upload a summary buffer to S3 with a specified content type."""
+
     try:
         _s3_client.put_object(
             Bucket=bucket,
             Key=bucket_key,
             Body=buffer.getvalue(),
-            ContentType="application/pdf",
+            ContentType=content_type,
         )
     except (ClientError, BotoCoreError) as exc:
-        logger.exception("Failed to upload summary PDF to S3")
-        raise RuntimeError("Unable to upload summary PDF") from exc
-    logger.info("Uploaded PDF to s3://%s/%s", bucket, bucket_key)
+        logger.exception("Failed to upload summary file to S3")
+        raise RuntimeError("Unable to upload summary") from exc
+    logger.info("Uploaded summary to s3://%s/%s", bucket, bucket_key)
 
 
 def process_for_summary(event: SummaryEvent, context: Any) -> Dict[str, Any]:
@@ -319,15 +354,33 @@ def process_for_summary(event: SummaryEvent, context: Any) -> Dict[str, Any]:
             content = item.get("content", "")
             summaries.append((title, content))
 
-        # Build, merge, and upload summary PDF files
-        summary_buf = create_summary_pdf(summaries)
+        fmt = str(event_body.get("output_format", "pdf")).lower()
+        if fmt == "pdf":
+            summary_buf = create_summary_pdf(summaries)
+            ext = "pdf"
+            ctype = "application/pdf"
+        elif fmt == "docx":
+            summary_buf = create_summary_docx(summaries)
+            ext = "docx"
+            ctype = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        elif fmt == "json":
+            summary_buf = create_summary_json(summaries)
+            ext = "json"
+            ctype = "application/json"
+        elif fmt == "xml":
+            summary_buf = create_summary_xml(summaries)
+            ext = "xml"
+            ctype = "application/xml"
+        else:
+            raise ValueError("Unsupported output format")
 
         organic_file_key = event_body['organic_bucket_key']
         organic_bucket_name = event_body['organic_bucket']
         summary_file_key = organic_file_key.replace('extracted', 'summary')
+        summary_file_key = os.path.splitext(summary_file_key)[0] + f".{ext}"
         logger.info(f"organic_file_key:{organic_file_key}")
         #new_folder_name = organic_file_folder[1]
-        upload_buffer_to_s3(summary_buf, organic_bucket_name, summary_file_key)
+        upload_buffer_to_s3(summary_buf, organic_bucket_name, summary_file_key, ctype)
 
         return {
             **event_body,
@@ -358,10 +411,10 @@ def _response(status: int, body: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def lambda_handler(event: SummaryEvent | Dict[str, Any], context: Any) -> Dict[str, Any]:
-    """Triggered by the state machine to produce a summary PDF.
+    """Triggered by the state machine to produce a summary file.
 
-    1. Formats the summary text into a PDF and merges it with the source
-       document from S3.
+    1. Formats the summary text into the requested output format and merges it with the source
+       document from S3 when applicable.
     2. Uploads the merged file and returns its location.
 
     Returns a response dictionary with status and file path.

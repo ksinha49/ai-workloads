@@ -12,6 +12,7 @@ class SummaryEvent:
     collection_name: Optional[str] = None
     summaries: Optional[List[Dict[str, Any]]] = None
     statusMessage: Optional[str] = None
+    output_format: str = "pdf"
     extra: Dict[str, Any] = field(default_factory=dict)
 
     @classmethod
@@ -28,6 +29,7 @@ class SummaryEvent:
             "organic_bucket_key",
             "summaries",
             "statusMessage",
+            "output_format",
         }
         extra = {k: v for k, v in body.items() if k not in keys}
         params = {k: body.get(k) for k in keys}
