@@ -9,8 +9,9 @@ launches the ingestion pipeline.
 stateDiagram-v2
     [*] --> file_processing
     file_processing --> Wait
-    file_processing --> classifier
+    file_processing --> idp_workflow
     state "IDP workflow" as idp_workflow {
+        [*] --> classifier
         classifier --> office_extractor
         classifier --> pdf_split
         pdf_split --> pdf_page_classifier
@@ -20,7 +21,7 @@ stateDiagram-v2
         pdf_ocr_extractor --> combine
         combine --> output
     }
-    output --> Wait
+    idp_workflow --> Wait
     Wait --> FileUploadStatus
     FileUploadStatus --> Choice
     Choice -->|fileupload_status != 'COMPLETE'| Wait
@@ -52,8 +53,8 @@ stateDiagram-v2
   **start_ingestion**.
 
 **start_ingestion**
-: Starts the ingestion Step Function referenced by `IngestionStateMachineArn`
-  with `states:startExecution.sync`. JSONata expressions pull `documentId`,
+: Triggers the RAG ingestion Step Function referenced by `IngestionStateMachineArn`
+  using `states:startExecution.sync`. JSONata expressions pull `documentId`,
   `ingest_params`, `collection_name`, `file_guid` and `file_name` from the input
   and build the nested JSON payload for the downstream state machine.
 
