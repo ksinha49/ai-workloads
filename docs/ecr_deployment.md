@@ -55,5 +55,14 @@ aws lambda update-function-code --function-name <name> \
   --image-uri <ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com/<service>:<tag>
 ```
 
+Instead of typing the full command each time, you can run the helper script
+`scripts/deploy_lambda_image.sh` which constructs the image URI automatically:
+
+```bash
+./scripts/deploy_lambda_image.sh <function-name> <account-id> <region> [tag]
+```
+
+The optional `tag` defaults to `latest`.
+
 You can find the correct URI with `aws ecr describe-images` or from the output
 of `scripts/push_ecr.sh`.
