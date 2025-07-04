@@ -6,6 +6,7 @@ import os
 import logging
 from common_utils import configure_logger
 from typing import Any, Dict, List, Callable
+from pydantic import BaseModel, ValidationError
 import json
 
 from common_utils.get_ssm import get_config
@@ -32,6 +33,15 @@ DEFAULT_PROVIDER = (
 )
 
 _CE_MODEL = None
+
+
+class RerankEvent(BaseModel):
+    query: str = ""
+    matches: List[Dict[str, Any]] = []
+    top_k: int = TOP_K
+
+    class Config:
+        extra = "allow"
 
 
 def _hf_score_pairs(query: str, docs: List[str]) -> List[float]:
@@ -132,7 +142,7 @@ def _score_pairs(query: str, docs: List[str]) -> List[float]:
     return score_fn(query, docs)
 
 
-def _process_event(event: Dict[str, Any]) -> Dict[str, Any]:
+def _process_event(event: RerankEvent) -> Dict[str, Any]:
     """Re-rank vector search results.
 
     1. Scores each match against the query using the configured rerank provider.
@@ -141,9 +151,9 @@ def _process_event(event: Dict[str, Any]) -> Dict[str, Any]:
     Returns the re-ranked matches in descending order.
     """
 
-    query = event.get("query") or ""
-    matches: List[Dict[str, Any]] = event.get("matches", [])
-    top_k = int(event.get("top_k", TOP_K))
+    query = event.query or ""
+    matches: List[Dict[str, Any]] = event.matches
+    top_k = int(event.top_k)
     logger.info("Re-ranking %d matches with top_k=%s", len(matches), top_k)
     texts = [m.get("metadata", {}).get("text", "") for m in matches]
     scores = _score_pairs(query, texts) if query else [0.0] * len(matches)
@@ -159,7 +169,19 @@ def _process_event(event: Dict[str, Any]) -> Dict[str, Any]:
 def lambda_handler(event: Dict[str, Any], context: Any) -> Any:
     """Entry point supporting SQS events."""
     if "Records" in event:
-        return [
-            _process_event(json.loads(r.get("body", "{}"))) for r in event["Records"]
-        ]
-    return _process_event(event)
+        results = []
+        for r in event["Records"]:
+            try:
+                ev = RerankEvent.parse_obj(json.loads(r.get("body", "{}")))
+            except ValidationError as exc:
+                logger.error("Invalid event: %s", exc)
+                results.append({"matches": []})
+            else:
+                results.append(_process_event(ev))
+        return results
+    try:
+        ev = RerankEvent.parse_obj(event)
+    except ValidationError as exc:
+        logger.error("Invalid event: %s", exc)
+        return {"matches": []}
+    return _process_event(ev)

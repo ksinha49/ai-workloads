@@ -14,6 +14,7 @@ from routellm_integration import forward_to_routellm
 import hashlib
 
 from typing import Any, Dict
+from pydantic import BaseModel, ValidationError
 
 from common_utils.get_ssm import get_config
 from common_utils.get_secret import get_secret
@@ -35,6 +36,19 @@ SUMMARY_ENDPOINT = get_config("SUMMARY_ENDPOINT") or os.environ.get("SUMMARY_END
 ROUTELLM_ENDPOINT = get_config("ROUTELLM_ENDPOINT") or os.environ.get("ROUTELLM_ENDPOINT")
 
 lambda_client = boto3.client("lambda")
+
+
+class SummarizeEvent(BaseModel):
+    collection_name: str
+    query: str | None = None
+    embedding: list[float] | None = None
+    embedModel: str | None = None
+    department: str | None = None
+    team: str | None = None
+    user: str | None = None
+
+    class Config:
+        extra = "allow"
 
 DEFAULT_EMBED_MODEL = (
     get_config("EMBED_MODEL") or os.environ.get("EMBED_MODEL", "sbert")
@@ -121,7 +135,7 @@ def _embed_query(text: str, model: str | None = None) -> list[float]:
         return _simple_embed(text)
 
 
-def _process_event(event: Dict[str, Any]) -> Dict[str, Any]:
+def _process_event(event: SummarizeEvent) -> Dict[str, Any]:
     """Handle a single summarization request.
 
     1. Performs a vector search (and optional re-ranking) to gather context for
@@ -132,21 +146,22 @@ def _process_event(event: Dict[str, Any]) -> Dict[str, Any]:
     Returns a dictionary containing the generated summary.
     """
 
-    if event.get("collection_name") is None:
+    if event.collection_name is None:
         raise ValueError("collection_name missing from event")
 
-    query = event.get("query")
-    emb = event.get("embedding")
+    query = event.query
+    emb = event.embedding
     if emb is None and query:
-        logger.info("Embedding query using model %s", event.get("embedModel"))
-        emb = _embed_query(query, event.get("embedModel"))
+        logger.info("Embedding query using model %s", event.embedModel)
+        emb = _embed_query(query, event.embedModel)
     search_payload = {"embedding": emb} if emb is not None else {}
     if RERANK_FUNCTION:
         search_payload["top_k"] = SEARCH_CANDIDATES
     for key in ("department", "team", "user"):
-        if key in event:
-            search_payload[key] = event[key]
-    search_payload["collection_name"] = event["collection_name"]
+        val = getattr(event, key)
+        if val is not None:
+            search_payload[key] = val
+    search_payload["collection_name"] = event.collection_name
     logger.info(
         "Invoking vector search function %s with payload %s",
         LAMBDA_FUNCTION,
@@ -178,7 +193,11 @@ def _process_event(event: Dict[str, Any]) -> Dict[str, Any]:
     context_text = " ".join(
         m.get("metadata", {}).get("text", "") for m in matches
     )
-    router_payload = {k: v for k, v in event.items() if k != "embedding"}
+    router_payload = {
+        k: v
+        for k, v in event.model_dump().items()
+        if k != "embedding" and v is not None
+    }
     router_payload["context"] = context_text
     logger.info("Forwarding payload to router at %s", ROUTELLM_ENDPOINT)
     try:
@@ -193,8 +212,20 @@ def _process_event(event: Dict[str, Any]) -> Dict[str, Any]:
 def lambda_handler(event: Dict[str, Any], context: Any) -> Any:
     """Entry point handling both direct and SQS invocations."""
     if "Records" in event:
-        return [
-            _process_event(json.loads(r.get("body", "{}"))) for r in event["Records"]
-        ]
-    return _process_event(event)
+        results = []
+        for r in event["Records"]:
+            try:
+                ev = SummarizeEvent.parse_obj(json.loads(r.get("body", "{}")))
+            except ValidationError as exc:
+                logger.error("Invalid event: %s", exc)
+                results.append({"summary": ""})
+            else:
+                results.append(_process_event(ev))
+        return results
+    try:
+        ev = SummarizeEvent.parse_obj(event)
+    except ValidationError as exc:
+        logger.error("Invalid event: %s", exc)
+        return {"summary": ""}
+    return _process_event(ev)
 

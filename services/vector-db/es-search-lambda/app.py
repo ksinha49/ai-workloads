@@ -8,6 +8,7 @@ from __future__ import annotations
 import logging
 from common_utils import configure_logger
 from typing import Any, Dict, List
+from pydantic import BaseModel, ValidationError
 
 from common_utils import ElasticsearchClient
 
@@ -21,6 +22,14 @@ logger = configure_logger(__name__)
 client = ElasticsearchClient()
 
 
+class SearchEvent(BaseModel):
+    embedding: List[float] | None = None
+    top_k: int = 5
+
+    class Config:
+        extra = "allow"
+
+
 def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     """Triggered to perform a vector search against Elasticsearch.
 
@@ -30,11 +39,17 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     Returns the list of matching documents.
     """
 
-    embedding: List[float] | None = event.get("embedding")
+    try:
+        payload = SearchEvent.parse_obj(event)
+    except ValidationError as exc:
+        logger.error("Invalid event: %s", exc)
+        return {"matches": []}
+
+    embedding = payload.embedding
     if embedding is None:
         return {"matches": []}
 
-    top_k = int(event.get("top_k", 5))
+    top_k = int(payload.top_k)
     try:
         results = client.search(embedding, top_k=top_k)
     except Exception as exc:  # pragma: no cover - runtime safety
