@@ -26,7 +26,7 @@ try:
 except ModuleNotFoundError:  # pragma: no cover - fallback for minimal env
     class ClientError(Exception):
         pass
-from common_utils import configure_logger
+from common_utils import configure_logger, lambda_response
 from common_utils.get_ssm import (
     get_values_from_ssm,
     get_environment_prefix,
@@ -163,9 +163,6 @@ def process_files(event: FileProcessingEvent, context) -> dict:
         logger.error("Failed to process file: %s", exc)
         raise
 
-def _response(status: int, body: dict) -> dict:
-    """Helper to build a consistent Lambda response."""
-    return {"statusCode": status, "body": body}
 
 
 def lambda_handler(event: FileProcessingEvent | dict, context) -> dict:
@@ -184,17 +181,17 @@ def lambda_handler(event: FileProcessingEvent | dict, context) -> dict:
                 event = FileProcessingEvent.from_dict(event)
             except ValueError as exc:
                 logger.error("Invalid event: %s", exc)
-                return _response(400, {"error": str(exc)})
+                return lambda_response(400, {"error": str(exc)})
         try:
             _validate_event(event)
         except ValueError as exc:
             logger.error("Invalid event: %s", exc)
-            return _response(400, {"error": str(exc)})
+            return lambda_response(400, {"error": str(exc)})
         final_response = process_files(event, context)
-        return _response(200, final_response)
+        return lambda_response(200, final_response)
     except (KeyError, ValueError) as exc:
         logger.error("Missing key in request: %s", exc)
-        return _response(400, {"error": str(exc)})
+        return lambda_response(400, {"error": str(exc)})
     except ClientError as exc:
         logger.error("AWS client error: %s", exc)
-        return _response(500, {"error": str(exc)})
+        return lambda_response(500, {"error": str(exc)})

@@ -19,7 +19,7 @@ Modified By: Koushik Sinha
 
 from __future__ import annotations
 
-from common_utils import configure_logger
+from common_utils import configure_logger, lambda_response
 import re
 import os
 from io import BytesIO
@@ -405,9 +405,6 @@ def process_for_summary(event: SummaryEvent, context: Any) -> Dict[str, Any]:
         return {"statusCode": 500, "statusMessage": "Internal server error"}
 
 
-def _response(status: int, body: Dict[str, Any]) -> Dict[str, Any]:
-    """Helper to build a consistent Lambda response."""
-    return {"statusCode": status, "body": body}
 
 
 def lambda_handler(event: SummaryEvent | Dict[str, Any], context: Any) -> Dict[str, Any]:
@@ -425,16 +422,16 @@ def lambda_handler(event: SummaryEvent | Dict[str, Any], context: Any) -> Dict[s
                 event = SummaryEvent.from_dict(event)
             except ValueError as exc:
                 logger.exception("Invalid request to lambda_handler")
-                return _response(400, {"statusMessage": str(exc)})
+                return lambda_response(400, {"statusMessage": str(exc)})
         body = process_for_summary(event, context)
         status = body.get("statusCode", 200)
-        return _response(status, body)
+        return lambda_response(status, body)
     except (ClientError, BotoCoreError) as exc:
         logger.exception("AWS error invoking Lambda")
-        return _response(502, {"statusMessage": "AWS service error"})
+        return lambda_response(502, {"statusMessage": "AWS service error"})
     except ValueError as exc:
         logger.exception("Invalid request to lambda_handler")
-        return _response(400, {"statusMessage": str(exc)})
+        return lambda_response(400, {"statusMessage": str(exc)})
     except Exception as exc:
         logger.exception("lambda_handler failed")
-        return _response(500, {"statusMessage": "Internal server error"})
+        return lambda_response(500, {"statusMessage": "Internal server error"})
