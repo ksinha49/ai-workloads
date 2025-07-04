@@ -91,6 +91,7 @@ Additional documentation is available in the `docs/` directory:
 - [docs/summarization_workflow.md](docs/summarization_workflow.md)
 - [docs/prompt_engine.md](docs/prompt_engine.md)
 - [docs/knowledge_rag_usage.md](docs/knowledge_rag_usage.md)
+- [docs/rag_architecture.md](docs/rag_architecture.md)
 - [docs/event_schemas.md](docs/event_schemas.md)
 - [docs/entity_tokenization_service.md](docs/entity_tokenization_service.md)
 - [docs/tokenization_workflow.md](docs/tokenization_workflow.md)
