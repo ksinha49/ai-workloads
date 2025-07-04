@@ -1,7 +1,17 @@
 # ---------------------------------------------------------------------------
 # app.py
 # ---------------------------------------------------------------------------
-"""Detect PII entities in text using ML models and regex fallbacks."""
+"""
+Module: app.py
+Description:
+  Detect PII entities in text using ML models and regex fallbacks.
+
+
+Version: 1.0.0
+Created: 2025-05-05
+Last Modified: 2025-06-28
+Modified By: Koushik Sinha
+"""
 
 from __future__ import annotations
 
@@ -13,7 +23,13 @@ from typing import Any, Dict, List, Tuple
 
 from common_utils import configure_logger
 
+# ─── Logging Configuration ────────────────────────────────────────────────────
 logger = configure_logger(__name__)
+
+# Module Metadata
+__author__ = "Koushik Sinha"
+__version__ = "1.0.0"
+__modified_by__ = "Koushik Sinha"
 
 _MODEL: Tuple[str, Any] | None = None
 _MEDICAL_MODEL: Tuple[str, Any] | None = None
