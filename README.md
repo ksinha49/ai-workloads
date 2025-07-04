@@ -96,3 +96,5 @@ Additional documentation is available in the `docs/` directory:
 - [docs/entity_tokenization_service.md](docs/entity_tokenization_service.md)
 - [docs/tokenization_workflow.md](docs/tokenization_workflow.md)
 - [docs/environment_variables.md](docs/environment_variables.md)
+- [docs/file_ingestion_workflow.md](docs/file_ingestion_workflow.md)
+- [docs/rag_ingestion_workflow.md](docs/rag_ingestion_workflow.md)
