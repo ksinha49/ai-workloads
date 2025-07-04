@@ -23,6 +23,7 @@ from typing import Any, Dict, List, Tuple
 
 from common_utils import configure_logger
 from common_utils.get_ssm import get_config
+from common_utils.ner_models import load_ner_model
 
 # ─── Logging Configuration ────────────────────────────────────────────────────
 logger = configure_logger(__name__)
@@ -38,140 +39,29 @@ _LEGAL_MODEL: Tuple[str, Any] | None = None
 
 
 def _load_model() -> Tuple[str, Any] | None:
-    """Load either a spaCy or HuggingFace NER model based on env vars."""
+    """Return the default NER model."""
 
     global _MODEL
-    if _MODEL is not None:
-        return _MODEL
-
-    library = (
-        get_config("NER_LIBRARY") or os.environ.get("NER_LIBRARY", "spacy")
-    ).lower()
-    if library == "spacy":
-        try:  # pragma: no cover - optional dependency
-            import spacy  # type: ignore
-
-            model_name = get_config("SPACY_MODEL") or os.environ.get(
-                "SPACY_MODEL", "en_core_web_sm"
-            )
-            _MODEL = ("spacy", spacy.load(model_name))
-        except Exception as exc:  # pragma: no cover - runtime safety
-            logger.exception("Failed to load spaCy model: %s", exc)
-            _MODEL = None
-    else:
-        try:  # pragma: no cover - optional dependency
-            from transformers import pipeline  # type: ignore
-
-            model_name = get_config("HF_MODEL") or os.environ.get(
-                "HF_MODEL", "dslim/bert-base-NER"
-            )
-            _MODEL = (
-                "hf",
-                pipeline(
-                    "ner",
-                    model=model_name,
-                    aggregation_strategy="simple",
-                ),
-            )
-        except Exception as exc:  # pragma: no cover - runtime safety
-            logger.exception("Failed to load HuggingFace model: %s", exc)
-            _MODEL = None
+    if _MODEL is None:
+        _MODEL = load_ner_model("SPACY_MODEL", "HF_MODEL")
     return _MODEL
 
 
 def _load_medical_model() -> Tuple[str, Any] | None:
-    """Load a PHI-specific model based on environment variables."""
+    """Return the NER model for the Medical domain."""
 
     global _MEDICAL_MODEL
-    if _MEDICAL_MODEL is not None:
-        return _MEDICAL_MODEL
-
-    library = (
-        get_config("NER_LIBRARY") or os.environ.get("NER_LIBRARY", "spacy")
-    ).lower()
-    if library == "spacy":
-        try:  # pragma: no cover - optional dependency
-            import spacy  # type: ignore
-
-            model_name = (
-                get_config("MEDICAL_MODEL")
-                or os.environ.get("MEDICAL_MODEL")
-                or get_config("SPACY_MODEL")
-                or os.environ.get("SPACY_MODEL", "en_core_web_sm")
-            )
-            _MEDICAL_MODEL = ("spacy", spacy.load(model_name))
-        except Exception as exc:  # pragma: no cover - runtime safety
-            logger.exception("Failed to load medical spaCy model: %s", exc)
-            _MEDICAL_MODEL = None
-    else:
-        try:  # pragma: no cover - optional dependency
-            from transformers import pipeline  # type: ignore
-
-            model_name = (
-                get_config("MEDICAL_MODEL")
-                or os.environ.get("MEDICAL_MODEL")
-                or get_config("HF_MODEL")
-                or os.environ.get("HF_MODEL", "dslim/bert-base-NER")
-            )
-            _MEDICAL_MODEL = (
-                "hf",
-                pipeline(
-                    "ner",
-                    model=model_name,
-                    aggregation_strategy="simple",
-                ),
-            )
-        except Exception as exc:  # pragma: no cover - runtime safety
-            logger.exception("Failed to load medical HF model: %s", exc)
-            _MEDICAL_MODEL = None
+    if _MEDICAL_MODEL is None:
+        _MEDICAL_MODEL = load_ner_model("MEDICAL_MODEL", "MEDICAL_MODEL")
     return _MEDICAL_MODEL
 
 
 def _load_legal_model() -> Tuple[str, Any] | None:
-    """Load a Legal-specific model based on environment variables."""
+    """Return the NER model for the Legal domain."""
 
     global _LEGAL_MODEL
-    if _LEGAL_MODEL is not None:
-        return _LEGAL_MODEL
-
-    library = (
-        get_config("NER_LIBRARY") or os.environ.get("NER_LIBRARY", "spacy")
-    ).lower()
-    if library == "spacy":
-        try:  # pragma: no cover - optional dependency
-            import spacy  # type: ignore
-
-            model_name = (
-                get_config("LEGAL_MODEL")
-                or os.environ.get("LEGAL_MODEL")
-                or get_config("SPACY_MODEL")
-                or os.environ.get("SPACY_MODEL", "en_core_web_sm")
-            )
-            _LEGAL_MODEL = ("spacy", spacy.load(model_name))
-        except Exception as exc:  # pragma: no cover - runtime safety
-            logger.exception("Failed to load legal spaCy model: %s", exc)
-            _LEGAL_MODEL = None
-    else:
-        try:  # pragma: no cover - optional dependency
-            from transformers import pipeline  # type: ignore
-
-            model_name = (
-                get_config("LEGAL_MODEL")
-                or os.environ.get("LEGAL_MODEL")
-                or get_config("HF_MODEL")
-                or os.environ.get("HF_MODEL", "dslim/bert-base-NER")
-            )
-            _LEGAL_MODEL = (
-                "hf",
-                pipeline(
-                    "ner",
-                    model=model_name,
-                    aggregation_strategy="simple",
-                ),
-            )
-        except Exception as exc:  # pragma: no cover - runtime safety
-            logger.exception("Failed to load legal HF model: %s", exc)
-            _LEGAL_MODEL = None
+    if _LEGAL_MODEL is None:
+        _LEGAL_MODEL = load_ner_model("LEGAL_MODEL", "LEGAL_MODEL")
     return _LEGAL_MODEL
 
 
