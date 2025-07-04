@@ -108,4 +108,11 @@ Each service loads its configuration from Parameter Store or the Lambda environm
 - `TOKEN_API_URL` – endpoint for tokenization when using token mode.
 - `ANON_TIMEOUT` – seconds before falling back to `[REMOVED]`.
 
+### EFS Storage
+
+- `EFS_DEPENDENCY_PATH` – mount location containing Python packages installed on EFS.
+- `MODEL_EFS_PATH` – base directory on EFS holding ML model files.
+
+Both variables may also be supplied via Parameter Store using the same names.
+
 See [services/text-anonymization/README.md](../services/text-anonymization/README.md) for more details.

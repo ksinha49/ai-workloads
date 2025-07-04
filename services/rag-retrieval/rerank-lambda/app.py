@@ -109,6 +109,12 @@ def _load_model():
     if _CE_MODEL is not None:
         return _CE_MODEL
     model_path = EFS_MODEL_PATH or DEFAULT_MODEL
+    if not EFS_MODEL_PATH:
+        base = get_config("MODEL_EFS_PATH") or os.environ.get("MODEL_EFS_PATH")
+        if base:
+            candidate = os.path.join(base, os.path.basename(DEFAULT_MODEL))
+            if os.path.exists(candidate):
+                model_path = candidate
     try:
         if model_path.startswith("s3://"):
             import boto3

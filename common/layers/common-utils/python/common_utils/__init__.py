@@ -3,6 +3,10 @@ __author__ = "Koushik Sinha"
 __version__ = "1.0.0"
 __modified_by__ = "Koushik Sinha"
 
+import os
+import sys
+import site
+
 from .logging_utils import configure_logger
 from .get_ssm import (
     get_values_from_ssm,
@@ -10,6 +14,18 @@ from .get_ssm import (
     parse_s3_uri,
     get_config,
 )
+
+# Optional path to Python packages installed on an attached EFS volume.
+_EFS_DEPENDENCY_PATH = os.environ.get("EFS_DEPENDENCY_PATH") or get_config(
+    "EFS_DEPENDENCY_PATH"
+)
+if _EFS_DEPENDENCY_PATH:
+    for p in (_EFS_DEPENDENCY_PATH, os.path.join(_EFS_DEPENDENCY_PATH, "python")):
+        if os.path.isdir(p) and p not in sys.path:
+            site.addsitedir(p)
+
+# Optional base directory for models stored on EFS.
+MODEL_EFS_PATH = os.environ.get("MODEL_EFS_PATH") or get_config("MODEL_EFS_PATH")
 from .get_secret import get_secret
 from .milvus_client import MilvusClient, VectorItem, SearchResult, GetResult
 from .elasticsearch_client import ElasticsearchClient
