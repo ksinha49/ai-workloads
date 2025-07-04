@@ -10,6 +10,7 @@ import logging
 from common_utils import configure_logger
 
 from typing import Any, Dict, List
+from pydantic import BaseModel, ValidationError
 import json
 
 from common_utils import MilvusClient
@@ -27,7 +28,22 @@ TOP_K = int(get_config("TOP_K") or os.environ.get("TOP_K", "5"))
 client = MilvusClient()
 
 
-def _process_event(event: Dict[str, Any]) -> Dict[str, Any]:
+class VectorSearchEvent(BaseModel):
+    embedding: List[float] | None = None
+    top_k: int = TOP_K
+    collection_name: str | None = None
+    department: str | None = None
+    team: str | None = None
+    user: str | None = None
+    entities: List[str] | None = None
+    file_guid: str | None = None
+    file_name: str | None = None
+
+    class Config:
+        extra = "allow"
+
+
+def _process_event(event: VectorSearchEvent) -> Dict[str, Any]:
     """Perform a vector similarity search.
 
     1. Uses the provided embedding to query Milvus for the top matching
@@ -37,13 +53,13 @@ def _process_event(event: Dict[str, Any]) -> Dict[str, Any]:
     Returns a dictionary of match objects sorted by score.
     """
 
-    embedding: List[float] | None = event.get("embedding")
+    embedding: List[float] | None = event.embedding
     if embedding is None:
         return {"matches": []}
 
-    top_k = int(event.get("top_k", TOP_K))
+    top_k = int(event.top_k)
     logger.info("Searching Milvus with top_k=%s", top_k)
-    collection = event.get("collection_name")
+    collection = event.collection_name
     client_obj = client if collection is None else MilvusClient(collection_name=collection)
     try:
         results = client_obj.search(embedding, top_k=top_k)
@@ -53,12 +69,12 @@ def _process_event(event: Dict[str, Any]) -> Dict[str, Any]:
     logger.info("Milvus returned %d results", len(results))
     matches = [{"id": r.id, "score": r.score, "metadata": r.metadata} for r in results]
 
-    department = event.get("department")
-    team = event.get("team")
-    user = event.get("user")
-    entities: List[str] | None = event.get("entities")
-    file_guid = event.get("file_guid")
-    file_name = event.get("file_name")
+    department = event.department
+    team = event.team
+    user = event.user
+    entities: List[str] | None = event.entities
+    file_guid = event.file_guid
+    file_name = event.file_name
     if department or team or user or entities or file_guid or file_name:
         logger.info(
             "Filtering %d matches by department=%s team=%s user=%s entities=%s",
@@ -95,7 +111,19 @@ def _process_event(event: Dict[str, Any]) -> Dict[str, Any]:
 def lambda_handler(event: Dict[str, Any], context: Any) -> Any:
     """Entry point supporting SQS events."""
     if "Records" in event:
-        return [
-            _process_event(json.loads(r.get("body", "{}"))) for r in event["Records"]
-        ]
-    return _process_event(event)
+        results = []
+        for r in event["Records"]:
+            try:
+                ev = VectorSearchEvent.parse_obj(json.loads(r.get("body", "{}")))
+            except ValidationError as exc:
+                logger.error("Invalid event: %s", exc)
+                results.append({"matches": []})
+            else:
+                results.append(_process_event(ev))
+        return results
+    try:
+        ev = VectorSearchEvent.parse_obj(event)
+    except ValidationError as exc:
+        logger.error("Invalid event: %s", exc)
+        return {"matches": []}
+    return _process_event(ev)

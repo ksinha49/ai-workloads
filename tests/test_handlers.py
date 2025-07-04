@@ -833,6 +833,13 @@ def test_rerank_lambda_cohere(monkeypatch, config):
     assert out["matches"][0]["id"] == 1
 
 
+def test_rerank_lambda_invalid(monkeypatch, config):
+    config["/parameters/aio/ameritasAI/SERVER_ENV"] = "dev"
+    module = load_lambda("rerank_invalid", "services/rag-retrieval/rerank-lambda/app.py")
+    out = module.lambda_handler({"matches": "bad"}, {})
+    assert out["matches"] == []
+
+
 def test_summarize_with_rerank(monkeypatch, config):
     prefix = "/parameters/aio/ameritasAI/dev"
     config["/parameters/aio/ameritasAI/SERVER_ENV"] = "dev"
@@ -971,6 +978,26 @@ def test_vector_search_top_k(monkeypatch, config):
     monkeypatch.setattr(module, "client", type("C", (), {"search": fake_search})())
     module.lambda_handler({"embedding": [0.1], "top_k": 7}, {})
     assert called["top_k"] == 7
+
+
+def test_vector_search_invalid(monkeypatch, config):
+    config["/parameters/aio/ameritasAI/SERVER_ENV"] = "dev"
+    import types, sys
+
+    dummy = types.ModuleType("pymilvus")
+    dummy.Collection = type("Coll", (), {"__init__": lambda self, *a, **k: None})
+    dummy.connections = types.SimpleNamespace(connect=lambda alias, host, port: None)
+    monkeypatch.setitem(sys.modules, "pymilvus", dummy)
+    import common_utils.milvus_client as mc
+
+    monkeypatch.setattr(mc, "Collection", dummy.Collection, raising=False)
+    monkeypatch.setattr(mc, "connections", dummy.connections, raising=False)
+
+    module = load_lambda(
+        "vector_invalid", "services/vector-db/vector-search-lambda/app.py"
+    )
+    out = module.lambda_handler({"embedding": "bad"}, {})
+    assert out["matches"] == []
 
 
 def test_vector_search_filters(monkeypatch, config):
