@@ -11,6 +11,8 @@ import logging
 from common_utils import configure_logger
 import boto3
 import httpx
+from botocore.exceptions import BotoCoreError, ClientError
+from httpx import HTTPError
 
 from typing import Any, Dict
 import json
@@ -57,7 +59,7 @@ def _process_event(event: Dict[str, Any]) -> Dict[str, Any]:
             Payload=json.dumps({"embedding": emb}).encode("utf-8"),
         )
         result = json.loads(resp["Payload"].read())
-    except Exception as exc:
+    except (ClientError, BotoCoreError, json.JSONDecodeError) as exc:
         logger.exception("Vector search invocation failed")
         if RERAISE_ERRORS:
             raise
@@ -70,7 +72,7 @@ def _process_event(event: Dict[str, Any]) -> Dict[str, Any]:
     try:
         r = httpx.post(ENTITIES_ENDPOINT, json={"query": query, "context": context_text})
         r.raise_for_status()
-    except Exception as exc:
+    except HTTPError as exc:
         logger.exception("Entity extraction service request failed")
         if RERAISE_ERRORS:
             raise

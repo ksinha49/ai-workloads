@@ -9,6 +9,22 @@ from typing import Any, Dict
 import boto3
 from common_utils import configure_logger
 from common_utils.get_ssm import get_config
+try:
+    import httpx  # type: ignore
+    HTTPError = getattr(httpx, "HTTPError", Exception)
+except Exception:  # pragma: no cover - allow import without httpx
+    httpx = None
+
+    class HTTPError(Exception):
+        pass
+try:
+    from botocore.exceptions import BotoCoreError, ClientError
+except ModuleNotFoundError:  # pragma: no cover - fallback for minimal env
+    class BotoCoreError(Exception):
+        pass
+
+    class ClientError(Exception):
+        pass
 
 logger = configure_logger(__name__)
 
@@ -37,14 +53,15 @@ def _process_record(record: Dict[str, Any]) -> None:
         if "variables" in body:
             engine_payload["variables"] = body.get("variables")
         try:
-            import httpx
+            if httpx is None:
+                raise HTTPError("httpx unavailable")
 
             # The prompt engine renders the template and forwards it to the
             # router service.  The response is ignored here because
             # `body["query"]` is passed unchanged to ``RAG_SUMMARY_FUNCTION_ARN``
             # below.
             httpx.post(PROMPT_ENGINE_ENDPOINT, json=engine_payload).raise_for_status()
-        except Exception:  # pragma: no cover - network failure
+        except HTTPError:  # pragma: no cover - network failure
             logger.exception("Prompt engine request failed")
     if body.get("collection_name") is None:
         logger.error("collection_name missing from message")
@@ -68,7 +85,7 @@ def _process_record(record: Dict[str, Any]) -> None:
             taskToken=token,
             output=json.dumps({"summary": summary, "Title": body.get("Title")}),
         )
-    except Exception as exc:  # pragma: no cover - runtime issues
+    except (ClientError, BotoCoreError, json.JSONDecodeError) as exc:  # pragma: no cover - runtime issues
         logger.exception("Error processing summarization request")
         if token:
             sf_client.send_task_failure(

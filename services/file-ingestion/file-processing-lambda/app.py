@@ -22,9 +22,12 @@ import logging
 import re
 from urllib.parse import urlparse
 try:
-    from botocore.exceptions import ClientError
+    from botocore.exceptions import ClientError, BotoCoreError
 except ModuleNotFoundError:  # pragma: no cover - fallback for minimal env
     class ClientError(Exception):
+        pass
+
+    class BotoCoreError(Exception):
         pass
 from common_utils import configure_logger, lambda_response
 from common_utils.get_ssm import (
@@ -32,6 +35,11 @@ from common_utils.get_ssm import (
     get_environment_prefix,
     parse_s3_uri,
 )
+
+
+class CopyVerificationError(Exception):
+    """Raised when verification of the S3 copy fails."""
+
 from models import FileProcessingEvent
 
 # Module Metadata
@@ -122,7 +130,7 @@ def copy_file_to_idp(bucket_name: str, bucket_key: str) -> str:
 
     dest_head = _s3_client.head_object(Bucket=idp_bucket, Key=dest_key)
     if dest_head.get("ETag") != src_etag or dest_head.get("ContentLength") != src_len:
-        raise ClientError({"Error": {"Code": "CopyVerificationFailed", "Message": "Copy verification failed"}}, "copy_object")
+        raise CopyVerificationError("Copy verification failed")
 
     return f"s3://{idp_bucket}/{dest_key}"
 
@@ -168,7 +176,7 @@ def process_files(event: FileProcessingEvent, context) -> dict:
             result["collection_name"] = event.collection_name
         result.update(event.extra)
         return result
-    except (KeyError, ClientError) as exc:
+    except (KeyError, ClientError, BotoCoreError, CopyVerificationError) as exc:
         logger.error("Failed to process file: %s", exc)
         raise
 
@@ -201,6 +209,6 @@ def lambda_handler(event: FileProcessingEvent | dict, context) -> dict:
     except (KeyError, ValueError) as exc:
         logger.error("Missing key in request: %s", exc)
         return lambda_response(400, {"error": str(exc)})
-    except ClientError as exc:
+    except (ClientError, BotoCoreError, CopyVerificationError) as exc:
         logger.error("AWS client error: %s", exc)
         return lambda_response(500, {"error": str(exc)})

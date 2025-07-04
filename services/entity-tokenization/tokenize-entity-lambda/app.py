@@ -9,6 +9,14 @@ from typing import Any, Dict
 
 import boto3
 from common_utils import configure_logger
+try:
+    from botocore.exceptions import BotoCoreError, ClientError
+except ModuleNotFoundError:  # pragma: no cover - fallback for minimal env
+    class BotoCoreError(Exception):
+        pass
+
+    class ClientError(Exception):
+        pass
 from common_utils.get_ssm import get_config
 
 logger = configure_logger(__name__)
@@ -33,7 +41,7 @@ def _generate_token(entity: str) -> str:
 def _lookup_token(entity: str, etype: str, domain: str) -> str | None:
     try:
         resp = _table.scan()
-    except Exception:  # pragma: no cover - runtime safeguard
+    except (ClientError, BotoCoreError) as exc:  # pragma: no cover - runtime safeguard
         logger.exception("DynamoDB scan failed")
         return None
     for item in resp.get("Items", []):
@@ -66,7 +74,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     }
     try:
         _table.put_item(Item=item)
-    except Exception:  # pragma: no cover - runtime safety
+    except (ClientError, BotoCoreError) as exc:  # pragma: no cover - runtime safety
         logger.exception("Failed to store mapping")
         return {"error": "dynamo failure"}
     return {"token": token}
