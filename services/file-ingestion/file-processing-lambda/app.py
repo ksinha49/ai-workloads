@@ -157,13 +157,21 @@ def process_files(event: FileProcessingEvent, context) -> dict:
         logger.info("Copying %s/%s to IDP bucket", bucket_name, bucket_key)
         dest_uri = copy_file_to_idp(bucket_name, bucket_key)
 
-        # Delete the source file now that it has been copied. This prevents the
-        # same document from being processed multiple times and more closely
-        # mirrors a move operation.
+        # Tag the source file for later deletion now that it has been copied.
+        # This prevents the same document from being processed multiple times
+        # and more closely mirrors a move operation.
         try:
-            _s3_client.delete_object(Bucket=bucket_name, Key=bucket_key)
+            _s3_client.put_object_tagging(
+                Bucket=bucket_name,
+                Key=bucket_key,
+                Tagging={"TagSet": [{"Key": "pending-delete", "Value": "true"}]},
+            )
         except AttributeError:
-            logger.warning("S3 client not available for deletion of %s/%s", bucket_name, bucket_key)
+            logger.warning(
+                "S3 client not available for tagging %s/%s", bucket_name, bucket_key
+            )
+        except Exception as exc:  # pragma: no cover - best effort
+            logger.warning("Failed to tag %s/%s for deletion: %s", bucket_name, bucket_key, exc)
 
         document_id = uuid.uuid4().hex
         file_name = os.path.basename(bucket_key)

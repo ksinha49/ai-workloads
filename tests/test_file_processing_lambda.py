@@ -29,8 +29,9 @@ def test_file_processing_lambda(monkeypatch, s3_stub, config):
     assert len(body['document_id']) == 32 and all(c in '0123456789abcdef' for c in body['document_id'])
     assert body['s3_location'] == 's3://dest-bucket/raw/test.docx'
     assert body['collection_name'] == 'c'
-    # ensure the source file was removed after processing
-    assert ('bucket', 'path/test.docx') not in s3_stub.objects
+    # ensure the source file was tagged for deletion rather than removed
+    assert ('bucket', 'path/test.docx') in s3_stub.objects
+    assert s3_stub.tags[('bucket', 'path/test.docx')]['pending-delete'] == 'true'
 
 
 def test_file_processing_lambda_copy_verification_failed(monkeypatch, s3_stub, config):
@@ -52,8 +53,9 @@ def test_file_processing_lambda_copy_verification_failed(monkeypatch, s3_stub, c
     event = FileProcessingEvent(file='s3://bucket/path/test.docx', collection_name='c')
     resp = module.lambda_handler(event, {})
     assert resp['statusCode'] == 500
-    # source should remain since verification failed
+    # source should remain and not be tagged since verification failed
     assert ('bucket', 'path/test.docx') in s3_stub.objects
+    assert ('bucket', 'path/test.docx') not in s3_stub.tags
 
 
 def test_file_processing_lambda_invalid_path(monkeypatch, config):
