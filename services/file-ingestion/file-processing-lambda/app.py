@@ -20,6 +20,7 @@ import uuid
 import boto3
 import logging
 import re
+from urllib.parse import urlparse
 try:
     from botocore.exceptions import ClientError
 except ModuleNotFoundError:  # pragma: no cover - fallback for minimal env
@@ -43,16 +44,49 @@ logger = configure_logger(__name__)
 
 _s3_client = boto3.client("s3")
 
-# allowed characters for S3 URIs and collection names
-S3_URI_PATTERN = re.compile(r"^s3://[A-Za-z0-9._-]+/[A-Za-z0-9._/-]+$")
+# allowed characters for collection names
 COLLECTION_PATTERN = re.compile(r"^[A-Za-z0-9._-]+$")
+
+
+def _is_valid_bucket_name(name: str) -> bool:
+    """Return ``True`` if *name* is a valid S3 bucket name."""
+
+    if len(name) < 3 or len(name) > 63:
+        return False
+    if not re.match(r"^[a-z0-9][a-z0-9.-]+[a-z0-9]$", name):
+        return False
+    if ".." in name or ".-" in name or "-." in name:
+        return False
+    if re.match(r"^(?:\d{1,3}\.){3}\d{1,3}$", name):
+        return False
+    return True
 
 
 def _validate_event(event: FileProcessingEvent) -> None:
     """Validate and sanitize incoming ``FileProcessingEvent``."""
 
-    if not isinstance(event.file, str) or not S3_URI_PATTERN.match(event.file):
+    if not isinstance(event.file, str):
         raise ValueError("invalid file path")
+
+    parsed = urlparse(event.file)
+    if parsed.scheme != "s3" or not parsed.netloc or not parsed.path:
+        raise ValueError("invalid file path")
+
+    bucket = parsed.netloc
+    key = parsed.path.lstrip("/")
+
+    if not _is_valid_bucket_name(bucket):
+        raise ValueError("invalid file path")
+
+    if not key or "//" in parsed.path:
+        raise ValueError("invalid file path")
+
+    if any(ord(c) < 32 or ord(c) == 127 for c in key):
+        raise ValueError("invalid file path")
+
+    if any(part in {"..", "."} for part in key.split("/")):
+        raise ValueError("invalid file path")
+
     if (
         event.collection_name is None
         or not isinstance(event.collection_name, str)
