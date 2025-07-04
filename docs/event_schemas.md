@@ -83,13 +83,16 @@ The IDP Lambdas are triggered by standard S3 events. Each event contains a list 
 
 ## Summarization Event
 
+Optionally include an `output_format` property to select `pdf`, `docx`, `json` or `xml` output.
+
 ```json
 {
   "statusCode": 200,
   "organic_bucket": "source-bucket",
   "organic_bucket_key": "extracted/doc.pdf",
   "collection_name": "my-collection",
-  "summaries": [{"Title": "Summary", "content": "text"}]
+  "summaries": [{"Title": "Summary", "content": "text"}],
+  "output_format": "pdf"
 }
 ```
 

@@ -1,6 +1,6 @@
 # Summarization Step Function Workflow
 
-This document describes the multi-step AWS Step Functions state machine that orchestrates the summarization pipeline. The workflow ingests a document, runs a series of prompts in parallel, and generates a merged PDF containing the summaries and original file.
+This document describes the multi-step AWS Step Functions state machine that orchestrates the summarization pipeline. The workflow ingests a document, runs a series of prompts in parallel, and generates a summary file that can be PDF, DOCX, JSON or XML, optionally merging PDF or DOCX output with the original document.
 
 ## Map State
 
@@ -47,7 +47,7 @@ The Step Function expects a list of prompt objects under `body.prompts` when the
 
 ## Role of `file-summary-lambda`
 
-Previously this Lambda generated the summaries itself. The revised workflow delegates summarization to the `run_prompts` `Map` state. `file-summary-lambda` now receives the pre-generated summaries, builds a summary PDF, and uploads the merged file back to S3.
+Previously this Lambda generated the summaries itself. The revised workflow delegates summarization to the `run_prompts` `Map` state. `file-summary-lambda` now receives the pre-generated summaries, formats them according to an optional `output_format` field (PDF, DOCX, JSON or XML), and uploads the resulting file back to S3.
 
 ## Prompt Engine Integration
 
