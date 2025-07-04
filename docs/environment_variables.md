@@ -85,6 +85,8 @@ Each service loads its configuration from Parameter Store or the Lambda environm
 - `STATE_MACHINE_ARN` – ARN of the main ingestion workflow.
 - `SUMMARY_QUEUE_URL` – queue URL consumed by the query Lambda.
 - `KNOWLEDGE_BASE_NAME` – optional name tag.
+- `DELETE_AFTER_DAYS` – retention days for source files tagged `pending-delete=true`.
+- `CLEANUP_BUCKETS` – comma separated list of buckets scanned by the cleanup Lambda.
 
 ### Sensitive Info Detection
 

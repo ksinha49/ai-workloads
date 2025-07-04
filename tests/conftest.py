@@ -13,6 +13,7 @@ class DummyS3:
     def __init__(self):
         self.objects = {}
         self.tags = {}
+        self.last_modified = {}
 
     def get_object(self, Bucket, Key):
         data = self.objects.get((Bucket, Key), b"")
@@ -25,7 +26,9 @@ class DummyS3:
             data = Body
         if isinstance(data, str):
             data = data.encode("utf-8")
+        import datetime
         self.objects[(Bucket, Key)] = data
+        self.last_modified[(Bucket, Key)] = datetime.datetime.utcnow()
         return {}
 
     def head_object(self, Bucket, Key):
@@ -38,12 +41,31 @@ class DummyS3:
 
     def copy_object(self, Bucket=None, Key=None, CopySource=None):
         src = (CopySource["Bucket"], CopySource["Key"])
+        import datetime
         self.objects[(Bucket, Key)] = self.objects.get(src, b"")
+        self.last_modified[(Bucket, Key)] = datetime.datetime.utcnow()
         return {}
 
     def delete_object(self, Bucket, Key):
         self.objects.pop((Bucket, Key), None)
+        self.tags.pop((Bucket, Key), None)
+        self.last_modified.pop((Bucket, Key), None)
         return {}
+
+    def put_object_tagging(self, Bucket, Key, Tagging):
+        tagset = Tagging.get("TagSet", [])
+        self.tags.setdefault((Bucket, Key), {})
+        for tag in tagset:
+            self.tags[(Bucket, Key)][tag["Key"]] = tag["Value"]
+        return {}
+
+    def list_objects_v2(self, Bucket, ContinuationToken=None):
+        keys = [k for (b, k) in self.objects.keys() if b == Bucket]
+        contents = [
+            {"Key": k, "LastModified": self.last_modified.get((Bucket, k))}
+            for k in keys
+        ]
+        return {"Contents": contents, "IsTruncated": False}
 
     def get_object_tagging(self, Bucket, Key):
         tagset = [

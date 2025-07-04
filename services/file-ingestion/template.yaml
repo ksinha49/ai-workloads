@@ -59,6 +59,16 @@ Parameters:
     Default: 200
     Description: Delay between polling for file processing status
 
+  DeleteAfterDays:
+    Type: Number
+    Default: 1
+    Description: Days to retain source objects tagged pending-delete
+
+  CleanupBuckets:
+    Type: String
+    Default: ''
+    Description: Comma separated list of buckets to scan for pending deletes
+
 Resources:
   FileProcessingLambdaLayer:
     Type: AWS::Serverless::LayerVersion
@@ -174,6 +184,37 @@ Resources:
               - s3:GetObject
             Resource: !Sub 'arn:aws:s3:::${IDPBucketName}/*'
 
+  PendingDeleteCleanupFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub '${AWSAccountName}-${AWS::StackName}-pending-delete-cleanup'
+      Handler: app.lambda_handler
+      Runtime: python3.13
+      CodeUri: ./pending-delete-cleanup-lambda/
+      Role: !Ref LambdaIAMRoleARN
+      MemorySize: 256
+      Timeout: 300
+      Environment:
+        Variables:
+          CLEANUP_BUCKETS: !Ref CleanupBuckets
+          DELETE_AFTER_DAYS: !Ref DeleteAfterDays
+
+  PendingDeleteCleanupSchedule:
+    Type: AWS::Events::Rule
+    Properties:
+      ScheduleExpression: rate(1 day)
+      Targets:
+        - Arn: !GetAtt PendingDeleteCleanupFunction.Arn
+          Id: cleanup
+
+  PendingDeleteCleanupPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt PendingDeleteCleanupFunction.Arn
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt PendingDeleteCleanupSchedule.Arn
+
   DocumentAuditDynamoPolicy:
     Type: AWS::IAM::Policy
     Properties:
@@ -189,6 +230,27 @@ Resources:
               - dynamodb:UpdateItem
               - dynamodb:GetItem
             Resource: !GetAtt DocumentAuditTable.Arn
+
+  PendingDeleteCleanupPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Sub '${AWSAccountName}-${AWS::StackName}-pending-delete-cleanup'
+      Roles:
+        - !Select [1, !Split ['/', !Ref LambdaIAMRoleARN]]
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - s3:ListBucket
+            Resource: !Sub 'arn:aws:s3:::*'
+          - Effect: Allow
+            Action:
+              - s3:GetObjectTagging
+              - s3:DeleteObject
+              - s3:ListBucket
+              - s3:GetObject
+            Resource: !Sub 'arn:aws:s3:::*/*'
 
   FileIngestionSFInvokePolicy:
     Type: AWS::IAM::Policy
@@ -287,3 +349,6 @@ Outputs:
   DocumentAuditTableName:
     Description: Name of the document audit table
     Value: !Ref DocumentAuditTable
+  PendingDeleteCleanupLambdaArn:
+    Description: ARN of the pending delete cleanup Lambda
+    Value: !GetAtt PendingDeleteCleanupFunction.Arn
