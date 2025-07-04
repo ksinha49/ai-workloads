@@ -22,6 +22,10 @@ TOP_K = int(get_config("TOP_K") or os.environ.get("TOP_K", "5"))
 DEFAULT_MODEL = get_config("CROSS_ENCODER_MODEL") or os.environ.get(
     "CROSS_ENCODER_MODEL", "cross-encoder/ms-marco-MiniLM-L-6-v2"
 )
+# Optional EFS path to load the cross encoder without downloading from S3
+EFS_MODEL_PATH = get_config("CROSS_ENCODER_EFS_PATH") or os.environ.get(
+    "CROSS_ENCODER_EFS_PATH"
+)
 # RERANK_PROVIDER selects the rerank provider (e.g. cohere, nvidia).
 DEFAULT_PROVIDER = (
     get_config("RERANK_PROVIDER") or os.environ.get("RERANK_PROVIDER", "huggingface")
@@ -88,7 +92,7 @@ def _load_model():
     global _CE_MODEL
     if _CE_MODEL is not None:
         return _CE_MODEL
-    model_path = DEFAULT_MODEL
+    model_path = EFS_MODEL_PATH or DEFAULT_MODEL
     try:
         if model_path.startswith("s3://"):
             import boto3

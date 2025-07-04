@@ -30,11 +30,34 @@ The retrieval logic calls the search Lambda defined by the `VECTOR_SEARCH_FUNCTI
 - `OPENAI_EMBED_MODEL` – embedding model name for OpenAI.
  - `COHERE_SECRET_NAME` – name or ARN of the Cohere API key secret.
 - `CROSS_ENCODER_MODEL` – model name or S3 path for the cross-encoder.
+- `CROSS_ENCODER_EFS_PATH` – local path to load the cross encoder from an
+  attached EFS volume.
 - `RERANK_PROVIDER` – rerank provider (`huggingface`, `cohere` or `nvidia`).
 - `NVIDIA_SECRET_NAME` – name or ARN of the NVIDIA API key secret.
 - `VECTOR_SEARCH_CANDIDATES` – number of candidates retrieved before re-ranking.
 
 Values can be stored in Parameter Store and loaded with the shared `get_config` helper.
+
+## Mounting an EFS access point
+
+To keep the cross encoder available between invocations, mount an EFS
+access point to the re-rank Lambda and point `CROSS_ENCODER_EFS_PATH`
+to the model on that file system.
+
+1. Create an EFS file system and access point.
+2. Add a `FileSystemConfigs` block to `RerankFunction` in
+   `template.yaml`:
+
+   ```yaml
+   RerankFunction:
+     Type: AWS::Serverless::Function
+     Properties:
+       FileSystemConfigs:
+         - Arn: arn:aws:elasticfilesystem:<region>:<account-id>:access-point/<ap-id>
+           LocalMountPath: /mnt/models
+   ```
+3. Copy the cross encoder to `/mnt/models` and set
+   `CROSS_ENCODER_EFS_PATH` accordingly.
 
 ## Deployment
 
