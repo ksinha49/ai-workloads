@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.12] - 2025-07-04
+### Added
+- Dockerfiles and `docker-compose.yml` files for each service.
+- Docker Compose workflow (`docker-compose.ecr.yml`) and `push_ecr.sh` script to build and push images to ECR.
+- `deploy_lambda_image.sh` helper for updating Lambda functions with container images.
+- Support for loading dependencies and models from EFS using `EFS_DEPENDENCY_PATH` and `MODEL_EFS_PATH`.
+
+### Changed
+- Service Dockerfiles now target Python 3.13.
+- Documentation expanded for ECR deployment and EFS configuration.
+
 ## [1.0.11] - 2025-07-04
 ### Added
 - Lightweight `BaseModel` for event validation in `common_utils.pydantic`.
