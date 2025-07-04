@@ -33,6 +33,9 @@ Parameters:
   PromptComplexityThreshold:
     Type: String
     Default: '20'
+  ClassifierModelId:
+    Type: String
+    Default: ''
   LlmInvocationFunctionName:
     Type: String
     Default: ''
@@ -122,6 +125,7 @@ Resources:
         OllamaEndpoint: !Ref OllamaEndpoint
         OllamaDefaultModel: !Ref OllamaDefaultModel
         PromptComplexityThreshold: !Ref PromptComplexityThreshold
+        ClassifierModelId: !Ref ClassifierModelId
         LlmInvocationFunctionName: !GetAtt LLMInvocationService.Outputs.InvokeLLMLambdaArn
 
   KnowledgeBaseService:

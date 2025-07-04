@@ -264,6 +264,12 @@ class HeuristicRouter:
 
     def try_route(self, event: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """Attempt to route ``event`` and return enriched event on success."""
+
+        # When a classifier model is configured we skip the heuristic router so
+        # :class:`PredictiveRouter` can decide based on model output.
+        if os.environ.get("CLASSIFIER_MODEL_ID"):
+            return None
+
         prompt = _prompt_text(event)
         if not prompt:
             return None

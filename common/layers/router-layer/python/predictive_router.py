@@ -67,13 +67,17 @@ class PredictiveRouter:
         """Create a Lambda client and read model identifiers from the environment."""
 
         self.lambda_client = boto3.client("lambda")
+        self.classifier_model_id = os.environ.get("CLASSIFIER_MODEL_ID") or os.environ.get(
+            "WEAK_MODEL_ID"
+        )
         self.weak_model_id = os.environ.get("WEAK_MODEL_ID")
         self.strong_model_id = os.environ.get("STRONG_MODEL_ID")
 
     def _classify_prompt(self, prompt: str) -> str:
-        """Return ``'simple'`` or ``'complex'`` for *prompt* using the weak model."""
+        """Return ``'simple'`` or ``'complex'`` for *prompt* using the classifier model."""
 
-        return invoke_classifier(self.lambda_client, self.weak_model_id, prompt)
+        model_id = self.classifier_model_id or self.weak_model_id
+        return invoke_classifier(self.lambda_client, model_id, prompt)
 
     def try_route(self, event: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """Return a routing decision for *event* or ``None`` when undecidable."""
