@@ -55,7 +55,9 @@ def _cohere_rerank(query: str, docs: List[str]) -> List[float]:
 
     import cohere  # type: ignore
 
-    secret = os.environ.get("COHERE_SECRET_NAME", "COHERE_API_KEY")
+    secret = get_config("COHERE_SECRET_NAME") or os.environ.get(
+        "COHERE_SECRET_NAME", "COHERE_API_KEY"
+    )
     api_key = get_secret(secret)
     client = cohere.Client(api_key)
     try:
@@ -71,8 +73,12 @@ def _nvidia_rerank(query: str, docs: List[str]) -> List[float]:
 
     import httpx  # type: ignore
 
-    endpoint = os.environ.get("NVIDIA_RERANK_ENDPOINT")
-    n_secret = os.environ.get("NVIDIA_SECRET_NAME", "NVIDIA_API_KEY")
+    endpoint = get_config("NVIDIA_RERANK_ENDPOINT") or os.environ.get(
+        "NVIDIA_RERANK_ENDPOINT"
+    )
+    n_secret = get_config("NVIDIA_SECRET_NAME") or os.environ.get(
+        "NVIDIA_SECRET_NAME", "NVIDIA_API_KEY"
+    )
     api_key = get_secret(n_secret)
     headers = {"Authorization": f"Bearer {api_key}"} if api_key else None
     payload = {"query": query, "documents": docs}

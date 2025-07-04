@@ -24,7 +24,9 @@ __modified_by__ = "Koushik Sinha"
 
 logger = configure_logger(__name__)
 
-RERAISE_ERRORS = os.environ.get("RERAISE_ERRORS", "false").lower() == "true"
+RERAISE_ERRORS = (
+    get_config("RERAISE_ERRORS") or os.environ.get("RERAISE_ERRORS", "false")
+).lower() == "true"
 
 LAMBDA_FUNCTION = get_config("VECTOR_SEARCH_FUNCTION") or os.environ.get("VECTOR_SEARCH_FUNCTION")
 ENTITIES_ENDPOINT = get_config("ENTITIES_ENDPOINT") or os.environ.get("ENTITIES_ENDPOINT")

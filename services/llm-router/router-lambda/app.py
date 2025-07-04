@@ -30,17 +30,20 @@ __modified_by__ = "Koushik Sinha"
 
 logger = configure_logger(__name__)
 
-INVOCATION_QUEUE_URL = os.environ.get("INVOCATION_QUEUE_URL")
+INVOCATION_QUEUE_URL = get_config("INVOCATION_QUEUE_URL") or os.environ.get(
+    "INVOCATION_QUEUE_URL"
+)
 sqs_client = boto3.client("sqs")
 
 DEFAULT_PROMPT_COMPLEXITY_THRESHOLD = 20
 PROMPT_COMPLEXITY_THRESHOLD = int(
-    os.environ.get("PROMPT_COMPLEXITY_THRESHOLD", str(DEFAULT_PROMPT_COMPLEXITY_THRESHOLD))
+    get_config("PROMPT_COMPLEXITY_THRESHOLD")
+    or os.environ.get("PROMPT_COMPLEXITY_THRESHOLD", str(DEFAULT_PROMPT_COMPLEXITY_THRESHOLD))
 )
 
 # allowlist of permitted backends
 DEFAULT_ALLOWED_BACKENDS = {"bedrock", "ollama"}
-_raw_backends = os.environ.get("ALLOWED_BACKENDS")
+_raw_backends = get_config("ALLOWED_BACKENDS") or os.environ.get("ALLOWED_BACKENDS")
 if not _raw_backends:
     try:  # pragma: no cover - SSM may be unavailable in tests
         _raw_backends = get_config("ALLOWED_BACKENDS")
@@ -52,7 +55,7 @@ if _raw_backends:
 else:
     ALLOWED_BACKENDS = DEFAULT_ALLOWED_BACKENDS
 # maximum prompt length accepted by the router
-MAX_PROMPT_LENGTH = int(os.environ.get("MAX_PROMPT_LENGTH", "4096"))
+MAX_PROMPT_LENGTH = int(get_config("MAX_PROMPT_LENGTH") or os.environ.get("MAX_PROMPT_LENGTH", "4096"))
 
 
 def _sanitize_payload(payload: Dict[str, Any]) -> Dict[str, Any]:

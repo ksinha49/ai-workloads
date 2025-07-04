@@ -1,6 +1,6 @@
 # Environment Variables
 
-Each service loads its configuration from Parameter Store or the Lambda environment. The table below summarises the most common variables.
+Each service loads its configuration from Parameter Store or the Lambda environment. Values are retrieved using the ``get_config`` helper so every variable may be supplied via SSM under the environment prefix. The table below summarises the most common variables.
 
 ### Core services
 
