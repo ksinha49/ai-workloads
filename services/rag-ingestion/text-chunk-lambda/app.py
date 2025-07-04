@@ -52,12 +52,47 @@ EXTRACT_ENTITIES = (
 
 
 def chunk_text(text: str, chunk_size: int, overlap: int) -> List[str]:
-    """Split ``text`` using ``chunk_size`` and ``overlap``."""
+    """Split ``text`` into chunks using paragraph and sentence boundaries.
 
+    ``overlap`` only applies when a single sentence exceeds ``chunk_size`` and we
+    fall back to character-based splitting.
+    """
+
+    import re
+
+    # Break text into paragraphs based on blank lines
+    paragraphs = [p.strip() for p in re.split(r"\n\s*\n", text) if p.strip()]
     step = chunk_size - overlap
     if step <= 0:
         step = chunk_size
-    return [text[i : i + chunk_size] for i in range(0, len(text), step)]
+
+    chunks: List[str] = []
+    for para in paragraphs:
+        current = ""
+        # Split paragraph into sentences. This is a heuristic but avoids an
+        # external dependency.
+        sentences = [s.strip() for s in re.split(r"(?<=[.!?])\s+", para) if s.strip()]
+        for s in sentences:
+            if len(s) > chunk_size:
+                # Flush any accumulated chunk before falling back to character
+                # based splitting for very long sentences.
+                if current:
+                    chunks.append(current)
+                    current = ""
+                for i in range(0, len(s), step):
+                    chunks.append(s[i : i + chunk_size])
+                continue
+
+            if not current:
+                current = s
+            elif len(current) + len(s) + 1 <= chunk_size:
+                current = f"{current} {s}"
+            else:
+                chunks.append(current)
+                current = s
+        if current:
+            chunks.append(current)
+    return chunks
 
 
 def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
