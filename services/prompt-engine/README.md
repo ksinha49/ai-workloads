@@ -62,3 +62,12 @@ Send a payload containing the desired `prompt_id` and variables to render:
 The summarization workflow can also provide `prompt_id` and `variables` for each
 entry in `body.prompts`. The worker Lambda forwards this data to the prompt
 engine before generating the summary.
+
+## Local testing
+
+Build and run with Docker Compose:
+
+```bash
+docker compose build
+docker compose up
+```

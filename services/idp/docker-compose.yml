@@ -1,0 +1,11 @@
+version: '3.8'
+services:
+  app:
+    build:
+      context: ../..
+      dockerfile: services/idp/Dockerfile
+    environment:
+      BUCKET_NAME: data-bucket
+      OCR_ENGINE: easyocr
+    ports:
+      - "9003:8080"

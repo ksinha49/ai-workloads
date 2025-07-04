@@ -1,0 +1,10 @@
+version: '3.8'
+services:
+  app:
+    build:
+      context: ../..
+      dockerfile: services/llm-invocation/Dockerfile
+    environment:
+      BEDROCK_OPENAI_ENDPOINTS: http://localhost
+    ports:
+      - "9005:8080"

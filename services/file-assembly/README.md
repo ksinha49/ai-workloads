@@ -24,3 +24,12 @@ sam deploy \
   --template-file services/file-assembly/template.yaml \
   --stack-name file-assembly
 ```
+
+## Local testing
+
+Build and run with Docker Compose:
+
+```bash
+docker compose build
+docker compose up
+```

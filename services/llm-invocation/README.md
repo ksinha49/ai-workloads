@@ -50,3 +50,12 @@ aws lambda invoke \
 ```
 
 If `system_prompt` is provided it will be sent as the system message to the backend.
+
+## Local testing
+
+Build and run with Docker Compose:
+
+```bash
+docker compose build
+docker compose up
+```

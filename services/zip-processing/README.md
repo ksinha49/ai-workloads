@@ -51,3 +51,12 @@ sam deploy \
     FileProcessingStepFunctionIAMRole=<role-arn> \
     FileProcessingEmailId=<email>
 ```
+
+## Local testing
+
+Build and run with Docker Compose:
+
+```bash
+docker compose build
+docker compose up
+```

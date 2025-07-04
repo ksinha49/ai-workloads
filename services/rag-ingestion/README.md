@@ -54,3 +54,12 @@ sam deploy \
 ```
 
 The outputs include the ARNs of `text-chunk-lambda`, `embed-lambda` and the `IngestionStateMachine` for use in other stacks.
+
+## Local testing
+
+Build and run with Docker Compose:
+
+```bash
+docker compose build
+docker compose up
+```

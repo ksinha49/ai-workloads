@@ -79,3 +79,12 @@ The heuristic strategy is implemented by the `HeuristicRouter` module in the
 shared layer.  By default it chooses Bedrock once the prompt length exceeds
 `PROMPT_COMPLEXITY_THRESHOLD` words. Additional rules can be supplied via the
 `HEURISTIC_ROUTER_CONFIG` environment variable.
+
+## Local testing
+
+Build and run with Docker Compose:
+
+```bash
+docker compose build
+docker compose up
+```
