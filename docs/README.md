@@ -6,6 +6,7 @@ This directory contains guides and reference material for the services in this r
 - [router_configuration.md](router_configuration.md) – LLM router parameters and heuristics.
 - [summarization_workflow.md](summarization_workflow.md) – details of the summarization Step Function.
 - [file_ingestion_workflow.md](file_ingestion_workflow.md) – how uploaded files are prepared before ingestion.
+- [rag_ingestion_workflow.md](rag_ingestion_workflow.md) – details of the ingestion Step Function.
 - [prompt_engine.md](prompt_engine.md) – how prompts are stored and rendered.
 - [knowledge_rag_usage.md](knowledge_rag_usage.md) – ingesting and querying the knowledge base.
 - [rag_architecture.md](rag_architecture.md) – how ingestion, retrieval and summarization services interact.
