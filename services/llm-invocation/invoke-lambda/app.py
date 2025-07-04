@@ -11,7 +11,7 @@ routing strategies can delegate all model interactions here.
 from __future__ import annotations
 
 import logging
-from common_utils import configure_logger
+from common_utils import configure_logger, lambda_response
 from typing import Any, Dict
 from models import LlmInvocationEvent, LambdaResponse
 
@@ -30,11 +30,6 @@ __version__ = "1.0.0"
 __modified_by__ = "Koushik Sinha"
 
 logger = configure_logger(__name__)
-
-
-def _response(status: int, body: dict) -> dict:
-    """Helper to build a consistent Lambda response."""
-    return {"statusCode": status, "body": body}
 
 
 
@@ -88,7 +83,7 @@ def _process_event(event: LlmInvocationEvent) -> LambdaResponse:
         logger.error(
             "LLM request failed [%d]: %s", exc.response.status_code, exc.response.text
         )
-        return _response(
+        return lambda_response(
             500,
             {
                 "error": f"{exc.response.status_code}: {exc.response.text}",
@@ -96,7 +91,7 @@ def _process_event(event: LlmInvocationEvent) -> LambdaResponse:
         )
     except Exception as exc:  # pragma: no cover - unexpected failures
         logger.exception("Unexpected error in llm invocation")
-        return _response(500, {"error": str(exc)})
+        return lambda_response(500, {"error": str(exc)})
 
 
 def lambda_handler(event: LlmInvocationEvent, context: Any) -> Any:

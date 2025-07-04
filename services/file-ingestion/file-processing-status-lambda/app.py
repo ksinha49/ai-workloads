@@ -16,7 +16,7 @@ Modified By: Koushik Sinha
 from __future__ import annotations
 import boto3
 import logging
-from common_utils import configure_logger
+from common_utils import configure_logger, lambda_response
 import os
 from models import ProcessingStatusEvent
 from common_utils.get_ssm import (
@@ -72,9 +72,6 @@ def check_file_processing_status(event: ProcessingStatusEvent, context) -> dict:
     return event_body
 
 
-def _response(status: int, body: dict) -> dict:
-    """Helper to build a consistent Lambda response."""
-    return {"statusCode": status, "body": body}
 
 
 def lambda_handler(event: ProcessingStatusEvent | dict, context) -> dict:
@@ -94,10 +91,10 @@ def lambda_handler(event: ProcessingStatusEvent | dict, context) -> dict:
                 event = ProcessingStatusEvent.from_dict(event)
             except ValueError as exc:
                 logger.exception("Invalid request to lambda_handler")
-                return _response(400, {"statusMessage": str(exc)})
+                return lambda_response(400, {"statusMessage": str(exc)})
         body = check_file_processing_status(event, context)
         logger.info("Returning final response: %s", body)
-        return _response(200, body)
+        return lambda_response(200, body)
     except Exception as e:
         logger.exception("lambda_handler failed")
-        return _response(500, {"statusMessage": str(e)})
+        return lambda_response(500, {"statusMessage": str(e)})

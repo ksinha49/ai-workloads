@@ -20,7 +20,7 @@ Modified By: Koushik Sinha
 from __future__ import annotations
 import json
 import logging
-from common_utils import configure_logger
+from common_utils import configure_logger, lambda_response
 import os
 import boto3
 from PyPDF2 import PdfReader, PdfWriter
@@ -152,9 +152,6 @@ def merge_pdfs(summary_file_content: bytes, organic_file_content: bytes) -> Opti
         raise ValueError(f"Failed to merge PDFs")
 
 
-def _response(status: int, body: dict) -> dict:
-    """Helper to build a consistent Lambda response."""
-    return {"statusCode": status, "body": body}
 
 
 def lambda_handler(event: FileAssemblyEvent, context) -> LambdaResponse:
@@ -178,8 +175,8 @@ def lambda_handler(event: FileAssemblyEvent, context) -> LambdaResponse:
     logger.info("Starting Lambda function...")
     try:
         final_response = assemble_files(event, context, s3_client)
-        return _response(200, final_response)
+        return lambda_response(200, final_response)
     except Exception as e:
         logger.error("Error in Lambda handler: %s", str(e))
         response_body = f"Error occurred: {str(e)}"
-        return _response(500, {"error": response_body})
+        return lambda_response(500, {"error": response_body})
