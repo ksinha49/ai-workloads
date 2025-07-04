@@ -1,14 +1,14 @@
 # Text Anonymization Service
 
-This service provides a Lambda function for anonymising text based on a list of entities.
-Depending on configuration the function can mask entity spans, replace them with
-synthetic values or call the tokenisation service.
+This service provides a Lambda for removing sensitive information from text using masking, pseudonyms or tokenization.
 
-- **Lambda**: `anonymize-text-lambda/app.py`
+## Lambda
 
-## Environment variables
+- **anonymize-text-lambda/app.py** – anonymizes text based on entity spans.
 
-`template.yaml` exposes the following variables used by the Lambda:
+## Parameters and environment variables
+
+`template.yaml` exposes a few parameters which become environment variables for the Lambda:
 
 | Parameter | Environment variable | Description |
 |-----------|----------------------|-------------|
@@ -16,11 +16,38 @@ synthetic values or call the tokenisation service.
 | `TokenApiUrl` | `TOKEN_API_URL` | URL of the tokenization Lambda when using token mode. |
 | `AnonymizationTimeout` | `ANON_TIMEOUT` | Seconds before falling back to `[REMOVED]`. |
 
+## Example
+
+Request body:
+
+```json
+{
+  "text": "John works at Acme.",
+  "entities": [
+    {"text": "John", "type": "PERSON", "start": 0, "end": 4},
+    {"text": "Acme", "type": "ORG", "start": 15, "end": 19}
+  ]
+}
+```
+
+Example response when using pseudonym mode:
+
+```json
+{
+  "text": "Jane Doe works at Widget Corp.",
+  "replacements": [
+    {"text": "John", "type": "PERSON", "start": 0, "end": 4, "replacement": "Jane Doe"},
+    {"text": "Acme", "type": "ORG", "start": 15, "end": 19, "replacement": "Widget Corp"}
+  ]
+}
+```
+
 ## Deployment
 
-Deploy with SAM using the included template:
+Deploy the stack with SAM:
 
 ```bash
 sam deploy --template-file services/text-anonymization/template.yaml --stack-name text-anonymization
 ```
 
+The stack exports `AnonymizeTextFunctionArn` for use by other services.
