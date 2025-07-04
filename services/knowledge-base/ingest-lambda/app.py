@@ -6,6 +6,7 @@ import json
 import os
 import logging
 from common_utils import configure_logger
+from common_utils.get_ssm import get_config
 import boto3
 from botocore.exceptions import ClientError
 
@@ -16,12 +17,15 @@ __modified_by__ = "Koushik Sinha"
 
 logger = configure_logger(__name__)
 
-STATE_MACHINE_ARN = os.environ.get("STATE_MACHINE_ARN")
+STATE_MACHINE_ARN = get_config("STATE_MACHINE_ARN") or os.environ.get(
+    "STATE_MACHINE_ARN"
+)
 if not STATE_MACHINE_ARN:
     raise RuntimeError("STATE_MACHINE_ARN not configured")
 
-FILE_INGESTION_STATE_MACHINE_ARN = os.environ.get(
-    "FILE_INGESTION_STATE_MACHINE_ARN"
+FILE_INGESTION_STATE_MACHINE_ARN = (
+    get_config("FILE_INGESTION_STATE_MACHINE_ARN")
+    or os.environ.get("FILE_INGESTION_STATE_MACHINE_ARN")
 )
 if not FILE_INGESTION_STATE_MACHINE_ARN:
     raise RuntimeError("FILE_INGESTION_STATE_MACHINE_ARN not configured")

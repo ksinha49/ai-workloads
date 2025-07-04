@@ -85,7 +85,9 @@ def _cohere_embed(text: str) -> list[float]:
 
     import cohere  # type: ignore
 
-    secret = os.environ.get("COHERE_SECRET_NAME", "COHERE_API_KEY")
+    secret = get_config("COHERE_SECRET_NAME") or os.environ.get(
+        "COHERE_SECRET_NAME", "COHERE_API_KEY"
+    )
     api_key = get_secret(secret)
     client = cohere.Client(api_key)
     resp = client.embed([text])

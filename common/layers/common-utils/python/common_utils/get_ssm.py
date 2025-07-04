@@ -63,6 +63,9 @@ def get_config(name: str, bucket: str | None = None, key: str | None = None,
         except Exception as exc:  # pragma: no cover - fallback to SSM
             logger.warning("Tag lookup failed for %s/%s: %s", bucket, key, exc)
 
-    param_name = f"{get_environment_prefix()}/{name}"
-    return get_values_from_ssm(param_name, decrypt)
+    try:
+        param_name = f"{get_environment_prefix()}/{name}"
+        return get_values_from_ssm(param_name, decrypt)
+    except Exception:
+        return None
 

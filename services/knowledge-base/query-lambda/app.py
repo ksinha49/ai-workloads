@@ -10,6 +10,7 @@ import json
 import os
 import logging
 from common_utils import configure_logger
+from common_utils.get_ssm import get_config
 import boto3
 from botocore.exceptions import ClientError
 
@@ -32,7 +33,7 @@ def lambda_handler(event: dict, context: object) -> dict:
     Returns whether the request was queued successfully.
     """
 
-    queue_url = os.environ.get("SUMMARY_QUEUE_URL")
+    queue_url = get_config("SUMMARY_QUEUE_URL") or os.environ.get("SUMMARY_QUEUE_URL")
     if not queue_url:
         logger.error("SUMMARY_QUEUE_URL not configured")
         return {"error": "SUMMARY_QUEUE_URL not configured"}

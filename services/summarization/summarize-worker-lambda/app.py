@@ -8,14 +8,19 @@ from typing import Any, Dict
 
 import boto3
 from common_utils import configure_logger
+from common_utils.get_ssm import get_config
 
 logger = configure_logger(__name__)
 
 lambda_client = boto3.client("lambda")
 sf_client = boto3.client("stepfunctions")
 
-SUMMARY_FUNCTION_ARN = os.environ.get("RAG_SUMMARY_FUNCTION_ARN")
-PROMPT_ENGINE_ENDPOINT = os.environ.get("PROMPT_ENGINE_ENDPOINT")
+SUMMARY_FUNCTION_ARN = (
+    get_config("RAG_SUMMARY_FUNCTION_ARN") or os.environ.get("RAG_SUMMARY_FUNCTION_ARN")
+)
+PROMPT_ENGINE_ENDPOINT = get_config("PROMPT_ENGINE_ENDPOINT") or os.environ.get(
+    "PROMPT_ENGINE_ENDPOINT"
+)
 
 
 def _process_record(record: Dict[str, Any]) -> None:

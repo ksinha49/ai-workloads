@@ -9,12 +9,13 @@ from typing import Any, Dict
 
 import boto3
 from common_utils import configure_logger
+from common_utils.get_ssm import get_config
 
 logger = configure_logger(__name__)
 
-TABLE_NAME = os.environ.get("TOKEN_TABLE")
-PREFIX = os.environ.get("TOKEN_PREFIX", "ent_")
-SALT = os.environ.get("TOKEN_SALT", "")
+TABLE_NAME = get_config("TOKEN_TABLE") or os.environ.get("TOKEN_TABLE")
+PREFIX = get_config("TOKEN_PREFIX") or os.environ.get("TOKEN_PREFIX", "ent_")
+SALT = get_config("TOKEN_SALT") or os.environ.get("TOKEN_SALT", "")
 
 _dynamo = boto3.resource("dynamodb")
 _table = _dynamo.Table(TABLE_NAME)

@@ -11,6 +11,7 @@ import os
 from typing import Any, Iterable, List, Optional
 
 from common_utils import configure_logger
+from common_utils.get_ssm import get_config
 
 logger = configure_logger(__name__)
 
@@ -30,8 +31,16 @@ class ElasticsearchClient:
         ``ELASTICSEARCH_INDEX_PREFIX`` environment variables respectively.
         """
 
-        self.url = url or os.environ.get("ELASTICSEARCH_URL", "http://localhost:9200")
-        self.index_prefix = index_prefix or os.environ.get("ELASTICSEARCH_INDEX_PREFIX", "docs")
+        self.url = (
+            url
+            or get_config("ELASTICSEARCH_URL")
+            or os.environ.get("ELASTICSEARCH_URL", "http://localhost:9200")
+        )
+        self.index_prefix = (
+            index_prefix
+            or get_config("ELASTICSEARCH_INDEX_PREFIX")
+            or os.environ.get("ELASTICSEARCH_INDEX_PREFIX", "docs")
+        )
 
         if Elasticsearch is None:  # pragma: no cover - imported module missing
             raise ImportError("elasticsearch package is required to use ElasticsearchClient")

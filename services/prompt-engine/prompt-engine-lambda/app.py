@@ -14,6 +14,7 @@ from typing import Any, Dict
 import boto3
 from boto3.dynamodb.conditions import Attr
 from common_utils import configure_logger
+from common_utils.get_ssm import get_config
 
 # Module Metadata
 __author__ = "Koushik Sinha"
@@ -22,8 +23,10 @@ __modified_by__ = "Koushik Sinha"
 
 logger = configure_logger(__name__)
 
-PROMPT_LIBRARY_TABLE = os.environ.get("PROMPT_LIBRARY_TABLE")
-ROUTER_ENDPOINT = os.environ.get("ROUTER_ENDPOINT")
+PROMPT_LIBRARY_TABLE = get_config("PROMPT_LIBRARY_TABLE") or os.environ.get(
+    "PROMPT_LIBRARY_TABLE"
+)
+ROUTER_ENDPOINT = get_config("ROUTER_ENDPOINT") or os.environ.get("ROUTER_ENDPOINT")
 
 _dynamo = boto3.resource("dynamodb")
 _table = _dynamo.Table(PROMPT_LIBRARY_TABLE)

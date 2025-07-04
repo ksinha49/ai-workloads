@@ -22,6 +22,7 @@ import re
 from typing import Any, Dict, List, Tuple
 
 from common_utils import configure_logger
+from common_utils.get_ssm import get_config
 
 # ─── Logging Configuration ────────────────────────────────────────────────────
 logger = configure_logger(__name__)
@@ -43,12 +44,16 @@ def _load_model() -> Tuple[str, Any] | None:
     if _MODEL is not None:
         return _MODEL
 
-    library = os.environ.get("NER_LIBRARY", "spacy").lower()
+    library = (
+        get_config("NER_LIBRARY") or os.environ.get("NER_LIBRARY", "spacy")
+    ).lower()
     if library == "spacy":
         try:  # pragma: no cover - optional dependency
             import spacy  # type: ignore
 
-            model_name = os.environ.get("SPACY_MODEL", "en_core_web_sm")
+            model_name = get_config("SPACY_MODEL") or os.environ.get(
+                "SPACY_MODEL", "en_core_web_sm"
+            )
             _MODEL = ("spacy", spacy.load(model_name))
         except Exception as exc:  # pragma: no cover - runtime safety
             logger.exception("Failed to load spaCy model: %s", exc)
@@ -57,7 +62,9 @@ def _load_model() -> Tuple[str, Any] | None:
         try:  # pragma: no cover - optional dependency
             from transformers import pipeline  # type: ignore
 
-            model_name = os.environ.get("HF_MODEL", "dslim/bert-base-NER")
+            model_name = get_config("HF_MODEL") or os.environ.get(
+                "HF_MODEL", "dslim/bert-base-NER"
+            )
             _MODEL = (
                 "hf",
                 pipeline(
@@ -79,13 +86,18 @@ def _load_medical_model() -> Tuple[str, Any] | None:
     if _MEDICAL_MODEL is not None:
         return _MEDICAL_MODEL
 
-    library = os.environ.get("NER_LIBRARY", "spacy").lower()
+    library = (
+        get_config("NER_LIBRARY") or os.environ.get("NER_LIBRARY", "spacy")
+    ).lower()
     if library == "spacy":
         try:  # pragma: no cover - optional dependency
             import spacy  # type: ignore
 
-            model_name = os.environ.get(
-                "MEDICAL_MODEL", os.environ.get("SPACY_MODEL", "en_core_web_sm")
+            model_name = (
+                get_config("MEDICAL_MODEL")
+                or os.environ.get("MEDICAL_MODEL")
+                or get_config("SPACY_MODEL")
+                or os.environ.get("SPACY_MODEL", "en_core_web_sm")
             )
             _MEDICAL_MODEL = ("spacy", spacy.load(model_name))
         except Exception as exc:  # pragma: no cover - runtime safety
@@ -95,8 +107,11 @@ def _load_medical_model() -> Tuple[str, Any] | None:
         try:  # pragma: no cover - optional dependency
             from transformers import pipeline  # type: ignore
 
-            model_name = os.environ.get(
-                "MEDICAL_MODEL", os.environ.get("HF_MODEL", "dslim/bert-base-NER")
+            model_name = (
+                get_config("MEDICAL_MODEL")
+                or os.environ.get("MEDICAL_MODEL")
+                or get_config("HF_MODEL")
+                or os.environ.get("HF_MODEL", "dslim/bert-base-NER")
             )
             _MEDICAL_MODEL = (
                 "hf",
@@ -119,13 +134,18 @@ def _load_legal_model() -> Tuple[str, Any] | None:
     if _LEGAL_MODEL is not None:
         return _LEGAL_MODEL
 
-    library = os.environ.get("NER_LIBRARY", "spacy").lower()
+    library = (
+        get_config("NER_LIBRARY") or os.environ.get("NER_LIBRARY", "spacy")
+    ).lower()
     if library == "spacy":
         try:  # pragma: no cover - optional dependency
             import spacy  # type: ignore
 
-            model_name = os.environ.get(
-                "LEGAL_MODEL", os.environ.get("SPACY_MODEL", "en_core_web_sm")
+            model_name = (
+                get_config("LEGAL_MODEL")
+                or os.environ.get("LEGAL_MODEL")
+                or get_config("SPACY_MODEL")
+                or os.environ.get("SPACY_MODEL", "en_core_web_sm")
             )
             _LEGAL_MODEL = ("spacy", spacy.load(model_name))
         except Exception as exc:  # pragma: no cover - runtime safety
@@ -135,8 +155,11 @@ def _load_legal_model() -> Tuple[str, Any] | None:
         try:  # pragma: no cover - optional dependency
             from transformers import pipeline  # type: ignore
 
-            model_name = os.environ.get(
-                "LEGAL_MODEL", os.environ.get("HF_MODEL", "dslim/bert-base-NER")
+            model_name = (
+                get_config("LEGAL_MODEL")
+                or os.environ.get("LEGAL_MODEL")
+                or get_config("HF_MODEL")
+                or os.environ.get("HF_MODEL", "dslim/bert-base-NER")
             )
             _LEGAL_MODEL = (
                 "hf",
@@ -172,14 +195,14 @@ def _load_regex_patterns() -> None:
     _REGEX_PATTERNS = dict(_DEFAULT_REGEX_PATTERNS)
     _LEGAL_REGEX_PATTERNS = dict(_DEFAULT_LEGAL_REGEX_PATTERNS)
 
-    env_patterns = os.environ.get("REGEX_PATTERNS")
+    env_patterns = get_config("REGEX_PATTERNS") or os.environ.get("REGEX_PATTERNS")
     if env_patterns:
         try:
             _REGEX_PATTERNS.update(json.loads(env_patterns))
         except Exception as exc:  # pragma: no cover - runtime safety
             logger.exception("Invalid REGEX_PATTERNS: %s", exc)
 
-    env_legal = os.environ.get("LEGAL_REGEX_PATTERNS")
+    env_legal = get_config("LEGAL_REGEX_PATTERNS") or os.environ.get("LEGAL_REGEX_PATTERNS")
     if env_legal:
         try:
             _LEGAL_REGEX_PATTERNS.update(json.loads(env_legal))

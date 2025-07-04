@@ -8,12 +8,13 @@ from typing import Any, Dict, List, Tuple
 import httpx
 from faker import Faker
 from common_utils import configure_logger
+from common_utils.get_ssm import get_config
 
 logger = configure_logger(__name__)
 
-MODE = os.environ.get("ANON_MODE", "mask").lower()
-TOKEN_API_URL = os.environ.get("TOKEN_API_URL", "")
-TIMEOUT = float(os.environ.get("ANON_TIMEOUT", "3"))
+MODE = (get_config("ANON_MODE") or os.environ.get("ANON_MODE", "mask")).lower()
+TOKEN_API_URL = get_config("TOKEN_API_URL") or os.environ.get("TOKEN_API_URL", "")
+TIMEOUT = float(get_config("ANON_TIMEOUT") or os.environ.get("ANON_TIMEOUT", "3"))
 
 _fake = Faker()
 

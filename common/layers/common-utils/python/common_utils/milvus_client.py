@@ -13,6 +13,7 @@ from dataclasses import dataclass
 from typing import Any, Iterable, List, Optional
 
 from common_utils import configure_logger
+from common_utils.get_ssm import get_config
 
 logger = configure_logger(__name__)
 
@@ -75,10 +76,14 @@ class MilvusClient:
         - ``metric_type`` from ``MILVUS_METRIC_TYPE`` or ``index_params``
         """
 
-        self.host = host or os.environ.get("MILVUS_HOST", "localhost")
-        self.port = int(port or os.environ.get("MILVUS_PORT", "19530"))
-        self.collection_name = collection_name or os.environ.get(
-            "MILVUS_COLLECTION", "docs"
+        self.host = host or get_config("MILVUS_HOST") or os.environ.get("MILVUS_HOST", "localhost")
+        self.port = int(
+            port or get_config("MILVUS_PORT") or os.environ.get("MILVUS_PORT", "19530")
+        )
+        self.collection_name = (
+            collection_name
+            or get_config("MILVUS_COLLECTION")
+            or os.environ.get("MILVUS_COLLECTION", "docs")
         )
 
         if Collection is None or connections is None:  # pragma: no cover
@@ -86,7 +91,7 @@ class MilvusClient:
 
         # Optional tuning parameters read from env if not provided
         if index_params is None:
-            params = os.environ.get("MILVUS_INDEX_PARAMS")
+            params = get_config("MILVUS_INDEX_PARAMS") or os.environ.get("MILVUS_INDEX_PARAMS")
             if params:
                 try:
                     index_params = json.loads(params)
@@ -95,11 +100,11 @@ class MilvusClient:
         self.index_params = index_params
 
         if metric_type is None:
-            metric_type = os.environ.get("MILVUS_METRIC_TYPE")
+            metric_type = get_config("MILVUS_METRIC_TYPE") or os.environ.get("MILVUS_METRIC_TYPE")
         self.metric_type = metric_type or (index_params or {}).get("metric_type", "L2")
 
         if search_params is None:
-            params = os.environ.get("MILVUS_SEARCH_PARAMS")
+            params = get_config("MILVUS_SEARCH_PARAMS") or os.environ.get("MILVUS_SEARCH_PARAMS")
             if params:
                 try:
                     search_params = json.loads(params)
