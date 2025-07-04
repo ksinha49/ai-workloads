@@ -51,6 +51,18 @@ __modified_by__ = "Koushik Sinha"
 logger = configure_logger(__name__)
 
 _s3_client = boto3.client("s3")
+try:  # pragma: no cover - boto3 may be stubbed
+    _dynamo = boto3.resource("dynamodb")
+except AttributeError:  # fallback when resource() not available
+    _dynamo = None
+try:
+    _audit_table_name = get_values_from_ssm(
+        f"{get_environment_prefix()}/DOCUMENT_AUDIT_TABLE"
+    )
+except Exception:  # pragma: no cover - SSM unavailable
+    _audit_table_name = None
+_audit_table_name = _audit_table_name or os.environ.get("DOCUMENT_AUDIT_TABLE")
+_audit_table = _dynamo.Table(_audit_table_name) if _dynamo and _audit_table_name else None
 
 # allowed characters for collection names
 COLLECTION_PATTERN = re.compile(r"^[A-Za-z0-9._-]+$")
@@ -156,6 +168,12 @@ def process_files(event: FileProcessingEvent, context) -> dict:
         document_id = uuid.uuid4().hex
         file_name = os.path.basename(bucket_key)
         file_guid = uuid.uuid4().hex
+
+        if _audit_table:
+            try:
+                _audit_table.put_item(Item={"document_id": document_id, "status": "UPLOADED"})
+            except Exception as exc:  # pragma: no cover - best effort
+                logger.warning("Failed to write audit record: %s", exc)
 
         result = {
             "document_id": document_id,

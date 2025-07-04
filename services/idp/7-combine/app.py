@@ -42,6 +42,16 @@ __modified_by__ = "Koushik Sinha"
 logger = configure_logger(__name__)
 
 s3_client = boto3.client("s3")
+try:  # pragma: no cover - boto3 may be stubbed
+    dynamo = boto3.resource("dynamodb")
+except AttributeError:
+    dynamo = None
+try:
+    _audit_table_name = get_config("DOCUMENT_AUDIT_TABLE")
+except Exception:  # pragma: no cover - SSM unavailable
+    _audit_table_name = None
+_audit_table_name = _audit_table_name or os.environ.get("DOCUMENT_AUDIT_TABLE")
+_audit_table = dynamo.Table(_audit_table_name) if dynamo and _audit_table_name else None
 
 
 
@@ -94,6 +104,16 @@ def _combine_document(bucket_name: str, pdf_page_prefix: str, text_page_prefix: 
         key = _page_key(bucket_name, text_page_prefix, doc_id, idx)
         if not key:
             logger.info("Waiting for page %03d of %s", idx, doc_id)
+            if _audit_table:
+                try:
+                    _audit_table.update_item(
+                        Key={"document_id": doc_id},
+                        UpdateExpression="SET #s = :s, page_count = :c",
+                        ExpressionAttributeNames={"#s": "status"},
+                        ExpressionAttributeValues={":s": "MISSING_PAGES", ":c": page_count},
+                    )
+                except Exception as exc:  # pragma: no cover - best effort
+                    logger.warning("Failed to update audit record: %s", exc)
             return
         page_keys.append(key)
 
@@ -113,6 +133,16 @@ def _combine_document(bucket_name: str, pdf_page_prefix: str, text_page_prefix: 
         ContentType="application/json",
     )
     logger.info("Wrote %s", dest_key)
+    if _audit_table:
+        try:
+            _audit_table.update_item(
+                Key={"document_id": doc_id},
+                UpdateExpression="SET #s = :s, page_count = :c",
+                ExpressionAttributeNames={"#s": "status"},
+                ExpressionAttributeValues={":s": "COMBINED", ":c": page_count},
+            )
+        except Exception as exc:  # pragma: no cover - best effort
+            logger.warning("Failed to update audit record: %s", exc)
 
 
 def _handle_record(record: dict) -> None:

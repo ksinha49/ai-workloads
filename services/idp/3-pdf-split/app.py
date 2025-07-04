@@ -39,6 +39,16 @@ __version__ = "1.0.0"
 logger = configure_logger(__name__)
 
 s3_client = boto3.client("s3")
+try:  # pragma: no cover - boto3 may be stubbed
+    dynamo = boto3.resource("dynamodb")
+except AttributeError:
+    dynamo = None
+try:
+    _audit_table_name = get_config("DOCUMENT_AUDIT_TABLE")
+except Exception:  # pragma: no cover - SSM unavailable
+    _audit_table_name = None
+_audit_table_name = _audit_table_name or os.environ.get("DOCUMENT_AUDIT_TABLE")
+_audit_table = dynamo.Table(_audit_table_name) if dynamo and _audit_table_name else None
 
 
 
@@ -79,6 +89,16 @@ def _split_pdf(
         ContentType="application/json",
     )
     logger.info("Wrote %s", manifest_key)
+    if _audit_table:
+        try:
+            _audit_table.update_item(
+                Key={"document_id": doc_id},
+                UpdateExpression="SET #s = :s, page_count = :c",
+                ExpressionAttributeNames={"#s": "status"},
+                ExpressionAttributeValues={":s": "SPLIT", ":c": len(doc.pages)},
+            )
+        except Exception as exc:  # pragma: no cover - best effort
+            logger.warning("Failed to update audit record: %s", exc)
 
 
 def _handle_record(record: dict, document_id: str | None = None) -> None:

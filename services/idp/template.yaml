@@ -45,6 +45,9 @@ Parameters:
   DOCLING_ENDPOINT:
     Type: String
     Default: ''
+  DocumentAuditTableName:
+    Type: String
+    Default: document-audit
 
 Globals:
   Function:
@@ -67,6 +70,7 @@ Globals:
         OUTPUT_PREFIX: !Ref OUTPUT_PREFIX
         TEXT_DOC_PREFIX: !Ref TEXT_DOC_PREFIX
         OCR_ENGINE: !Ref OCR_ENGINE
+        DOCUMENT_AUDIT_TABLE: !Ref DocumentAuditTableName
 
 Resources:
   LambdaExecutionRole:
@@ -91,6 +95,16 @@ Resources:
                   - s3:GetObject
                   - s3:PutObject
                 Resource: !Sub arn:aws:s3:::${BUCKET_NAME}/*
+        - PolicyName: DocumentAuditDynamo
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:PutItem
+                Resource: !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DocumentAuditTableName}
 
   OCRLayer:
     Type: AWS::Serverless::LayerVersion

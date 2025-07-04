@@ -45,6 +45,8 @@ Resources:
     Type: AWS::Serverless::Application
     Properties:
       Location: services/idp/template.yaml
+      Parameters:
+        DocumentAuditTableName: !GetAtt FileIngestionService.Outputs.DocumentAuditTableName
 
   SummarizationService:
     Type: AWS::Serverless::Application
@@ -165,4 +167,7 @@ Outputs:
   TokenTableName:
     Description: Name of the entity token table
     Value: !GetAtt EntityTokenizationService.Outputs.TokenTableName
+  DocumentAuditTableName:
+    Description: Name of the document audit table
+    Value: !GetAtt FileIngestionService.Outputs.DocumentAuditTableName
 
