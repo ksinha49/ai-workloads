@@ -13,15 +13,15 @@ Version: 1.0.0
 from __future__ import annotations
 
 import logging
-from common_utils import configure_logger
 import os
+import re
 from typing import Any, Dict
-from models import LlmRouterEvent, LambdaResponse
-
-import json
-from main_router import route_event
 
 import boto3
+import json
+from common_utils import configure_logger
+from models import LlmRouterEvent, LambdaResponse
+from main_router import route_event
 
 __author__ = "Koushik Sinha"
 __version__ = "1.0.0"
@@ -36,6 +36,26 @@ DEFAULT_PROMPT_COMPLEXITY_THRESHOLD = 20
 PROMPT_COMPLEXITY_THRESHOLD = int(
     os.environ.get("PROMPT_COMPLEXITY_THRESHOLD", str(DEFAULT_PROMPT_COMPLEXITY_THRESHOLD))
 )
+
+# allowlist of permitted backends
+ALLOWED_BACKENDS = {"bedrock", "ollama"}
+# maximum prompt length accepted by the router
+MAX_PROMPT_LENGTH = int(os.environ.get("MAX_PROMPT_LENGTH", "4096"))
+
+
+def _sanitize_payload(payload: Dict[str, Any]) -> Dict[str, Any]:
+    """Validate and sanitize the incoming payload."""
+
+    prompt = payload.get("prompt")
+    if not isinstance(prompt, str):
+        raise ValueError("prompt must be a string")
+    if len(prompt) > MAX_PROMPT_LENGTH:
+        raise ValueError("prompt too long")
+    if payload.get("backend") and payload["backend"] not in ALLOWED_BACKENDS:
+        raise ValueError("unsupported backend")
+    # Strip non-printable characters that could be used for injection
+    payload["prompt"] = re.sub(r"[^\x20-\x7E]+", "", prompt)
+    return payload
 def _choose_backend(prompt: str) -> str:
     """Return which backend to use based on prompt complexity."""
     complexity = len(prompt.split())
@@ -75,6 +95,10 @@ def lambda_handler(event: LlmRouterEvent, context: Any) -> LambdaResponse:
 
     if not payload.get("prompt"):
         return {"statusCode": 400, "body": json.dumps({"message": "Missing 'prompt'"})}
+    try:
+        payload = _sanitize_payload(payload)
+    except ValueError as exc:
+        return {"statusCode": 400, "body": json.dumps({"message": str(exc)})}
 
     backend = payload.get("backend")
     strategy = payload.get("strategy")
