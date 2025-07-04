@@ -96,6 +96,7 @@ Resources:
         Variables:
           TOP_K: !Ref VectorSearchCandidates
           CROSS_ENCODER_MODEL: ''
+          CROSS_ENCODER_EFS_PATH: ''
           RERANK_PROVIDER: ''
           COHERE_SECRET_NAME: !Ref CohereSecretName
           NVIDIA_SECRET_NAME: !Ref NvidiaSecretName
