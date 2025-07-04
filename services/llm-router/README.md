@@ -29,6 +29,7 @@ The routing logic is split into small modules which can also be reused outside t
 | `PromptComplexityThreshold` | `PROMPT_COMPLEXITY_THRESHOLD` | Word threshold used by the heuristic router |
 | `LlmInvocationFunctionName` | `LLM_INVOCATION_FUNCTION` | Name of the Lambda that invokes the selected backend |
 | `InvocationQueueUrl` | `INVOCATION_QUEUE_URL` | SQS queue used for async invocation |
+| `MaxPromptLength` | `MAX_PROMPT_LENGTH` | Maximum length of the accepted prompt |
 
 ## Environment variables
 
