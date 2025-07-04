@@ -30,7 +30,13 @@ This document details the environment variables used by the router Lambda and ho
 | `ROUTELLM_ENDPOINT` | Optional URL for forwarding requests to a RouteLLM service. |
 | `STRONG_MODEL_ID` | Identifier for the more capable Bedrock model. |
 | `WEAK_MODEL_ID` | Identifier for the lightweight model used with shorter prompts. |
+| `CLASSIFIER_MODEL_ID` | Optional model used to classify prompts for predictive routing. |
 | `LLM_INVOCATION_FUNCTION` | Name of the Lambda used for actual model invocation. |
+
+When `CLASSIFIER_MODEL_ID` is set the router bypasses the simple length
+heuristic and delegates prompt selection to the predictive strategy. The
+classifier model decides whether a prompt is *simple* or *complex* and routes to
+`WEAK_MODEL_ID` or `STRONG_MODEL_ID` accordingly.
 
 ## Setting Values with Parameter Store
 

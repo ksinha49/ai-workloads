@@ -76,6 +76,7 @@ Each service loads its configuration from Parameter Store or the Lambda environm
 - `HEURISTIC_ROUTER_CONFIG` – JSON rules for advanced routing.
 - `LLM_INVOCATION_FUNCTION` – Lambda used to invoke the chosen backend.
 - `STRONG_MODEL_ID` / `WEAK_MODEL_ID` – model identifiers for routing.
+- `CLASSIFIER_MODEL_ID` – optional model used to classify prompts when predictive routing is enabled.
 
 ### Knowledge Base
 

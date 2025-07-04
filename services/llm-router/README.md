@@ -28,8 +28,13 @@ The routing logic is split into small modules which can also be reused outside t
 | `OllamaDefaultModel` | `OLLAMA_DEFAULT_MODEL` | Default model when none supplied |
 | `PromptComplexityThreshold` | `PROMPT_COMPLEXITY_THRESHOLD` | Word threshold used by the heuristic router |
 | `LlmInvocationFunctionName` | `LLM_INVOCATION_FUNCTION` | Name of the Lambda that invokes the selected backend |
+| `ClassifierModelId` | `CLASSIFIER_MODEL_ID` | Optional model used to classify prompt complexity |
 | `InvocationQueueUrl` | `INVOCATION_QUEUE_URL` | SQS queue used for async invocation |
 | `MaxPromptLength` | `MAX_PROMPT_LENGTH` | Maximum length of the accepted prompt |
+
+Enabling `ClassifierModelId` activates predictive routing. The router will call
+the classifier model to decide between the weak and strong Bedrock models
+configured via `WEAK_MODEL_ID` and `STRONG_MODEL_ID`.
 
 ## Environment variables
 
@@ -43,6 +48,16 @@ Deploy the router with SAM:
 sam deploy \
   --template-file services/llm-router/template.yaml \
   --stack-name llm-router
+```
+
+To enable predictive routing supply model identifiers:
+
+```bash
+sam deploy \
+  --parameter-overrides \
+    ClassifierModelId=my-classifier \
+    WeakModelId=my-weak-model \
+    StrongModelId=my-strong-model
 ```
 
 ## Usage

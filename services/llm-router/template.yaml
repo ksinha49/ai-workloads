@@ -18,6 +18,9 @@ Parameters:
   PromptComplexityThreshold:
     Type: String
     Default: '20'
+  ClassifierModelId:
+    Type: String
+    Default: ''
   LlmInvocationFunctionName:
     Type: String
     Default: ''
@@ -53,6 +56,7 @@ Resources:
           OLLAMA_DEFAULT_MODEL: !Ref OllamaDefaultModel
           PROMPT_COMPLEXITY_THRESHOLD: !Ref PromptComplexityThreshold
           LLM_INVOCATION_FUNCTION: !Ref LlmInvocationFunctionName
+          CLASSIFIER_MODEL_ID: !Ref ClassifierModelId
       Events:
         Api:
           Type: Api
