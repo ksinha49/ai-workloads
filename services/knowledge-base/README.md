@@ -54,3 +54,12 @@ sam deploy \
     FileIngestionStateMachineArn=<arn> \
     SummarizeQueueUrl=<url>
 ```
+
+## Local testing
+
+Build and run with Docker Compose:
+
+```bash
+docker compose build
+docker compose up
+```

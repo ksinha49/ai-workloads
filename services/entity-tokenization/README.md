@@ -29,3 +29,12 @@ sam deploy --template-file services/entity-tokenization/template.yaml --stack-na
 
 The stack exports `TokenizeEntityFunctionArn` and `TokenTableName` for use by
 other services.
+
+## Local testing
+
+Build and run with Docker Compose:
+
+```bash
+docker compose build
+docker compose up
+```

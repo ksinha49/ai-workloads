@@ -58,3 +58,12 @@ sam deploy --template-file services/sensitive-info-detection/template.yaml --sta
 ```
 
 The output exports `DetectSensitiveInfoFunctionArn` which can be used by other services.
+
+## Local testing
+
+Build and run with Docker Compose:
+
+```bash
+docker compose build
+docker compose up
+```

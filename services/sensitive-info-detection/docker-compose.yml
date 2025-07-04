@@ -1,0 +1,10 @@
+version: '3.8'
+services:
+  app:
+    build:
+      context: ../..
+      dockerfile: services/sensitive-info-detection/Dockerfile
+    environment:
+      NER_LIBRARY: spacy
+    ports:
+      - "9010:8080"

@@ -1,0 +1,12 @@
+version: '3.8'
+services:
+  app:
+    build:
+      context: ../..
+      dockerfile: services/file-ingestion/Dockerfile
+    environment:
+      AWS_ACCOUNT_NAME: dev
+      IDP_BUCKET: bucket
+      RAW_PREFIX: uploads/
+    ports:
+      - "9002:8080"

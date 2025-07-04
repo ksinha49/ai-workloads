@@ -54,3 +54,12 @@ The stack exports the ARNs of the search functions:
 These values are referenced by other services. For example, `rag-retrieval`
 sets the `VECTOR_SEARCH_FUNCTION` environment variable to one of these ARNs to
 toggle between pure vector search and hybrid search.
+
+## Local testing
+
+Build and run with Docker Compose:
+
+```bash
+docker compose build
+docker compose up
+```

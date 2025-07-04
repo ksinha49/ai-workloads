@@ -1,0 +1,10 @@
+version: '3.8'
+services:
+  app:
+    build:
+      context: ../..
+      dockerfile: services/knowledge-base/Dockerfile
+    environment:
+      STATE_MACHINE_ARN: arn:aws:states:region:acct:stateMachine:sm
+    ports:
+      - "9004:8080"

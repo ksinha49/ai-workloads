@@ -66,3 +66,12 @@ Deploy the stack with SAM:
 ```bash
 sam deploy --template-file services/idp/template.yaml
 ```
+
+## Local testing
+
+Build and run with Docker Compose:
+
+```bash
+docker compose build
+docker compose up
+```

@@ -78,3 +78,12 @@ sam deploy \
 The summarization Lambda forwards requests through the LLM router defined by
 `ROUTELLM_ENDPOINT`. Configure any router specific variables as described in
 [../../docs/router_configuration.md](../../docs/router_configuration.md).
+
+## Local testing
+
+Build and run with Docker Compose:
+
+```bash
+docker compose build
+docker compose up
+```

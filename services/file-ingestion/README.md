@@ -44,3 +44,12 @@ sam deploy \
     IDPRawPrefix=<prefix> \
     IngestionStateMachineArn=<arn>
 ```
+
+## Local testing
+
+Build and run with Docker Compose:
+
+```bash
+docker compose build
+docker compose up
+```

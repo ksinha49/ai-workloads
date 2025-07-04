@@ -112,3 +112,12 @@ An example prompt is available in
 The queue worker passes ``llm_params`` to the ``llm-invocation`` Lambda which
 forwards ``system_prompt`` to the selected backend.
 
+
+## Local testing
+
+Build and run with Docker Compose:
+
+```bash
+docker compose build
+docker compose up
+```

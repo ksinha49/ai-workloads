@@ -51,3 +51,12 @@ sam deploy --template-file services/text-anonymization/template.yaml --stack-nam
 ```
 
 The stack exports `AnonymizeTextFunctionArn` for use by other services.
+
+## Local testing
+
+Build and run with Docker Compose:
+
+```bash
+docker compose build
+docker compose up
+```
