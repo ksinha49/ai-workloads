@@ -138,6 +138,11 @@ Resources:
     Properties:
       Location: services/prompt-engine/template.yaml
 
+  PIIDetectionService:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: services/pii-detection/template.yaml
+
 Outputs:
   FileIngestionStateMachineArn:
     Description: ARN of the file ingestion state machine
