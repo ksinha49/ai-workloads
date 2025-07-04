@@ -109,3 +109,33 @@ def test_lambda_handler_invoke_error(monkeypatch):
     body = json.loads(out["body"])
     assert out["statusCode"] == 500
     assert "boom" in body["error"]
+
+
+def test_lambda_handler_malicious_prompt(monkeypatch):
+    monkeypatch.setenv("INVOCATION_QUEUE_URL", "url")
+    calls = []
+    monkeypatch.setattr(sys.modules["boto3"], "client", lambda name: _make_fake_send(calls))
+    module = load_lambda("router_lambda_malicious", "services/llm-router/router-lambda/app.py")
+    module.sqs_client = sys.modules["boto3"].client("sqs")
+
+    event = {"body": json.dumps({"prompt": "<script>alert('x')</script>"})}
+    out = module.lambda_handler(event, {})
+    assert out["statusCode"] == 202
+    queued = calls[0]
+    assert "<" not in queued["prompt"]
+    assert ">" not in queued["prompt"]
+    assert "'" not in queued["prompt"]
+    assert '"' not in queued["prompt"]
+
+
+def test_lambda_handler_bad_prompt_type(monkeypatch):
+    monkeypatch.setenv("INVOCATION_QUEUE_URL", "url")
+    calls = []
+    monkeypatch.setattr(sys.modules["boto3"], "client", lambda name: _make_fake_send(calls))
+    module = load_lambda("router_lambda_bad", "services/llm-router/router-lambda/app.py")
+    module.sqs_client = sys.modules["boto3"].client("sqs")
+
+    event = {"body": json.dumps({"prompt": ["bad"]})}
+    out = module.lambda_handler(event, {})
+    assert out["statusCode"] == 400
+

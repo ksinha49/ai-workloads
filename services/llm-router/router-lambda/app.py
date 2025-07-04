@@ -47,6 +47,26 @@ MAX_PROMPT_LENGTH = int(os.environ.get("MAX_PROMPT_LENGTH", "4096"))
 def _sanitize_payload(payload: Dict[str, Any]) -> Dict[str, Any]:
     """Validate and sanitize the incoming payload."""
 
+    # optionally validate payload structure if jsonschema is available
+    schema = {
+        "type": "object",
+        "properties": {
+            "prompt": {"type": "string"},
+            "backend": {"type": "string"},
+            "strategy": {"type": "string"},
+        },
+        "required": ["prompt"],
+    }
+    try:  # pragma: no cover - jsonschema may not be installed
+        from jsonschema import validate, ValidationError
+
+        try:
+            validate(instance=payload, schema=schema)
+        except ValidationError as exc:
+            raise ValueError(f"invalid payload: {exc.message}") from exc
+    except Exception:
+        pass
+
     prompt = payload.get("prompt")
     if not isinstance(prompt, str):
         raise ValueError("prompt must be a string")
@@ -54,8 +74,12 @@ def _sanitize_payload(payload: Dict[str, Any]) -> Dict[str, Any]:
         raise ValueError("prompt too long")
     if payload.get("backend") and payload["backend"] not in ALLOWED_BACKENDS:
         raise ValueError("unsupported backend")
+
     # Strip non-printable characters that could be used for injection
-    payload["prompt"] = re.sub(r"[^\x20-\x7E]+", "", prompt)
+    safe = re.sub(r"[^\x20-\x7E]+", "", prompt)
+    # Remove characters commonly used in injection attacks
+    safe = re.sub(r"[<>\"']", "", safe)
+    payload["prompt"] = safe
     return payload
 def _choose_backend(prompt: str) -> str:
     """Return which backend to use based on prompt complexity."""
