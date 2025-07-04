@@ -698,7 +698,13 @@ import sys
 
 def test_llm_router_choose_backend(monkeypatch):
     monkeypatch.setenv("PROMPT_COMPLEXITY_THRESHOLD", "3")
+    monkeypatch.setenv("CLASSIFIER_MODEL_ID", "x")
     module = load_lambda("llm_router_app", "services/llm-router/router-lambda/app.py")
+    monkeypatch.setattr(
+        module,
+        "invoke_classifier",
+        lambda client, model, prompt: "complex" if len(prompt.split()) > 3 else "simple",
+    )
     assert module._choose_backend("one two") == "ollama"
     assert module._choose_backend("one two three four") == "bedrock"
 
@@ -759,8 +765,14 @@ def test_llm_router_lambda_handler_backend_override(monkeypatch):
 
 def test_llm_router_choose_backend_default(monkeypatch):
     monkeypatch.delenv("PROMPT_COMPLEXITY_THRESHOLD", raising=False)
+    monkeypatch.setenv("CLASSIFIER_MODEL_ID", "x")
     module = load_lambda(
         "llm_router_app_default", "services/llm-router/router-lambda/app.py"
+    )
+    monkeypatch.setattr(
+        module,
+        "invoke_classifier",
+        lambda client, model, prompt: "complex" if len(prompt.split()) > 20 else "simple",
     )
     short_prompt = " ".join(["w"] * 5)
     long_prompt = " ".join(["w"] * 25)
