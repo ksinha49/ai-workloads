@@ -20,6 +20,7 @@ The repository includes the following directories under `services/`:
 - `llm-invocation` – forwards OpenAI-style requests to a specific LLM backend
 - `knowledge-base` – ingest text snippets and query them through the retrieval stack
 - `sensitive-info-detection` – PII/PHI detection for text including legal entities
+- `entity-tokenization` – replaces sensitive entities with stable tokens
 
 Shared dependencies are packaged as layers in `common/layers/`.
 
@@ -95,6 +96,10 @@ summarization queue for asynchronous processing.
 Detects PII, PHI and legal entities in text using regex patterns and optional
 machine learning models. Domain-specific models and regex overrides can be
 configured via environment variables.
+
+#### entity-tokenization
+Replaces sensitive entity values with consistent tokens. Existing mappings are
+looked up in DynamoDB and new tokens are generated using an optional salt.
 
 ## Repository Structure
 
@@ -259,3 +264,4 @@ Additional documentation is available in the `docs/` directory:
 - [docs/prompt_engine.md](docs/prompt_engine.md)
 - [docs/knowledge_rag_usage.md](docs/knowledge_rag_usage.md)
 - [docs/event_schemas.md](docs/event_schemas.md)
+- [docs/entity_tokenization_service.md](docs/entity_tokenization_service.md)

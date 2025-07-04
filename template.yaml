@@ -143,6 +143,11 @@ Resources:
     Properties:
       Location: services/sensitive-info-detection/template.yaml
 
+  EntityTokenizationService:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: services/entity-tokenization/template.yaml
+
 Outputs:
   FileIngestionStateMachineArn:
     Description: ARN of the file ingestion state machine
@@ -150,4 +155,10 @@ Outputs:
   DetectSensitiveInfoFunctionArn:
     Description: ARN of the sensitive info detection Lambda
     Value: !GetAtt SensitiveInfoDetectionService.Outputs.DetectSensitiveInfoFunctionArn
+  TokenizeEntityFunctionArn:
+    Description: ARN of the entity tokenization Lambda
+    Value: !GetAtt EntityTokenizationService.Outputs.TokenizeEntityFunctionArn
+  TokenTableName:
+    Description: Name of the entity token table
+    Value: !GetAtt EntityTokenizationService.Outputs.TokenTableName
 
