@@ -20,13 +20,6 @@ def test_file_processing_lambda(monkeypatch, s3_stub, config):
 
     s3_stub.objects[('bucket', 'path/test.docx')] = b'data'
 
-    def copy_object(Bucket=None, Key=None, CopySource=None):
-        src = (CopySource['Bucket'], CopySource['Key'])
-        s3_stub.objects[(Bucket, Key)] = s3_stub.objects.get(src, b'')
-        return {}
-
-    setattr(s3_stub, 'copy_object', copy_object)
-
     module = load_lambda('file_proc', 'services/file-ingestion/file-processing-lambda/app.py')
 
     event = FileProcessingEvent(file='s3://bucket/path/test.docx', collection_name='c')
@@ -38,6 +31,29 @@ def test_file_processing_lambda(monkeypatch, s3_stub, config):
     assert body['collection_name'] == 'c'
     # ensure the source file was removed after processing
     assert ('bucket', 'path/test.docx') not in s3_stub.objects
+
+
+def test_file_processing_lambda_copy_verification_failed(monkeypatch, s3_stub, config):
+    prefix = '/parameters/aio/ameritasAI/dev'
+    config['/parameters/aio/ameritasAI/SERVER_ENV'] = 'dev'
+    config[f'{prefix}/IDP_BUCKET'] = 'dest-bucket'
+    config[f'{prefix}/RAW_PREFIX'] = 'raw/'
+
+    s3_stub.objects[('bucket', 'path/test.docx')] = b'data'
+
+    def bad_copy(Bucket=None, Key=None, CopySource=None):
+        s3_stub.objects[(Bucket, Key)] = b'bad'
+        return {}
+
+    monkeypatch.setattr(s3_stub, 'copy_object', bad_copy)
+
+    module = load_lambda('file_proc_fail', 'services/file-ingestion/file-processing-lambda/app.py')
+
+    event = FileProcessingEvent(file='s3://bucket/path/test.docx', collection_name='c')
+    resp = module.lambda_handler(event, {})
+    assert resp['statusCode'] == 500
+    # source should remain since verification failed
+    assert ('bucket', 'path/test.docx') in s3_stub.objects
 
 
 def test_file_processing_lambda_invalid_path(monkeypatch, config):

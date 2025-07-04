@@ -3,6 +3,8 @@
 This service copies uploaded files to the IDP bucket and polls for text extraction results. It provides two Lambdas and a Step Function.
 
 - **file-processing-lambda** – copies the uploaded file to `IDP_BUCKET/RAW_PREFIX`.
+  The Lambda now validates the copy by comparing the source and destination
+  objects' `ETag` and `ContentLength` before removing the original file.
 - **file-processing-status-lambda** – checks S3 for the text document and updates `fileupload_status`.
 - **FileIngestionStateMachine** – orchestrates both Lambdas and then triggers the ingestion workflow.
 
