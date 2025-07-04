@@ -1,0 +1,44 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Lambda to anonymize text using masking, pseudonyms or tokens.
+
+Parameters:
+  AnonymizationMode:
+    Type: String
+    Default: 'mask'
+  TokenApiUrl:
+    Type: String
+    Default: ''
+  AnonymizationTimeout:
+    Type: Number
+    Default: 3
+
+Globals:
+  Function:
+    Handler: app.lambda_handler
+    Runtime: python3.13
+    Timeout: 60
+    MemorySize: 512
+
+Resources:
+  AnonymizeTextFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./anonymize-text-lambda/
+      Environment:
+        Variables:
+          ANON_MODE: !Ref AnonymizationMode
+          TOKEN_API_URL: !Ref TokenApiUrl
+          ANON_TIMEOUT: !Ref AnonymizationTimeout
+      Policies: []
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /anonymize-text
+            Method: post
+
+Outputs:
+  AnonymizeTextFunctionArn:
+    Description: ARN of the anonymization Lambda
+    Value: !GetAtt AnonymizeTextFunction.Arn
