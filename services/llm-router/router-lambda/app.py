@@ -22,6 +22,7 @@ import json
 from common_utils import configure_logger
 from models import LlmRouterEvent, LambdaResponse
 from main_router import route_event
+from predictive_router import invoke_classifier
 
 __author__ = "Koushik Sinha"
 __version__ = "1.0.0"
@@ -58,6 +59,17 @@ def _sanitize_payload(payload: Dict[str, Any]) -> Dict[str, Any]:
     return payload
 def _choose_backend(prompt: str) -> str:
     """Return which backend to use based on prompt complexity."""
+    classifier_model = os.environ.get("CLASSIFIER_MODEL_ID") or os.environ.get("WEAK_MODEL_ID")
+    if classifier_model:
+        try:
+            result = invoke_classifier(boto3.client("lambda"), classifier_model, prompt)
+            if result == "complex":
+                return "bedrock"
+            if result == "simple":
+                return "ollama"
+        except Exception as exc:  # pragma: no cover - ML model failure
+            logger.exception("Classifier error: %s", exc)
+
     complexity = len(prompt.split())
     if complexity >= PROMPT_COMPLEXITY_THRESHOLD:
         return "bedrock"
