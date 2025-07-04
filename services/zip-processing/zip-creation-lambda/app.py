@@ -16,7 +16,7 @@ import boto3
 import zipfile
 import io
 from botocore.exceptions import ClientError
-import re
+from defusedxml import ElementTree as ET
 import json
 import logging
 from common_utils import configure_logger
@@ -90,27 +90,26 @@ def parse_s3_uri(s3_uri: str) -> (str, str, str):
     return bucket_name, file_key, file_name
 
 def parse_multiple_tags(xml_content, tags):
+    """Parse multiple tags from an XML string safely.
+
+    Parameters
+    ----------
+    xml_content : str
+        Raw XML data.
+    tags : list[str]
+        Tags to extract.
+
+    Returns
+    -------
+    dict
+        Mapping of tag name to extracted text or ``None`` if the tag is absent.
     """
-    Parses content for multiple tags.
-    :param xml_content: xml content
-    :param tags: List of XML tags to parse
-    :return: String with tag names as keys and lists of their content as values
-    """
-    # Parse the XML content
-    #root = ET.fromstring(xml_content)
-    # Dictionary to store content for each tag
+
+    root = ET.fromstring(xml_content)
     actual_tag_content = {}
     for tag_name in tags:
-         pattern = rf"<{tag_name}>(.*?)</{tag_name}>"
-         match = re.search(pattern, xml_content, re.DOTALL)
-         tag_content = match.group(1) if match else None
-         #tag_content = re.findall(pattern, xml_content, re.DOTALL)
-         actual_tag_content[tag_name] = tag_content
-         """actual_tag_content[tag_name] = tag_content
-         if actual_tag_content:
-            actual_tag_content = f"{actual_tag_content}_{tag_content}"
-         else:
-            actual_tag_content = tag_content"""
+        el = root.find(tag_name)
+        actual_tag_content[tag_name] = el.text if el is not None else None
     return actual_tag_content
 
 def extract_dynamic_path(path):
