@@ -1354,3 +1354,15 @@ def test_detect_pii_legal_regex(monkeypatch):
     text = "case 12-12345"
     out = module.lambda_handler({"text": text, "classification": "Legal"}, {})
     assert any(e["type"] == "CASE_NUMBER" for e in out["entities"])
+
+
+def test_detect_pii_custom_regex(monkeypatch):
+    pattern = {"FOO": r"foo\d+"}
+    monkeypatch.setenv("REGEX_PATTERNS", json.dumps(pattern))
+    module = load_lambda(
+        "detect_pii_custom", "services/pii-detection/detect-pii-lambda/app.py"
+    )
+
+    monkeypatch.setattr(module, "_load_model", lambda: None)
+    out = module.lambda_handler({"text": "foo123"}, {})
+    assert any(e["type"] == "FOO" for e in out["entities"])

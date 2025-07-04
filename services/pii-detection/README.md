@@ -20,8 +20,12 @@ model. Each parameter becomes an environment variable for the Lambda:
 | `HFModel`    | `HF_MODEL`          | HuggingFace model name when using `hf`.    |
 | `MedicalModel` | `MEDICAL_MODEL`   | Model used when `domain` is `Medical`. |
 | `LegalModel` | `LEGAL_MODEL`       | Model used when `domain` is `Legal`. |
+| `RegexPatterns` | `REGEX_PATTERNS` | JSON map of regex detectors. |
+| `LegalRegexPatterns` | `LEGAL_REGEX_PATTERNS` | JSON map used for `Legal` domain. |
 
 The Lambda always runs a small set of regex detectors in addition to any model.
+These detectors can be overridden by providing JSON strings via the
+`REGEX_PATTERNS` and `LEGAL_REGEX_PATTERNS` environment variables.
 
 ### Domain-based configuration
 
