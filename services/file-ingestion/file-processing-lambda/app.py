@@ -19,6 +19,7 @@ import os
 import uuid
 import boto3
 import logging
+import re
 try:
     from botocore.exceptions import ClientError
 except ModuleNotFoundError:  # pragma: no cover - fallback for minimal env
@@ -41,6 +42,23 @@ __modified_by__ = "Koushik Sinha"
 logger = configure_logger(__name__)
 
 _s3_client = boto3.client("s3")
+
+# allowed characters for S3 URIs and collection names
+S3_URI_PATTERN = re.compile(r"^s3://[A-Za-z0-9._-]+/[A-Za-z0-9._/-]+$")
+COLLECTION_PATTERN = re.compile(r"^[A-Za-z0-9._-]+$")
+
+
+def _validate_event(event: FileProcessingEvent) -> None:
+    """Validate and sanitize incoming ``FileProcessingEvent``."""
+
+    if not isinstance(event.file, str) or not S3_URI_PATTERN.match(event.file):
+        raise ValueError("invalid file path")
+    if (
+        event.collection_name is None
+        or not isinstance(event.collection_name, str)
+        or not COLLECTION_PATTERN.match(event.collection_name)
+    ):
+        raise ValueError("invalid collection_name")
 
 def copy_file_to_idp(bucket_name: str, bucket_key: str) -> str:
     """Copy the file to the IDP bucket RAW_PREFIX and return the destination URI."""
@@ -69,9 +87,9 @@ def copy_file_to_idp(bucket_name: str, bucket_key: str) -> str:
 def process_files(event: FileProcessingEvent, context) -> dict:
     """Copy the uploaded file to the IDP bucket and return its location."""
 
+    _validate_event(event)
+
     try:
-        if event.collection_name is None:
-            raise ValueError("collection_name missing from event")
         bucket_name, bucket_key = parse_s3_uri(event.file)
         logger.info("Copying %s/%s to IDP bucket", bucket_name, bucket_key)
         dest_uri = copy_file_to_idp(bucket_name, bucket_key)
@@ -133,6 +151,11 @@ def lambda_handler(event: FileProcessingEvent | dict, context) -> dict:
             except ValueError as exc:
                 logger.error("Invalid event: %s", exc)
                 return _response(400, {"error": str(exc)})
+        try:
+            _validate_event(event)
+        except ValueError as exc:
+            logger.error("Invalid event: %s", exc)
+            return _response(400, {"error": str(exc)})
         final_response = process_files(event, context)
         return _response(200, final_response)
     except (KeyError, ValueError) as exc:
