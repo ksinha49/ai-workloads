@@ -63,10 +63,10 @@ def upload_to_s3(pdf_bytes: bytes, file_name: str, bucket_name: str, s3_client=s
         response = s3_client.put_object(
             Bucket=bucket_name, Key=bucket_file_name, Body=pdf_bytes, ContentType="application/pdf"
         )
-        logger.info(f"Uploaded file {bucket_file_name} to S3 successfully.")
+        logger.info("Uploaded file %s to S3 successfully.", bucket_file_name)
         return {"summarized_file": f"s3://{bucket_name}/{bucket_file_name}"}
     except Exception as e:
-        logger.error(f"Error uploading to S3: {str(e)}")
+        logger.error("Error uploading to S3: %s", str(e))
         raise ValueError(f"Failed to upload PDF to S3")
 
 
@@ -93,12 +93,12 @@ def assemble_files(event: FileAssemblyEvent, context, s3_client=s3_client) -> Fi
         organic_bucket_key = event_body["organic_bucket_key"]
         summary_bucket_name = event_body["summary_bucket_name"]
         summary_bucket_key = event_body["summary_bucket_key"]
-        logger.info(f"Getting file details from S3: {organic_bucket_name}/{organic_bucket_key}")
+        logger.info("Getting file details from S3: %s/%s", organic_bucket_name, organic_bucket_key)
         organic_response = s3_client.get_object(Bucket=organic_bucket_name, Key=organic_bucket_key)
-        logger.info(f"GOT THE FILE DETAILS FROM THE S3: {organic_bucket_name}/{organic_bucket_key}")
+        logger.info("GOT THE FILE DETAILS FROM THE S3: %s/%s", organic_bucket_name, organic_bucket_key)
         organic_file_content = organic_response["Body"].read()
         summary_response = s3_client.get_object(Bucket=summary_bucket_name, Key=summary_bucket_key)
-        logger.info(f"GOT THE FILE DETAILS FROM THE S3: {summary_bucket_name}/{summary_bucket_key}")
+        logger.info("GOT THE FILE DETAILS FROM THE S3: %s/%s", summary_bucket_name, summary_bucket_key)
         summary_file_content = summary_response["Body"].read()
 
         organic_file_key = event_body['organic_bucket_key']
@@ -107,7 +107,7 @@ def assemble_files(event: FileAssemblyEvent, context, s3_client=s3_client) -> Fi
 
         ext = os.path.splitext(organic_file_key)[1].lower()
         if ext == '.pdf':
-            logger.info(f"Merging PDFs: {merged_file_key}")
+            logger.info("Merging PDFs: %s", merged_file_key)
             merged_pdf_bytes = merge_pdfs(summary_file_content, organic_file_content)
             final_response = upload_to_s3(merged_pdf_bytes, merged_file_key, organic_bucket_name, s3_client)
             final_response['merged'] = True
@@ -117,7 +117,7 @@ def assemble_files(event: FileAssemblyEvent, context, s3_client=s3_client) -> Fi
             final_response['merged'] = False
         return final_response
     except Exception as e:
-        logger.error(f"Error assembling files: {str(e)}")
+        logger.error("Error assembling files: %s", str(e))
         raise ValueError(f"Failed to assemble PDFs")
 
 
@@ -148,7 +148,7 @@ def merge_pdfs(summary_file_content: bytes, organic_file_content: bytes) -> Opti
         merge_pdf.seek(0)
         return merge_pdf.read()
     except Exception as e:
-        logger.error(f"Error merging PDFs: {str(e)}")
+        logger.error("Error merging PDFs: %s", str(e))
         raise ValueError(f"Failed to merge PDFs")
 
 
@@ -180,6 +180,6 @@ def lambda_handler(event: FileAssemblyEvent, context) -> LambdaResponse:
         final_response = assemble_files(event, context, s3_client)
         return _response(200, final_response)
     except Exception as e:
-        logger.error(f"Error in Lambda handler: {str(e)}")
+        logger.error("Error in Lambda handler: %s", str(e))
         response_body = f"Error occurred: {str(e)}"
         return _response(500, {"error": response_body})

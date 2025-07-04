@@ -166,7 +166,7 @@ def extract_zip_file(event: dict) -> dict:
                     continue
                 if info.filename.lower().endswith(".pdf") or info.filename.lower().endswith(".xml"):
                     s3_key = f"{extracted_file_key}{info.filename}"
-                    logger.info(f"s3_key:{s3_key}")
+                    logger.info("s3_key:%s", s3_key)
                     with zf.open(info) as file_obj:
                         uploadedFilePath = upload_to_s3(
                             destination_bucket_name, s3_key, file_obj
@@ -182,7 +182,7 @@ def extract_zip_file(event: dict) -> dict:
                 else:
                     # Place in a folder named after the ZIP file
                     s3_key = f'{extracted_file_key}/{zip_file_name}/{info.filename}'
-                logger.info(f"s3_key:{s3_key}")
+                logger.info("s3_key:%s", s3_key)
                 with zf.open(info) as file_obj:
                     xmlUploadedPath = upload_to_s3(destination_bucket_name, s3_key, file_obj)
                     xmlfileList.append(xmlUploadedPath)"""
