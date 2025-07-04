@@ -37,7 +37,7 @@ Each service loads its configuration from Parameter Store or the Lambda environm
 - `EMBED_MODEL_MAP` – JSON mapping of document types to models.
 - `SBERT_MODEL` – SentenceTransformer model path or name.
 - `OPENAI_EMBED_MODEL` – embedding model for OpenAI.
-- `COHERE_API_KEY` – API key for Cohere embeddings.
+- `COHERE_SECRET_NAME` – name or ARN of the Cohere API key secret.
 
 ### Vector DB
 
@@ -58,15 +58,16 @@ Each service loads its configuration from Parameter Store or the Lambda environm
 - `ROUTELLM_ENDPOINT` – LLM router URL.
 - `EMBED_MODEL` / `SBERT_MODEL` – embedding configuration.
 - `OPENAI_EMBED_MODEL` – OpenAI model name.
-- `COHERE_API_KEY` – Cohere API key.
+- `COHERE_SECRET_NAME` – name or ARN of the Cohere API key secret.
 - `RERANK_FUNCTION` – optional Lambda used to re-rank search results.
 - `RERANK_PROVIDER` – provider for the re-ranking model.
+- `NVIDIA_SECRET_NAME` – name or ARN of the NVIDIA API key secret.
 - `VECTOR_SEARCH_CANDIDATES` – number of search results retrieved before re-ranking.
 
 ### LLM Router and Invocation
 
 - `BEDROCK_OPENAI_ENDPOINTS` – comma‑separated Bedrock endpoints.
-- `BEDROCK_API_KEY` – API key for Bedrock.
+- `BEDROCK_SECRET_NAME` – name or ARN of the Bedrock API key secret.
 - `BEDROCK_TEMPERATURE`, `BEDROCK_NUM_CTX`, `BEDROCK_MAX_TOKENS`, `BEDROCK_TOP_P`, `BEDROCK_TOP_K`, `BEDROCK_MAX_TOKENS_TO_SAMPLE` – generation settings for Bedrock.
 - `OLLAMA_ENDPOINTS` – comma‑separated URLs of Ollama servers.
 - `OLLAMA_DEFAULT_MODEL` – default Ollama model name.

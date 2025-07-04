@@ -23,6 +23,12 @@ Parameters:
   VectorSearchCandidates:
     Type: String
     Default: '5'
+  CohereSecretName:
+    Type: String
+    Default: ''
+  NvidiaSecretName:
+    Type: String
+    Default: ''
 
 Globals:
   Function:
@@ -44,6 +50,7 @@ Resources:
           VECTOR_SEARCH_CANDIDATES: !Ref VectorSearchCandidates
           SUMMARY_ENDPOINT: !Ref SummaryEndpoint
           ROUTELLM_ENDPOINT: !Ref RouteLlmEndpoint
+          COHERE_SECRET_NAME: !Ref CohereSecretName
       Events:
         Api:
           Type: Api
@@ -90,6 +97,8 @@ Resources:
           TOP_K: !Ref VectorSearchCandidates
           CROSS_ENCODER_MODEL: ''
           RERANK_PROVIDER: ''
+          COHERE_SECRET_NAME: !Ref CohereSecretName
+          NVIDIA_SECRET_NAME: !Ref NvidiaSecretName
 
 Outputs:
   RerankFunctionArn:

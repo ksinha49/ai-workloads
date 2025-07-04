@@ -9,6 +9,7 @@ from typing import Any, Dict, List, Callable
 import json
 
 from common_utils.get_ssm import get_config
+from common_utils.get_secret import get_secret
 
 # Module Metadata
 __author__ = "Koushik Sinha"
@@ -50,9 +51,8 @@ def _cohere_rerank(query: str, docs: List[str]) -> List[float]:
 
     import cohere  # type: ignore
 
-    api_key = get_config("COHERE_API_KEY", decrypt=True) or os.environ.get(
-        "COHERE_API_KEY"
-    )
+    secret = os.environ.get("COHERE_SECRET_NAME", "COHERE_API_KEY")
+    api_key = get_secret(secret)
     client = cohere.Client(api_key)
     try:
         resp = client.rerank(query=query, documents=docs, top_n=len(docs))
@@ -68,7 +68,8 @@ def _nvidia_rerank(query: str, docs: List[str]) -> List[float]:
     import httpx  # type: ignore
 
     endpoint = os.environ.get("NVIDIA_RERANK_ENDPOINT")
-    api_key = os.environ.get("NVIDIA_API_KEY")
+    n_secret = os.environ.get("NVIDIA_SECRET_NAME", "NVIDIA_API_KEY")
+    api_key = get_secret(n_secret)
     headers = {"Authorization": f"Bearer {api_key}"} if api_key else None
     payload = {"query": query, "documents": docs}
     try:

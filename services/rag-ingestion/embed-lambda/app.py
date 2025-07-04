@@ -13,6 +13,7 @@ from common_utils import configure_logger
 from typing import Any, Dict, List
 
 from common_utils.get_ssm import get_config
+from common_utils.get_secret import get_secret
 
 # Module Metadata
 __author__ = "Koushik Sinha"
@@ -76,7 +77,8 @@ def _cohere_embed(text: str) -> List[float]:
 
     import cohere  # type: ignore
 
-    api_key = get_config("COHERE_API_KEY", decrypt=True) or os.environ.get("COHERE_API_KEY")
+    secret = os.environ.get("COHERE_SECRET_NAME", "COHERE_API_KEY")
+    api_key = get_secret(secret)
     client = cohere.Client(api_key)
     resp = client.embed([text])
     return resp.embeddings[0]

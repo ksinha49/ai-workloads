@@ -6,7 +6,7 @@ Parameters:
   BedrockOpenAIEndpoint:
     Type: String
     Default: ''
-  BedrockApiKey:
+  BedrockSecretName:
     Type: String
     Default: ''
   BedrockTemperature:
@@ -91,7 +91,7 @@ Resources:
       Environment:
         Variables:
           BEDROCK_OPENAI_ENDPOINTS: !Ref BedrockOpenAIEndpoint
-          BEDROCK_API_KEY: !Ref BedrockApiKey
+          BEDROCK_SECRET_NAME: !Ref BedrockSecretName
           BEDROCK_TEMPERATURE: !Ref BedrockTemperature
           BEDROCK_NUM_CTX: !Ref BedrockNumCtx
           BEDROCK_MAX_TOKENS: !Ref BedrockMaxTokens

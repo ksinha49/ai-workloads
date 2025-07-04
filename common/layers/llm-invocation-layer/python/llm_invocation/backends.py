@@ -12,10 +12,12 @@ import boto3
 import httpx
 import asyncio
 from common_utils import configure_logger
+from common_utils.get_secret import get_secret
 
 logger = configure_logger(__name__)
 
-BEDROCK_API_KEY = os.environ.get("BEDROCK_API_KEY")
+_secret_name = os.environ.get("BEDROCK_SECRET_NAME", "BEDROCK_API_KEY")
+BEDROCK_API_KEY = get_secret(_secret_name)
 OLLAMA_DEFAULT_MODEL = os.environ.get("OLLAMA_DEFAULT_MODEL", "")
 
 # Default sampling parameters for Bedrock models

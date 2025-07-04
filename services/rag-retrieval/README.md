@@ -28,9 +28,10 @@ The retrieval logic calls the search Lambda defined by the `VECTOR_SEARCH_FUNCTI
 - `EMBED_MODEL` – default embedding provider (`sbert` by default).
 - `SBERT_MODEL` – SentenceTransformer model name or S3 path.
 - `OPENAI_EMBED_MODEL` – embedding model name for OpenAI.
-- `COHERE_API_KEY` – API key when using Cohere embeddings.
+ - `COHERE_SECRET_NAME` – name or ARN of the Cohere API key secret.
 - `CROSS_ENCODER_MODEL` – model name or S3 path for the cross-encoder.
 - `RERANK_PROVIDER` – rerank provider (`huggingface`, `cohere` or `nvidia`).
+- `NVIDIA_SECRET_NAME` – name or ARN of the NVIDIA API key secret.
 - `VECTOR_SEARCH_CANDIDATES` – number of candidates retrieved before re-ranking.
 
 Values can be stored in Parameter Store and loaded with the shared `get_config` helper.
