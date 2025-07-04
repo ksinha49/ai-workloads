@@ -191,7 +191,7 @@ def extract_zip_file(event: dict) -> dict:
             "statusCode": 200,
             "pdfFiles": pdffileList,
             "xmlFiles": xmlfileList,
-            "zipFileName": getFileName(zip_file_key),
+            "zipFileName": get_file_name(zip_file_key),
         }
 
     except ClientError as exc:
@@ -205,13 +205,11 @@ def extract_zip_file(event: dict) -> dict:
         logger.exception("Unexpected error processing ZIP: %s", exc)
         return _error_response(500, "Internal server error")
 
-def getFileName(bucket_key):
-    """
-    Utility function to parse the S3 URI into bucket name and file key.
-    """
+def get_file_name(bucket_key):
+    """Extract the object key from a full S3 path."""
+
     parts = bucket_key.split("/", 1)
-    file_name = parts[1]
-    return file_name
+    return parts[1]
 
 def lambda_handler(event: dict, context: dict):
     """Triggered when a ZIP file is uploaded for extraction.
