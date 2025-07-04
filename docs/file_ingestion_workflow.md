@@ -10,6 +10,7 @@ stateDiagram-v2
     [*] --> file_processing
     file_processing --> Wait
     file_processing --> idp_workflow
+
     state "IDP workflow" as idp_workflow {
         [*] --> classifier
         classifier --> office_extractor
@@ -20,12 +21,17 @@ stateDiagram-v2
         office_extractor --> combine
         pdf_ocr_extractor --> combine
         combine --> output
+        output --> idp_workflow_end
     }
-    idp_workflow --> Wait
-    Wait --> FileUploadStatus
-    FileUploadStatus --> Choice
-    Choice -->|fileupload_status != 'COMPLETE'| Wait
-    Choice -->|fileupload_status == 'COMPLETE'| start_ingestion
+
+    idp_workflow_end --> Wait
+
+    Wait --> FileUploadStatus : check status
+    state FileUploadStatus <<choice>>
+
+    FileUploadStatus --> Wait : fileupload_status != "COMPLETE"
+    FileUploadStatus --> start_ingestion : fileupload_status == "COMPLETE"
+
     start_ingestion --> [*]
 ```
 
