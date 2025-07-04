@@ -265,3 +265,4 @@ Additional documentation is available in the `docs/` directory:
 - [docs/knowledge_rag_usage.md](docs/knowledge_rag_usage.md)
 - [docs/event_schemas.md](docs/event_schemas.md)
 - [docs/entity_tokenization_service.md](docs/entity_tokenization_service.md)
+- [docs/tokenization_workflow.md](docs/tokenization_workflow.md)

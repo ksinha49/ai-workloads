@@ -28,3 +28,5 @@ A response similar to the following is returned:
 ```
 
 Subsequent calls with the same entity, type and domain return the same token.
+
+For details on the overall tokenization process see [tokenization_workflow.md](tokenization_workflow.md).
