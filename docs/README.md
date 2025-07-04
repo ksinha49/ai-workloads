@@ -7,6 +7,7 @@ This directory contains guides and reference material for the services in this r
 - [summarization_workflow.md](summarization_workflow.md) – details of the summarization Step Function.
 - [prompt_engine.md](prompt_engine.md) – how prompts are stored and rendered.
 - [knowledge_rag_usage.md](knowledge_rag_usage.md) – ingesting and querying the knowledge base.
+- [rag_architecture.md](rag_architecture.md) – how ingestion, retrieval and summarization services interact.
 - [event_schemas.md](event_schemas.md) – sample payloads for Lambdas and Step Functions.
 - [entity_tokenization_service.md](entity_tokenization_service.md) – overview of the tokenization Lambda.
 - [tokenization_workflow.md](tokenization_workflow.md) – generating and rotating tokens securely.
