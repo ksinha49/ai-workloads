@@ -14,6 +14,8 @@ Copies uploaded files to the IDP bucket and waits for text extraction results be
 - **Lambdas:** `file-processing-lambda`, `file-processing-status-lambda`
 - **State machine:** `FileIngestionStateMachine` orchestrates the flow
 
+See the [file ingestion workflow](../docs/file_ingestion_workflow.md) for an overview.
+
 ## idp
 Complete Intelligent Document Processing pipeline performing classification, page splitting, text extraction and OCR before posting JSON output to an external API.
 
@@ -31,6 +33,8 @@ Splits text into overlapping chunks, generates embeddings and stores them in Mil
 
 - **Lambdas:** `text-chunk-lambda`, `embed-lambda`
 - Exports the ingestion state machine for other stacks
+
+For a detailed workflow, see [../docs/rag_ingestion_workflow.md](../docs/rag_ingestion_workflow.md).
 
 ## vector-db
 Manages Milvus collections and provides search functions.
