@@ -10,6 +10,15 @@ import time
 
 import boto3
 import httpx
+try:  # pragma: no cover - optional dependency
+    from botocore.exceptions import BotoCoreError
+except Exception:  # pragma: no cover - allow import without botocore
+    BotoCoreError = Exception  # type: ignore
+try:  # pragma: no cover - optional dependency
+    from httpx import HTTPError
+except Exception:  # pragma: no cover - allow import without httpx
+    class HTTPError(Exception):
+        pass
 from common_utils import configure_logger
 from common_utils.get_ssm import get_config
 from common_utils.get_secret import get_secret
@@ -238,7 +247,7 @@ def invoke_bedrock_runtime(
     try:
         resp = _invoke()
         data = json.loads(resp.get("body").read())
-    except Exception as exc:  # pragma: no cover - network/runtime failures
+    except (BotoCoreError, json.JSONDecodeError) as exc:  # pragma: no cover - network/runtime failures
         logger.error("Bedrock runtime invocation failed: %s", exc)
         raise
 
@@ -266,7 +275,7 @@ def invoke_bedrock_openai(payload: Dict[str, Any]) -> Dict[str, Any]:
     try:
         resp = httpx.post(endpoint, json=payload, headers=headers)
         resp.raise_for_status()
-    except Exception:
+    except HTTPError:
         _bedrock_selector.record_failure(endpoint)
         raise
     else:
@@ -293,7 +302,7 @@ def invoke_ollama(payload: Dict[str, Any]) -> Dict[str, Any]:
     try:
         resp = httpx.post(endpoint, json=payload)
         resp.raise_for_status()
-    except Exception:
+    except HTTPError:
         _ollama_selector.record_failure(endpoint)
         raise
     else:

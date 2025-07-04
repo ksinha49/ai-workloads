@@ -6,6 +6,7 @@ from typing import List, Optional
 
 import nbformat
 from pygments.lexers import guess_lexer_for_filename
+from pygments.util import ClassNotFound
 from tree_sitter import Language, Parser
 import tiktoken
 
@@ -74,7 +75,7 @@ class CodeFileChunker(TextFileChunker):
                 part = text[node.start_byte : node.end_byte]
                 chunks.extend(super().chunk(part))
             return chunks or super().chunk(text)
-        except Exception:
+        except (OSError, RuntimeError, ValueError):
             return super().chunk(text)
 
 
@@ -121,7 +122,7 @@ class UniversalFileChunker:
                 try:
                     lexer = guess_lexer_for_filename(file_name, text)
                     language = lexer.name.lower()
-                except Exception:
+                except ClassNotFound:
                     pass
             return CodeFileChunker(self.max_tokens, self.overlap, language).chunk(text)
         return self.text_chunker.chunk(text)

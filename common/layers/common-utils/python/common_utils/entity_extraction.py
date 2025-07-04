@@ -36,7 +36,7 @@ def _load_spacy():
 
         model = get_config("SPACY_MODEL") or os.environ.get("SPACY_MODEL", "en_core_web_sm")
         _NLP = spacy.load(model)
-    except Exception:
+    except (ImportError, OSError):
         _NLP = None
     return _NLP
 

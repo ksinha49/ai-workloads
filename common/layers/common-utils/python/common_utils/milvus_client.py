@@ -19,9 +19,11 @@ logger = configure_logger(__name__)
 
 try:  # pragma: no cover - optional dependency
     from pymilvus import Collection, connections
+    from pymilvus.exceptions import MilvusException
 except Exception:  # pragma: no cover - allow import without pymilvus
     Collection = None  # type: ignore
     connections = None  # type: ignore
+    MilvusException = Exception  # type: ignore
 
 
 @dataclass
@@ -119,7 +121,7 @@ class MilvusClient:
                 self.collection.create_index(
                     "embedding", self.index_params, index_name="embedding_idx"
                 )
-            except Exception:
+            except MilvusException:
                 # index may already exist
                 pass
 
@@ -219,7 +221,7 @@ class MilvusClient:
                 self.collection.create_index(
                     "embedding", self.index_params, index_name="embedding_idx"
                 )
-            except Exception:
+            except MilvusException:
                 pass
 
     def drop_collection(self) -> None:
