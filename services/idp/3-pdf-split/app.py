@@ -29,7 +29,7 @@ from typing import Iterable
 from models import S3Event, LambdaResponse
 
 import boto3
-from common_utils import get_config, configure_logger
+from common_utils import get_config, configure_logger, iter_s3_records
 from PyPDF2 import PdfReader, PdfWriter
 
 __author__ = "Koushik Sinha"
@@ -42,12 +42,6 @@ s3_client = boto3.client("s3")
 
 
 
-def _iter_records(event: S3Event) -> Iterable[dict]:
-    """Yield S3 event records from the Lambda event."""
-
-    records = event.Records if hasattr(event, "Records") else event.get("Records", [])
-    for record in records:
-        yield record
 
 
 def _split_pdf(bucket_name: str, pdf_page_prefix: str, key: str) -> None:
@@ -126,7 +120,7 @@ def lambda_handler(event: S3Event, context: dict) -> LambdaResponse:
         200 status once splitting is complete.
     """
     logger.info("Received event for 3-pdf-split: %s", event)
-    for rec in _iter_records(event):
+    for rec in iter_s3_records(event):
         try:
             _handle_record(rec)
         except Exception as exc:  # pragma: no cover - runtime safety

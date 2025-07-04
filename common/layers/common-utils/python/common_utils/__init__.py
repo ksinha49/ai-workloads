@@ -16,6 +16,7 @@ from .elasticsearch_client import ElasticsearchClient
 from .entity_extraction import extract_entities
 from .lambda_response import lambda_response
 from .ner_models import load_ner_model
+from .s3_utils import iter_s3_records
 
 __all__ = [
     "get_values_from_ssm",
@@ -32,4 +33,5 @@ __all__ = [
     "configure_logger",
     "lambda_response",
     "load_ner_model",
+    "iter_s3_records",
 ]

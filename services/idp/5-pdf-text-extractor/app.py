@@ -29,7 +29,7 @@ from models import S3Event, LambdaResponse
 from statistics import median
 
 import boto3
-from common_utils import get_config, configure_logger
+from common_utils import get_config, configure_logger, iter_s3_records
 import fitz  # PyMuPDF
 try:
     from botocore.exceptions import ClientError, BotoCoreError
@@ -51,12 +51,6 @@ s3_client = boto3.client("s3")
 
 
 
-def _iter_records(event: S3Event) -> Iterable[dict]:
-    """Yield S3 event records from *event*."""
-
-    records = event.Records if hasattr(event, "Records") else event.get("Records", [])
-    for record in records:
-        yield record
 
 
 def _results_to_layout_text(results: list[tuple[list[list[int]], str]]) -> str:
@@ -232,7 +226,7 @@ def lambda_handler(event: S3Event, context: dict) -> LambdaResponse:
     """
 
     logger.info("Received event for 5-pdf-text-extractor: %s", event)
-    for rec in _iter_records(event):
+    for rec in iter_s3_records(event):
         try:
             _handle_record(rec)
         except (ClientError, BotoCoreError, fitz.FileDataError, ValueError) as exc:

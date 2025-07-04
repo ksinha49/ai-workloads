@@ -32,7 +32,7 @@ from typing import Iterable
 from models import S3Event, LambdaResponse
 
 import boto3
-from common_utils import get_config, configure_logger
+from common_utils import get_config, configure_logger, iter_s3_records
 
 __author__ = "Koushik Sinha"
 __version__ = "1.0.0"
@@ -45,12 +45,6 @@ s3_client = boto3.client("s3")
 
 
 
-def _iter_records(event: S3Event) -> Iterable[dict]:
-    """Yield S3 event records from *event*."""
-
-    records = event.Records if hasattr(event, "Records") else event.get("Records", [])
-    for record in records:
-        yield record
 
 
 def _load_manifest(bucket_name: str, pdf_page_prefix: str, doc_id: str) -> dict | None:
@@ -171,7 +165,7 @@ def lambda_handler(event: S3Event, context: dict) -> LambdaResponse:
     """
 
     logger.info("Received event for 7-combine: %s", event)
-    for rec in _iter_records(event):
+    for rec in iter_s3_records(event):
         try:
             _handle_record(rec)
         except Exception as exc:  # pragma: no cover - runtime safety

@@ -16,7 +16,7 @@ from typing import Iterable
 from models import S3Event, LambdaResponse
 
 import boto3
-from common_utils import get_config, configure_logger
+from common_utils import get_config, configure_logger, iter_s3_records
 from docx import Document
 from pptx import Presentation
 from openpyxl import load_workbook
@@ -31,12 +31,6 @@ logger = configure_logger(__name__)
 s3_client = boto3.client("s3")
 
 
-def _iter_records(event: S3Event) -> Iterable[dict]:
-    """Yield each S3 event record from ``event``."""
-
-    records = event.Records if hasattr(event, "Records") else event.get("Records", [])
-    for rec in records:
-        yield rec
 
 def _extract_docx(body: bytes) -> list[str]:
     """Return Markdown pages extracted from a DOCX file."""
@@ -152,7 +146,7 @@ def lambda_handler(event: S3Event, context: dict) -> LambdaResponse:
     """
 
     logger.info("Received event for 2-office-extractor: %s", event)
-    for rec in _iter_records(event):
+    for rec in iter_s3_records(event):
         try:
             _process_record(rec)
         except Exception as exc:  # pragma: no cover - runtime safety
