@@ -2,6 +2,16 @@
 
 This document describes the multi-step AWS Step Functions state machine that orchestrates the summarization pipeline. The workflow ingests a document, runs a series of prompts in parallel, and generates a summary file that can be PDF, DOCX, JSON or XML, optionally merging PDF or DOCX output with the original document.
 
+```mermaid
+stateDiagram-v2
+    file_ingestion --> check_workflow
+    check_workflow --> load_prompts
+    load_prompts --> run_prompts_map
+    state "run_prompts (Map)" as run_prompts_map
+    run_prompts_map --> file_summary
+    file_summary --> file_assemble
+```
+
 ## Map State
 
 The `run_prompts` state uses the [Map](https://docs.aws.amazon.com/step-functions/latest/dg/amazon-states-language-map-state.html) state type to send each prompt to an SQS queue. Worker Lambdas consume these messages, invoke the summarization logic and return the results using task tokens. The summaries are collected in `$.run_prompts`.
