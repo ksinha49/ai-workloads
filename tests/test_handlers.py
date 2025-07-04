@@ -1285,7 +1285,7 @@ def test_detect_pii_ml(monkeypatch):
     def fake_model(text):
         return type("Doc", (), {"ents": [DummyEnt("John", "PERSON", 0, 4)]})()
 
-    monkeypatch.setattr(module, "_load_model", lambda: ("spacy", fake_model))
+    monkeypatch.setattr(module, "load_ner_model", lambda *a, **k: ("spacy", fake_model))
 
     out = module.lambda_handler({"text": "John 123-45-6789"}, {})
     assert {
@@ -1301,7 +1301,7 @@ def test_detect_pii_regex(monkeypatch):
     module = load_lambda(
         "detect_pii_regex", "services/sensitive-info-detection/detect-sensitive-info-lambda/app.py"
     )
-    monkeypatch.setattr(module, "_load_model", lambda: None)
+    monkeypatch.setattr(module, "load_ner_model", lambda *a, **k: None)
 
     out = module.lambda_handler({"text": "Card 4111 1111 1111 1111"}, {})
     assert any(e["type"] == "CREDIT_CARD" for e in out["entities"])
@@ -1322,7 +1322,7 @@ def test_detect_pii_medical_domain(monkeypatch):
     def fake_model(text):
         return type("Doc", (), {"ents": [DummyEnt("Jane", "PATIENT", 0, 4)]})()
 
-    monkeypatch.setattr(module, "_load_medical_model", lambda: ("spacy", fake_model))
+    monkeypatch.setattr(module, "load_ner_model", lambda *a, **k: ("spacy", fake_model))
 
     out = module.lambda_handler({"text": "Jane", "domain": "Medical"}, {})
     assert any(e["type"] == "PATIENT" for e in out["entities"])
@@ -1333,7 +1333,7 @@ def test_detect_pii_legal_regex(monkeypatch):
         "detect_pii_legal", "services/sensitive-info-detection/detect-sensitive-info-lambda/app.py"
     )
 
-    monkeypatch.setattr(module, "_load_legal_model", lambda: None)
+    monkeypatch.setattr(module, "load_ner_model", lambda *a, **k: None)
     text = "case 12-12345"
     out = module.lambda_handler({"text": text, "classification": "Legal"}, {})
     assert any(e["type"] == "CASE_NUMBER" for e in out["entities"])
@@ -1356,11 +1356,11 @@ def test_detect_pii_legal_domain(monkeypatch):
     def fake_model(text):
         return type("Doc", (), {"ents": [DummyEnt("Bob", "LAWYER", 0, 3)]})()
 
-    def fake_load():
+    def fake_load(*args, **kwargs):
         called["loaded"] = True
         return ("spacy", fake_model)
 
-    monkeypatch.setattr(module, "_load_legal_model", fake_load)
+    monkeypatch.setattr(module, "load_ner_model", fake_load)
     monkeypatch.setattr(module, "_load_model", lambda: (_ for _ in ()).throw(AssertionError()))
 
     out = module.lambda_handler({"text": "Bob", "domain": "Legal"}, {})
@@ -1375,6 +1375,6 @@ def test_detect_pii_custom_regex(monkeypatch):
         "detect_pii_custom", "services/sensitive-info-detection/detect-sensitive-info-lambda/app.py"
     )
 
-    monkeypatch.setattr(module, "_load_model", lambda: None)
+    monkeypatch.setattr(module, "load_ner_model", lambda *a, **k: None)
     out = module.lambda_handler({"text": "foo123"}, {})
     assert any(e["type"] == "FOO" for e in out["entities"])
