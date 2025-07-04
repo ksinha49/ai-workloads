@@ -1,0 +1,43 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Lambda to detect PII entities.
+
+Parameters:
+  NerLibrary:
+    Type: String
+    Default: 'spacy'
+  SpacyModel:
+    Type: String
+    Default: 'en_core_web_sm'
+  HFModel:
+    Type: String
+    Default: 'dslim/bert-base-NER'
+
+Globals:
+  Function:
+    Handler: app.lambda_handler
+    Runtime: python3.13
+    Timeout: 60
+    MemorySize: 512
+
+Resources:
+  DetectPiiFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./detect-pii-lambda/
+      Environment:
+        Variables:
+          NER_LIBRARY: !Ref NerLibrary
+          SPACY_MODEL: !Ref SpacyModel
+          HF_MODEL: !Ref HFModel
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /detect-pii
+            Method: post
+
+Outputs:
+  DetectPiiFunctionArn:
+    Description: ARN of the PII detection Lambda
+    Value: !GetAtt DetectPiiFunction.Arn

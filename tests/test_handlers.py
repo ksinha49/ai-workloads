@@ -1285,3 +1285,40 @@ def test_vector_search_guid_filter(monkeypatch, config):
     res = module.lambda_handler({"embedding": [0.1], "file_guid": "g2"}, {})
     assert len(res["matches"]) == 1
     assert res["matches"][0]["metadata"]["file_guid"] == "g2"
+
+
+def test_detect_pii_ml(monkeypatch):
+    module = load_lambda(
+        "detect_pii_ml", "services/pii-detection/detect-pii-lambda/app.py"
+    )
+
+    class DummyEnt:
+        def __init__(self, text, label, start, end):
+            self.text = text
+            self.label_ = label
+            self.start_char = start
+            self.end_char = end
+
+    def fake_model(text):
+        return type("Doc", (), {"ents": [DummyEnt("John", "PERSON", 0, 4)]})()
+
+    monkeypatch.setattr(module, "_load_model", lambda: ("spacy", fake_model))
+
+    out = module.lambda_handler({"text": "John 123-45-6789"}, {})
+    assert {
+        "text": "John",
+        "type": "PERSON",
+        "start": 0,
+        "end": 4,
+    } in out["entities"]
+    assert any(e["type"] == "SSN" for e in out["entities"])
+
+
+def test_detect_pii_regex(monkeypatch):
+    module = load_lambda(
+        "detect_pii_regex", "services/pii-detection/detect-pii-lambda/app.py"
+    )
+    monkeypatch.setattr(module, "_load_model", lambda: None)
+
+    out = module.lambda_handler({"text": "Card 4111 1111 1111 1111"}, {})
+    assert any(e["type"] == "CREDIT_CARD" for e in out["entities"])
