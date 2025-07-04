@@ -21,6 +21,7 @@ The repository includes the following directories under `services/`:
 - `knowledge-base` – ingest text snippets and query them through the retrieval stack
 - `sensitive-info-detection` – PII/PHI detection for text including legal entities
 - `entity-tokenization` – replaces sensitive entities with stable tokens
+- `text-anonymization` – replaces or masks detected entities in text
 
 Shared dependencies are packaged as layers in `common/layers/`.
 
@@ -100,6 +101,12 @@ configured via environment variables.
 #### entity-tokenization
 Replaces sensitive entity values with consistent tokens. Existing mappings are
 looked up in DynamoDB and new tokens are generated using an optional salt.
+
+#### text-anonymization
+Replaces or masks entities detected in text. The Lambda supports three modes:
+`mask` to overwrite spans with `[REMOVED]`, `pseudo` to generate synthetic
+values, or `token` to invoke the tokenization service for stable replacements.
+The service relies on the entity detection output to locate spans.
 
 ## Repository Structure
 
