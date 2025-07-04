@@ -15,7 +15,7 @@ import urllib.error
 import urllib.request
 
 import boto3
-from common_utils import get_config, configure_logger
+from common_utils import get_config, configure_logger, iter_s3_records
 from models import S3Event, LambdaResponse
 try:
     from botocore.exceptions import ClientError, BotoCoreError
@@ -36,12 +36,6 @@ s3_client = boto3.client("s3")
 
 
 
-def _iter_records(event: S3Event):
-    """Yield S3 event records from *event*."""
-
-    records = event.Records if hasattr(event, "Records") else event.get("Records", [])
-    for record in records:
-        yield record
 
 
 def _post_to_api(payload: dict, url: str, api_key: str | None) -> bool:
@@ -129,7 +123,7 @@ def lambda_handler(event: S3Event, context: dict) -> LambdaResponse:
     """
 
     logger.info("Received event for 8-output: %s", event)
-    for rec in _iter_records(event):
+    for rec in iter_s3_records(event):
         try:
             _handle_record(rec)
         except (ClientError, BotoCoreError, json.JSONDecodeError, urllib.error.URLError) as exc:

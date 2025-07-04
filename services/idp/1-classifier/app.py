@@ -14,7 +14,7 @@ from typing import Iterable
 from models import S3Event, LambdaResponse
 
 import boto3
-from common_utils import get_config, configure_logger
+from common_utils import get_config, configure_logger, iter_s3_records
 import fitz  # PyMuPDF
 try:
     from botocore.exceptions import ClientError, BotoCoreError
@@ -123,12 +123,6 @@ def _handle_record(record: dict) -> None:
         prefix = office_prefix
     _copy_to_prefix(bucket_name, raw_prefix, key, body, prefix, content_type)
 
-def _iter_records(event: S3Event) -> Iterable[dict]:
-    """Yield each S3 record contained in ``event``."""
-
-    records = event.Records if hasattr(event, "Records") else event.get("Records", [])
-    for record in records:
-        yield record
 
 def lambda_handler(event: S3Event, context) -> LambdaResponse:
     """Triggered by new files in ``RAW_PREFIX``.
@@ -149,7 +143,7 @@ def lambda_handler(event: S3Event, context) -> LambdaResponse:
     """
 
     logger.info("Received event: %s", event)
-    for rec in _iter_records(event):
+    for rec in iter_s3_records(event):
         try:
             _handle_record(rec)
         except (ClientError, BotoCoreError, fitz.FileDataError, ValueError) as exc:
