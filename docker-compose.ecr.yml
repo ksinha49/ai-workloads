@@ -1,0 +1,77 @@
+version: '3.8'
+services:
+  entity-tokenization:
+    build:
+      context: .
+      dockerfile: services/entity-tokenization/Dockerfile
+    image: ${ECR_REGISTRY}/entity-tokenization:${TAG:-latest}
+  file-assembly:
+    build:
+      context: .
+      dockerfile: services/file-assembly/Dockerfile
+    image: ${ECR_REGISTRY}/file-assembly:${TAG:-latest}
+  file-ingestion:
+    build:
+      context: .
+      dockerfile: services/file-ingestion/Dockerfile
+    image: ${ECR_REGISTRY}/file-ingestion:${TAG:-latest}
+  idp:
+    build:
+      context: .
+      dockerfile: services/idp/Dockerfile
+    image: ${ECR_REGISTRY}/idp:${TAG:-latest}
+  knowledge-base:
+    build:
+      context: .
+      dockerfile: services/knowledge-base/Dockerfile
+    image: ${ECR_REGISTRY}/knowledge-base:${TAG:-latest}
+  llm-invocation:
+    build:
+      context: .
+      dockerfile: services/llm-invocation/Dockerfile
+    image: ${ECR_REGISTRY}/llm-invocation:${TAG:-latest}
+  llm-router:
+    build:
+      context: .
+      dockerfile: services/llm-router/Dockerfile
+    image: ${ECR_REGISTRY}/llm-router:${TAG:-latest}
+  prompt-engine:
+    build:
+      context: .
+      dockerfile: services/prompt-engine/Dockerfile
+    image: ${ECR_REGISTRY}/prompt-engine:${TAG:-latest}
+  rag-ingestion:
+    build:
+      context: .
+      dockerfile: services/rag-ingestion/Dockerfile
+    image: ${ECR_REGISTRY}/rag-ingestion:${TAG:-latest}
+  rag-retrieval:
+    build:
+      context: .
+      dockerfile: services/rag-retrieval/Dockerfile
+    image: ${ECR_REGISTRY}/rag-retrieval:${TAG:-latest}
+  sensitive-info-detection:
+    build:
+      context: .
+      dockerfile: services/sensitive-info-detection/Dockerfile
+    image: ${ECR_REGISTRY}/sensitive-info-detection:${TAG:-latest}
+  summarization:
+    build:
+      context: .
+      dockerfile: services/summarization/Dockerfile
+    image: ${ECR_REGISTRY}/summarization:${TAG:-latest}
+  text-anonymization:
+    build:
+      context: .
+      dockerfile: services/text-anonymization/Dockerfile
+    image: ${ECR_REGISTRY}/text-anonymization:${TAG:-latest}
+  vector-db:
+    build:
+      context: .
+      dockerfile: services/vector-db/Dockerfile
+    image: ${ECR_REGISTRY}/vector-db:${TAG:-latest}
+  zip-processing:
+    build:
+      context: .
+      dockerfile: services/zip-processing/Dockerfile
+    image: ${ECR_REGISTRY}/zip-processing:${TAG:-latest}

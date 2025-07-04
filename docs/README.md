@@ -14,3 +14,4 @@ This directory contains guides and reference material for the services in this r
 - [entity_tokenization_service.md](entity_tokenization_service.md) – overview of the tokenization Lambda.
 - [tokenization_workflow.md](tokenization_workflow.md) – generating and rotating tokens securely.
 - [environment_variables.md](environment_variables.md) – common Lambda configuration.
+- [ecr_deployment.md](ecr_deployment.md) – building and pushing container images.
