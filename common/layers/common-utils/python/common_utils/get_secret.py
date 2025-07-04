@@ -6,6 +6,10 @@ import os
 from typing import Optional
 
 import boto3
+try:  # pragma: no cover - optional dependency
+    from botocore.exceptions import BotoCoreError, ClientError
+except Exception:  # pragma: no cover - allow import without botocore
+    BotoCoreError = ClientError = Exception  # type: ignore
 
 from common_utils import configure_logger
 
@@ -35,6 +39,6 @@ def get_secret(name: str) -> Optional[str]:
         _SECRET_CACHE[secret_name] = value
         logger.info("Loaded secret %s", secret_name)
         return value
-    except Exception as exc:
+    except (BotoCoreError, ClientError) as exc:
         logger.error("Error retrieving secret %s: %s", secret_name, exc)
         raise

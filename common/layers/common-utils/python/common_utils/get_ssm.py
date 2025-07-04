@@ -2,6 +2,10 @@
 
 from typing import Optional, Tuple
 import boto3
+try:  # pragma: no cover - optional dependency
+    from botocore.exceptions import BotoCoreError, ClientError
+except Exception:  # pragma: no cover - allow import without botocore
+    BotoCoreError = ClientError = Exception  # type: ignore
 
 from common_utils import configure_logger
 
@@ -27,7 +31,7 @@ def get_values_from_ssm(name: str, decrypt: bool = False) -> Optional[str]:
         _SSM_CACHE[name] = value
         logger.info("Parameter Value for %s: %s", name, value)
         return value
-    except Exception as exc:
+    except (BotoCoreError, ClientError) as exc:
         logger.error("Error retrieving parameter %s: %s", name, exc)
         raise
 
@@ -60,12 +64,12 @@ def get_config(name: str, bucket: str | None = None, key: str | None = None,
             for tag in resp.get("TagSet", []):
                 if tag.get("Key") == name:
                     return tag.get("Value")
-        except Exception as exc:  # pragma: no cover - fallback to SSM
+        except (BotoCoreError, ClientError) as exc:  # pragma: no cover - fallback to SSM
             logger.warning("Tag lookup failed for %s/%s: %s", bucket, key, exc)
 
     try:
         param_name = f"{get_environment_prefix()}/{name}"
         return get_values_from_ssm(param_name, decrypt)
-    except Exception:
+    except (BotoCoreError, ClientError):
         return None
 

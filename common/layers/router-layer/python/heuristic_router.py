@@ -9,6 +9,10 @@ from dataclasses import dataclass
 from typing import Any, Dict, Optional, List
 
 import boto3
+try:  # pragma: no cover - optional dependency
+    from langdetect.lang_detect_exception import LangDetectException
+except Exception:  # pragma: no cover - allow import without langdetect
+    LangDetectException = Exception  # type: ignore
 from generative_router import invoke_bedrock_model
 from common_utils.get_ssm import get_config
 
@@ -196,7 +200,7 @@ class HeuristicRouter:
         except KeyError as e:
             trace_log.append(f"  - ERROR in language rule: {e}.")
             return None
-        except Exception as e:
+        except LangDetectException as e:
             trace_log.append(f"  - ERROR: Language detection failed: {e}.")
             return None
 
@@ -238,7 +242,7 @@ class HeuristicRouter:
                 return None
 
             return final_model
-        except (KeyError, json.JSONDecodeError, Exception) as e:
+        except (KeyError, json.JSONDecodeError, ValueError) as e:
             trace_log.append(f"  - ERROR in llm_classifier rule: {e}.")
             return None
 

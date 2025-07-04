@@ -17,7 +17,7 @@ logger = configure_logger(__name__)
 
 try:  # pragma: no cover - optional dependency
     from elasticsearch import Elasticsearch
-except Exception:  # pragma: no cover - allow import without elasticsearch
+except ImportError:  # pragma: no cover - allow import without elasticsearch
     Elasticsearch = None  # type: ignore
 
 
