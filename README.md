@@ -19,7 +19,7 @@ The repository includes the following directories under `services/`:
 - `llm-router` – routes prompts via heuristic, predictive and cascading strategies to Amazon Bedrock or local Ollama
 - `llm-invocation` – forwards OpenAI-style requests to a specific LLM backend
 - `knowledge-base` – ingest text snippets and query them through the retrieval stack
-- `pii-detection` – PII/PHI detection for text including legal entities
+- `sensitive-info-detection` – PII/PHI detection for text including legal entities
 
 Shared dependencies are packaged as layers in `common/layers/`.
 
