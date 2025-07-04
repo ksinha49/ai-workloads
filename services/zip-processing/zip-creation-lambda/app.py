@@ -15,7 +15,10 @@ Modified By: Koushik Sinha
 import boto3
 import zipfile
 import io
-from botocore.exceptions import ClientError
+try:  # pragma: no cover - optional dependency
+    from botocore.exceptions import BotoCoreError, ClientError
+except Exception:  # pragma: no cover - allow import without botocore
+    BotoCoreError = ClientError = Exception  # type: ignore
 from defusedxml import ElementTree as ET
 import json
 import logging
@@ -56,7 +59,7 @@ def get_values_from_ssm(ssm_key: str) -> str:
         else:
             logger.warning("No value found for parameter: %s", ssm_key)
             return None
-    except Exception as e:
+    except (BotoCoreError, ClientError) as e:
         raise ValueError(f"Error occurred while retrieving parameter: {e}")
 
 def get_environment_prefix() -> str:
@@ -235,7 +238,7 @@ def assemble_zip_files(event, s3_client=s3_client):
             return  {"status": "200",
                 "statusMessage" : "All the files in the zip file got processed"
                 }
-    except Exception as e:
+    except ValueError as e:
        error_header = (
           "The below policies encountered an error and could not produce a summary. The APS will still be available in TPP.\n\n"
        )

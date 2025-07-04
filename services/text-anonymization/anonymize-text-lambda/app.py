@@ -6,6 +6,11 @@ import os
 from typing import Any, Dict, List, Tuple
 
 import httpx
+try:  # pragma: no cover - optional dependency
+    from httpx import HTTPError
+except Exception:  # pragma: no cover - allow import without httpx
+    class HTTPError(Exception):
+        pass
 from faker import Faker
 from common_utils import configure_logger
 from common_utils.get_ssm import get_config
@@ -41,7 +46,7 @@ def _pseudonymize(ent: Dict[str, Any]) -> Tuple[str, Dict[str, Any]]:
     gen = _FAKE_MAP.get(ent.get("type"), _fake.word)
     try:
         replacement = gen()
-    except Exception:  # pragma: no cover - faker failure
+    except (ValueError, RuntimeError):  # pragma: no cover - faker failure
         logger.exception("Faker generation failed")
         replacement = "[REMOVED]"
     return replacement, {"replacement": replacement, **ent}
@@ -56,7 +61,7 @@ def _tokenize(ent: Dict[str, Any]) -> Tuple[str, Dict[str, Any]]:
         resp = httpx.post(TOKEN_API_URL, json=payload, timeout=TIMEOUT)
         resp.raise_for_status()
         token = resp.json().get("token", "[REMOVED]")
-    except Exception:  # pragma: no cover - network failure
+    except HTTPError:  # pragma: no cover - network failure
         logger.exception("Tokenization request failed")
         token = "[REMOVED]"
     return token, {"replacement": token, **ent}

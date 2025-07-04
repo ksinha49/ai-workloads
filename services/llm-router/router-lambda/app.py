@@ -18,6 +18,10 @@ import re
 from typing import Any, Dict
 
 import boto3
+try:  # pragma: no cover - optional dependency
+    from botocore.exceptions import BotoCoreError, ClientError
+except Exception:  # pragma: no cover - allow import without botocore
+    BotoCoreError = ClientError = Exception  # type: ignore
 import json
 from common_utils import configure_logger, get_config
 from models import LlmRouterEvent, LambdaResponse
@@ -153,7 +157,7 @@ def lambda_handler(event: LlmRouterEvent, context: Any) -> LambdaResponse:
             QueueUrl=INVOCATION_QUEUE_URL,
             MessageBody=json.dumps(request_payload),
         )
-    except Exception as exc:  # pragma: no cover - queue failure
+    except (BotoCoreError, ClientError) as exc:
         logger.exception("Error queueing LLM invocation")
         return {
             "statusCode": 500,

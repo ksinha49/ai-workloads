@@ -101,12 +101,12 @@ def test_tokenization_timeout(monkeypatch, load_app, config):
     monkeypatch.setenv("ANON_MODE", "token")
     monkeypatch.setenv("TOKEN_API_URL", "http://token")
 
+    module = load_app()
+
     def raise_timeout(url, json=None, timeout=None):
-        raise RuntimeError("timeout")
+        raise module.HTTPError("timeout")
 
     monkeypatch.setattr(sys.modules["httpx"], "post", raise_timeout)
-
-    module = load_app()
     out = module.lambda_handler(_event(), {})
     assert out["text"] == "[REMOVED] met [REMOVED]."
     repl = out.get("replacements", [])
