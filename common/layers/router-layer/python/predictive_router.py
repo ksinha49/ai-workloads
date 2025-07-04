@@ -15,6 +15,7 @@ import os
 from typing import Any, Dict, Optional
 
 import boto3
+from common_utils.get_ssm import get_config
 
 __all__ = [
     "PredictiveRouter",
@@ -26,7 +27,7 @@ __all__ = [
 
 def invoke_bedrock_model(lambda_client: Any, model_id: str, prompt: str) -> str:
     """Invoke the LLM invocation lambda for a Bedrock model."""
-    fn = os.environ.get("LLM_INVOCATION_FUNCTION")
+    fn = get_config("LLM_INVOCATION_FUNCTION") or os.environ.get("LLM_INVOCATION_FUNCTION")
     if not fn:
         raise RuntimeError("LLM_INVOCATION_FUNCTION not set")
     resp = lambda_client.invoke(
@@ -67,11 +68,18 @@ class PredictiveRouter:
         """Create a Lambda client and read model identifiers from the environment."""
 
         self.lambda_client = boto3.client("lambda")
-        self.classifier_model_id = os.environ.get("CLASSIFIER_MODEL_ID") or os.environ.get(
-            "WEAK_MODEL_ID"
+        self.classifier_model_id = (
+            get_config("CLASSIFIER_MODEL_ID")
+            or os.environ.get("CLASSIFIER_MODEL_ID")
+            or get_config("WEAK_MODEL_ID")
+            or os.environ.get("WEAK_MODEL_ID")
         )
-        self.weak_model_id = os.environ.get("WEAK_MODEL_ID")
-        self.strong_model_id = os.environ.get("STRONG_MODEL_ID")
+        self.weak_model_id = (
+            get_config("WEAK_MODEL_ID") or os.environ.get("WEAK_MODEL_ID")
+        )
+        self.strong_model_id = (
+            get_config("STRONG_MODEL_ID") or os.environ.get("STRONG_MODEL_ID")
+        )
 
     def _classify_prompt(self, prompt: str) -> str:
         """Return ``'simple'`` or ``'complex'`` for *prompt* using the classifier model."""

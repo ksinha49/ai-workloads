@@ -11,8 +11,9 @@ __all__ = [
 ]
 
 import httpx
+from common_utils.get_ssm import get_config
 
-ROUTELLM_ENDPOINT = os.environ.get("ROUTELLM_ENDPOINT", "")
+ROUTELLM_ENDPOINT = get_config("ROUTELLM_ENDPOINT") or os.environ.get("ROUTELLM_ENDPOINT", "")
 
 
 def forward_to_routellm(payload: Dict[str, Any]) -> Dict[str, Any]:

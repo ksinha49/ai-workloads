@@ -10,12 +10,14 @@ from typing import Any, Dict, Optional, List
 
 import boto3
 from generative_router import invoke_bedrock_model
+from common_utils.get_ssm import get_config
 
 __all__ = ["HeuristicRouter", "handle_heuristic_route"]
 
 DEFAULT_PROMPT_COMPLEXITY_THRESHOLD = 20
 PROMPT_COMPLEXITY_THRESHOLD = int(
-    os.environ.get("PROMPT_COMPLEXITY_THRESHOLD", str(DEFAULT_PROMPT_COMPLEXITY_THRESHOLD))
+    get_config("PROMPT_COMPLEXITY_THRESHOLD")
+    or os.environ.get("PROMPT_COMPLEXITY_THRESHOLD", str(DEFAULT_PROMPT_COMPLEXITY_THRESHOLD))
 )
 
 
@@ -51,7 +53,7 @@ class AppConfig:
 def _load_config() -> AppConfig:
     """Return router configuration from ``HEURISTIC_ROUTER_CONFIG`` env var."""
 
-    cfg = os.environ.get("HEURISTIC_ROUTER_CONFIG")
+    cfg = get_config("HEURISTIC_ROUTER_CONFIG") or os.environ.get("HEURISTIC_ROUTER_CONFIG")
     if cfg:
         try:
             data = json.loads(cfg)
@@ -267,7 +269,7 @@ class HeuristicRouter:
 
         # When a classifier model is configured we skip the heuristic router so
         # :class:`PredictiveRouter` can decide based on model output.
-        if os.environ.get("CLASSIFIER_MODEL_ID"):
+        if get_config("CLASSIFIER_MODEL_ID") or os.environ.get("CLASSIFIER_MODEL_ID"):
             return None
 
         prompt = _prompt_text(event)

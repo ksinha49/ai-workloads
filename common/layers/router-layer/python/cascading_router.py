@@ -16,6 +16,7 @@ from typing import Any, Dict, Optional
 from heuristic_router import HeuristicRouter
 from predictive_router import PredictiveRouter
 from generative_router import GenerativeRouter
+from common_utils.get_ssm import get_config
 
 __all__ = [
     "CascadingRouter",
@@ -43,7 +44,7 @@ class CascadingRouter:
 
 def invoke_bedrock_model(lambda_client: Any, model_id: str, prompt: str) -> str:
     """Invoke the llm invocation lambda for a Bedrock model."""
-    fn = os.environ.get("LLM_INVOCATION_FUNCTION")
+    fn = get_config("LLM_INVOCATION_FUNCTION") or os.environ.get("LLM_INVOCATION_FUNCTION")
     if not fn:
         raise RuntimeError("LLM_INVOCATION_FUNCTION not set")
     resp = lambda_client.invoke(
@@ -92,8 +93,16 @@ def handle_cascading_route(
 
         lambda_client = boto3.client("lambda")
 
-    weak_model_id = config.get("weak_model_id") or os.environ.get("WEAK_MODEL_ID")
-    strong_model_id = config.get("strong_model_id") or os.environ.get("STRONG_MODEL_ID")
+    weak_model_id = (
+        config.get("weak_model_id")
+        or get_config("WEAK_MODEL_ID")
+        or os.environ.get("WEAK_MODEL_ID")
+    )
+    strong_model_id = (
+        config.get("strong_model_id")
+        or get_config("STRONG_MODEL_ID")
+        or os.environ.get("STRONG_MODEL_ID")
+    )
 
     weak_model_response = invoke_bedrock_model(lambda_client, weak_model_id, prompt)
 

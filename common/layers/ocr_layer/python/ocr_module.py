@@ -173,7 +173,8 @@ def _perform_ocr(ctx, engine: str, img_bytes: bytes) -> tuple[str, float]:
 
     if engine.lower() == "trocr":
         import os
-        url = os.environ.get("TROCR_ENDPOINT")
+        from common_utils.get_ssm import get_config
+        url = get_config("TROCR_ENDPOINT") or os.environ.get("TROCR_ENDPOINT")
         if ctx and isinstance(ctx, str):
             url = ctx
         if not url:
@@ -182,7 +183,8 @@ def _perform_ocr(ctx, engine: str, img_bytes: bytes) -> tuple[str, float]:
 
     if engine.lower() == "docling":
         import os
-        url = os.environ.get("DOCLING_ENDPOINT")
+        from common_utils.get_ssm import get_config
+        url = get_config("DOCLING_ENDPOINT") or os.environ.get("DOCLING_ENDPOINT")
         if ctx and isinstance(ctx, str):
             url = ctx
         if not url:
