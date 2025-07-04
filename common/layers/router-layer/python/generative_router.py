@@ -8,6 +8,7 @@ import re
 from typing import Any, Dict, Optional
 
 import boto3
+from common_utils.get_ssm import get_config
 
 __all__ = [
     "GenerativeRouter",
@@ -43,7 +44,7 @@ def handle_generative_route(prompt: str, config: Dict[str, Any] | None = None) -
 
 def invoke_bedrock_model(lambda_client: Any, model_id: str, prompt: str) -> str:
     """Invoke the LLM invocation lambda for a Bedrock model."""
-    fn = os.environ.get("LLM_INVOCATION_FUNCTION")
+    fn = get_config("LLM_INVOCATION_FUNCTION") or os.environ.get("LLM_INVOCATION_FUNCTION")
     if not fn:
         raise RuntimeError("LLM_INVOCATION_FUNCTION not set")
     resp = lambda_client.invoke(
@@ -64,8 +65,16 @@ def handle_generative_self_reflection(
     if lambda_client is None:
         lambda_client = boto3.client("lambda")
 
-    weak_model_id = config.get("weak_model_id") or os.environ.get("WEAK_MODEL_ID")
-    strong_model_id = config.get("strong_model_id") or os.environ.get("STRONG_MODEL_ID")
+    weak_model_id = (
+        config.get("weak_model_id")
+        or get_config("WEAK_MODEL_ID")
+        or os.environ.get("WEAK_MODEL_ID")
+    )
+    strong_model_id = (
+        config.get("strong_model_id")
+        or get_config("STRONG_MODEL_ID")
+        or os.environ.get("STRONG_MODEL_ID")
+    )
 
     reflection_prompt = (
         "On a scale of 1 to 10, where 1 is not confident at all and 10 is very confident, "

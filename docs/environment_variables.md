@@ -72,6 +72,7 @@ Each service loads its configuration from Parameter Store or the Lambda environm
 - `OLLAMA_ENDPOINTS` – comma‑separated URLs of Ollama servers.
 - `OLLAMA_DEFAULT_MODEL` – default Ollama model name.
 - `OLLAMA_NUM_CTX`, `OLLAMA_REPEAT_LAST_N`, `OLLAMA_REPEAT_PENALTY`, `OLLAMA_TEMPERATURE`, `OLLAMA_SEED`, `OLLAMA_STOP`, `OLLAMA_NUM_PREDICT`, `OLLAMA_TOP_K`, `OLLAMA_TOP_P`, `OLLAMA_MIN_P` – generation settings for Ollama.
+- `ALLOWED_BACKENDS` – comma-separated list of permitted router backends.
 - `PROMPT_COMPLEXITY_THRESHOLD` – word count before switching models.
 - `HEURISTIC_ROUTER_CONFIG` – JSON rules for advanced routing.
 - `LLM_INVOCATION_FUNCTION` – Lambda used to invoke the chosen backend.

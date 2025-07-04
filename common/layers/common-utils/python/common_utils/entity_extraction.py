@@ -12,6 +12,7 @@ import re
 from typing import Iterable, List
 
 from common_utils import configure_logger
+from common_utils.get_ssm import get_config
 
 logger = configure_logger(__name__)
 
@@ -33,7 +34,7 @@ def _load_spacy():
     try:  # pragma: no cover - optional dependency
         import spacy  # type: ignore
 
-        model = os.environ.get("SPACY_MODEL", "en_core_web_sm")
+        model = get_config("SPACY_MODEL") or os.environ.get("SPACY_MODEL", "en_core_web_sm")
         _NLP = spacy.load(model)
     except Exception:
         _NLP = None

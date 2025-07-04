@@ -11,13 +11,19 @@ import time
 import boto3
 import httpx
 from common_utils import configure_logger
+from common_utils.get_ssm import get_config
 from common_utils.get_secret import get_secret
 
 logger = configure_logger(__name__)
 
-_secret_name = os.environ.get("BEDROCK_SECRET_NAME", "BEDROCK_API_KEY")
+_secret_name = (
+    get_config("BEDROCK_SECRET_NAME")
+    or os.environ.get("BEDROCK_SECRET_NAME", "BEDROCK_API_KEY")
+)
 BEDROCK_API_KEY = get_secret(_secret_name)
-OLLAMA_DEFAULT_MODEL = os.environ.get("OLLAMA_DEFAULT_MODEL", "")
+OLLAMA_DEFAULT_MODEL = (
+    get_config("OLLAMA_DEFAULT_MODEL") or os.environ.get("OLLAMA_DEFAULT_MODEL", "")
+)
 
 # Default sampling parameters for Bedrock models
 DEFAULT_BEDROCK_TEMPERATURE = 0.5
@@ -28,16 +34,26 @@ DEFAULT_BEDROCK_TOP_K = 50
 DEFAULT_BEDROCK_MAX_TOKENS_TO_SAMPLE = 2048
 
 BEDROCK_TEMPERATURE = float(
-    os.environ.get("BEDROCK_TEMPERATURE", str(DEFAULT_BEDROCK_TEMPERATURE))
+    get_config("BEDROCK_TEMPERATURE")
+    or os.environ.get("BEDROCK_TEMPERATURE", str(DEFAULT_BEDROCK_TEMPERATURE))
 )
-BEDROCK_NUM_CTX = int(os.environ.get("BEDROCK_NUM_CTX", str(DEFAULT_BEDROCK_NUM_CTX)))
+BEDROCK_NUM_CTX = int(
+    get_config("BEDROCK_NUM_CTX")
+    or os.environ.get("BEDROCK_NUM_CTX", str(DEFAULT_BEDROCK_NUM_CTX))
+)
 BEDROCK_MAX_TOKENS = int(
-    os.environ.get("BEDROCK_MAX_TOKENS", str(DEFAULT_BEDROCK_MAX_TOKENS))
+    get_config("BEDROCK_MAX_TOKENS")
+    or os.environ.get("BEDROCK_MAX_TOKENS", str(DEFAULT_BEDROCK_MAX_TOKENS))
 )
-BEDROCK_TOP_P = float(os.environ.get("BEDROCK_TOP_P", str(DEFAULT_BEDROCK_TOP_P)))
-BEDROCK_TOP_K = int(os.environ.get("BEDROCK_TOP_K", str(DEFAULT_BEDROCK_TOP_K)))
+BEDROCK_TOP_P = float(
+    get_config("BEDROCK_TOP_P") or os.environ.get("BEDROCK_TOP_P", str(DEFAULT_BEDROCK_TOP_P))
+)
+BEDROCK_TOP_K = int(
+    get_config("BEDROCK_TOP_K") or os.environ.get("BEDROCK_TOP_K", str(DEFAULT_BEDROCK_TOP_K))
+)
 BEDROCK_MAX_TOKENS_TO_SAMPLE = int(
-    os.environ.get(
+    get_config("BEDROCK_MAX_TOKENS_TO_SAMPLE")
+    or os.environ.get(
         "BEDROCK_MAX_TOKENS_TO_SAMPLE", str(DEFAULT_BEDROCK_MAX_TOKENS_TO_SAMPLE)
     )
 )
@@ -54,35 +70,50 @@ DEFAULT_OLLAMA_TOP_K = 40
 DEFAULT_OLLAMA_TOP_P = 0.9
 DEFAULT_OLLAMA_MIN_P = 0.05
 
-OLLAMA_NUM_CTX = int(os.environ.get("OLLAMA_NUM_CTX", str(DEFAULT_OLLAMA_NUM_CTX)))
+OLLAMA_NUM_CTX = int(
+    get_config("OLLAMA_NUM_CTX")
+    or os.environ.get("OLLAMA_NUM_CTX", str(DEFAULT_OLLAMA_NUM_CTX))
+)
 OLLAMA_REPEAT_LAST_N = int(
-    os.environ.get("OLLAMA_REPEAT_LAST_N", str(DEFAULT_OLLAMA_REPEAT_LAST_N))
+    get_config("OLLAMA_REPEAT_LAST_N")
+    or os.environ.get("OLLAMA_REPEAT_LAST_N", str(DEFAULT_OLLAMA_REPEAT_LAST_N))
 )
 OLLAMA_REPEAT_PENALTY = float(
-    os.environ.get("OLLAMA_REPEAT_PENALTY", str(DEFAULT_OLLAMA_REPEAT_PENALTY))
+    get_config("OLLAMA_REPEAT_PENALTY")
+    or os.environ.get("OLLAMA_REPEAT_PENALTY", str(DEFAULT_OLLAMA_REPEAT_PENALTY))
 )
 OLLAMA_TEMPERATURE = float(
-    os.environ.get("OLLAMA_TEMPERATURE", str(DEFAULT_OLLAMA_TEMPERATURE))
+    get_config("OLLAMA_TEMPERATURE")
+    or os.environ.get("OLLAMA_TEMPERATURE", str(DEFAULT_OLLAMA_TEMPERATURE))
 )
-OLLAMA_SEED = int(os.environ.get("OLLAMA_SEED", str(DEFAULT_OLLAMA_SEED)))
-OLLAMA_STOP = os.environ.get("OLLAMA_STOP", DEFAULT_OLLAMA_STOP)
+OLLAMA_SEED = int(
+    get_config("OLLAMA_SEED") or os.environ.get("OLLAMA_SEED", str(DEFAULT_OLLAMA_SEED))
+)
+OLLAMA_STOP = get_config("OLLAMA_STOP") or os.environ.get("OLLAMA_STOP", DEFAULT_OLLAMA_STOP)
 OLLAMA_NUM_PREDICT = int(
-    os.environ.get("OLLAMA_NUM_PREDICT", str(DEFAULT_OLLAMA_NUM_PREDICT))
+    get_config("OLLAMA_NUM_PREDICT")
+    or os.environ.get("OLLAMA_NUM_PREDICT", str(DEFAULT_OLLAMA_NUM_PREDICT))
 )
-OLLAMA_TOP_K = int(os.environ.get("OLLAMA_TOP_K", str(DEFAULT_OLLAMA_TOP_K)))
-OLLAMA_TOP_P = float(os.environ.get("OLLAMA_TOP_P", str(DEFAULT_OLLAMA_TOP_P)))
-OLLAMA_MIN_P = float(os.environ.get("OLLAMA_MIN_P", str(DEFAULT_OLLAMA_MIN_P)))
+OLLAMA_TOP_K = int(
+    get_config("OLLAMA_TOP_K") or os.environ.get("OLLAMA_TOP_K", str(DEFAULT_OLLAMA_TOP_K))
+)
+OLLAMA_TOP_P = float(
+    get_config("OLLAMA_TOP_P") or os.environ.get("OLLAMA_TOP_P", str(DEFAULT_OLLAMA_TOP_P))
+)
+OLLAMA_MIN_P = float(
+    get_config("OLLAMA_MIN_P") or os.environ.get("OLLAMA_MIN_P", str(DEFAULT_OLLAMA_MIN_P))
+)
 
 
 def _get_endpoints(plural_var: str, single_var: str) -> List[str]:
     """Return a list of endpoint URLs read from environment variables."""
 
-    raw = os.environ.get(plural_var)
+    raw = get_config(plural_var) or os.environ.get(plural_var)
     if raw:
         parts = [p.strip() for p in raw.split(",") if p.strip()]
         if parts:
             return parts
-    single = os.environ.get(single_var)
+    single = get_config(single_var) or os.environ.get(single_var)
     return [single] if single else []
 
 
@@ -171,7 +202,13 @@ def invoke_bedrock_runtime(
     """Call Bedrock using its OpenAI compatible runtime."""
 
     runtime = boto3.client("bedrock-runtime")
-    model_id = model_id or os.environ.get("STRONG_MODEL_ID") or os.environ.get("WEAK_MODEL_ID")
+    model_id = (
+        model_id
+        or get_config("STRONG_MODEL_ID")
+        or os.environ.get("STRONG_MODEL_ID")
+        or get_config("WEAK_MODEL_ID")
+        or os.environ.get("WEAK_MODEL_ID")
+    )
 
     messages = [{"role": "user", "content": prompt}]
     if system_prompt is not None:
