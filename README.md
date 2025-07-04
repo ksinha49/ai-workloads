@@ -91,6 +91,11 @@ Provides a lightweight API to ingest short text documents and query them using
 the retrieval and summarization stack. Query requests are also published to the
 summarization queue for asynchronous processing.
 
+#### sensitive-info-detection
+Detects PII, PHI and legal entities in text using regex patterns and optional
+machine learning models. Domain-specific models and regex overrides can be
+configured via environment variables.
+
 ## Repository Structure
 
 ```text
@@ -229,6 +234,16 @@ environment. The table below summarises the most common variables.
 - `STATE_MACHINE_ARN` – ARN of the main ingestion workflow.
 - `SUMMARY_QUEUE_URL` – queue URL consumed by the query Lambda.
 - `KNOWLEDGE_BASE_NAME` – optional name tag.
+
+### Sensitive Info Detection
+
+- `NER_LIBRARY` – NLP library to use (`spacy` or `hf`).
+- `SPACY_MODEL` – spaCy model name.
+- `HF_MODEL` – HuggingFace model name.
+- `MEDICAL_MODEL` – model when `domain` is `Medical`.
+- `LEGAL_MODEL` – model when `domain` is `Legal`.
+- `REGEX_PATTERNS` – JSON map of custom regex detectors.
+- `LEGAL_REGEX_PATTERNS` – JSON map of legal-specific patterns.
 
 ## Deployment
 

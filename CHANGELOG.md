@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.9] - 2025-07-03
+### Added
+- Sensitive Info Detection service with regex and ML-based entity extraction.
+- Domain-specific models and customizable regex patterns.
+
+### Changed
+- Renamed `pii-detection` to `sensitive-info-detection`.
+- Improved error handling and metadata in the detection Lambda.
+
 ## [1.0.8] - 2025-07-03
 ### Added
 - Introduction of the Prompt Engine service and SQS-based prompt handling.
