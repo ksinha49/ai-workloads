@@ -11,7 +11,7 @@ import logging
 from common_utils import configure_logger
 from chunking import UniversalFileChunker
 
-from typing import Any, Dict, List
+from typing import Any, Dict, Iterable, List
 
 from common_utils.get_ssm import get_config
 from common_utils import extract_entities
@@ -51,8 +51,24 @@ EXTRACT_ENTITIES = (
 ).lower() == "true"
 
 
-def chunk_text(text: str, chunk_size: int, overlap: int) -> List[str]:
-    """Split ``text`` into chunks using paragraph and sentence boundaries.
+def _iter_paragraphs(text: str) -> Iterable[str]:
+    """Yield paragraphs from ``text`` one at a time."""
+
+    import re
+
+    start = 0
+    for match in re.finditer(r"\n\s*\n", text):
+        para = text[start : match.start()].strip()
+        if para:
+            yield para
+        start = match.end()
+    tail = text[start:].strip()
+    if tail:
+        yield tail
+
+
+def chunk_text(text: str, chunk_size: int, overlap: int) -> Iterable[str]:
+    """Yield ``text`` in chunks using paragraph and sentence boundaries.
 
     ``overlap`` only applies when a single sentence exceeds ``chunk_size`` and we
     fall back to character-based splitting.
@@ -60,14 +76,11 @@ def chunk_text(text: str, chunk_size: int, overlap: int) -> List[str]:
 
     import re
 
-    # Break text into paragraphs based on blank lines
-    paragraphs = [p.strip() for p in re.split(r"\n\s*\n", text) if p.strip()]
     step = chunk_size - overlap
     if step <= 0:
         step = chunk_size
 
-    chunks: List[str] = []
-    for para in paragraphs:
+    for para in _iter_paragraphs(text):
         current = ""
         # Split paragraph into sentences. This is a heuristic but avoids an
         # external dependency.
@@ -77,10 +90,10 @@ def chunk_text(text: str, chunk_size: int, overlap: int) -> List[str]:
                 # Flush any accumulated chunk before falling back to character
                 # based splitting for very long sentences.
                 if current:
-                    chunks.append(current)
+                    yield current
                     current = ""
                 for i in range(0, len(s), step):
-                    chunks.append(s[i : i + chunk_size])
+                    yield s[i : i + chunk_size]
                 continue
 
             if not current:
@@ -88,11 +101,10 @@ def chunk_text(text: str, chunk_size: int, overlap: int) -> List[str]:
             elif len(current) + len(s) + 1 <= chunk_size:
                 current = f"{current} {s}"
             else:
-                chunks.append(current)
+                yield current
                 current = s
         if current:
-            chunks.append(current)
-    return chunks
+            yield current
 
 
 def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
