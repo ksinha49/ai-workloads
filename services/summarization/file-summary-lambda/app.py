@@ -378,7 +378,7 @@ def process_for_summary(event: SummaryEvent, context: Any) -> Dict[str, Any]:
         organic_bucket_name = event_body['organic_bucket']
         summary_file_key = organic_file_key.replace('extracted', 'summary')
         summary_file_key = os.path.splitext(summary_file_key)[0] + f".{ext}"
-        logger.info(f"organic_file_key:{organic_file_key}")
+        logger.info("organic_file_key:%s", organic_file_key)
         #new_folder_name = organic_file_folder[1]
         upload_buffer_to_s3(summary_buf, organic_bucket_name, summary_file_key, ctype)
 

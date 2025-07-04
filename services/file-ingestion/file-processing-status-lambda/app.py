@@ -96,7 +96,7 @@ def lambda_handler(event: ProcessingStatusEvent | dict, context) -> dict:
                 logger.exception("Invalid request to lambda_handler")
                 return _response(400, {"statusMessage": str(exc)})
         body = check_file_processing_status(event, context)
-        logger.info(f"Returning final response: {body}")
+        logger.info("Returning final response: %s", body)
         return _response(200, body)
     except Exception as e:
         logger.exception("lambda_handler failed")

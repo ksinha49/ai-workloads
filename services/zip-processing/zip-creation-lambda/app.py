@@ -51,10 +51,10 @@ def get_values_from_ssm(ssm_key: str) -> str:
             WithDecryption=False
         )
         if response['Parameter']['Value']:
-            logger.info(f"Parameter Value for {ssm_key}: {response['Parameter']['Value']}")
+            logger.info("Parameter Value for %s: %s", ssm_key, response['Parameter']['Value'])
             return response['Parameter']['Value']
         else:
-            logger.warning(f"No value found for parameter: {ssm_key}")
+            logger.warning("No value found for parameter: %s", ssm_key)
             return None
     except Exception as e:
         raise ValueError(f"Error occurred while retrieving parameter: {e}")
@@ -118,7 +118,7 @@ def extract_dynamic_path(path):
 
     # Define the length of the dynamic prefix
     prefix_length = 8  # Length of "2025/06/23/20/16/29"
-    logger.info(f"path:{path}")
+    logger.info("path:%s", path)
     # Split the path by '/'
     parts = path.split('/')
     
@@ -147,7 +147,7 @@ def assemble_zip_files(event, s3_client=s3_client):
     # Get the zip file name
     zip_file_name = event['zipFileName']
     zip_file_name = zip_file_name.split("/")[-1]
-    logger.info(f"zip_file_name:{zip_file_name}")
+    logger.info("zip_file_name:%s", zip_file_name)
     zip_file_name = f"curated/{zip_file_name}"
 
     pdf_files = [file['pdffile'] for file in event.get('pdfFiles', [])]
@@ -163,7 +163,7 @@ def assemble_zip_files(event, s3_client=s3_client):
             bucket_name, file_key, file_name = parse_s3_uri(xml_file)
             response = s3_client.get_object(Bucket=bucket_name, Key=f"{file_key}/{file_name}")
             file_name = extract_dynamic_path(file_name)
-            logger.info(f"file_name:{file_name}")
+            logger.info("file_name:%s", file_name)
             output_zip.writestr(file_name, response['Body'].read())
         # Check if Output is present and summarized_file exists
         for file in event.get("files", []):
@@ -180,7 +180,7 @@ def assemble_zip_files(event, s3_client=s3_client):
                   response = s3_client.get_object(Bucket=bucket_name, Key=f"{file_key}/{file_name}")
 
                   file_name = extract_dynamic_path(file_name)
-                  logger.info(f"file_name:{file_name}")
+                  logger.info("file_name:%s", file_name)
                   output_zip.writestr(file_name, response['Body'].read())
 
         for pdf_file in pdf_files:
@@ -190,7 +190,7 @@ def assemble_zip_files(event, s3_client=s3_client):
             if parts[0] not in processedFiles:
               response = s3_client.get_object(Bucket=bucket_name, Key=f"{file_key}/{file_name}")
               file_name = extract_dynamic_path(file_name)
-              logger.info(f"file_name:{file_name}")
+              logger.info("file_name:%s", file_name)
               output_zip.writestr(file_name, response['Body'].read())
     # Save the zip file to S3
     output_zip_stream.seek(0)
@@ -204,7 +204,7 @@ def assemble_zip_files(event, s3_client=s3_client):
             Body=output_zip_stream.getvalue(),
         )
     except ClientError as e:
-        logger.error(f"Failed to upload zip file to S3: {e}")
+        logger.error("Failed to upload zip file to S3: %s", e)
         return {
             "statusCode": 500,
             "error": "Failed to upload zip file",
@@ -226,8 +226,8 @@ def assemble_zip_files(event, s3_client=s3_client):
                     pdf_file_name =f"{xml_file_name}.pdf"
                     unprocessedFileMessage.append((xml_tag_content["PolNumber"],xml_tag_content["TrackingID"],pdf_file_name) )  
             except ClientError as e:
-                logger.error(f"Failed to retrieve XML from S3: {e}")   
-                raise e 
+                logger.error("Failed to retrieve XML from S3: %s", e)
+                raise e
 
     try:
          if unprocessedFileMessage:
