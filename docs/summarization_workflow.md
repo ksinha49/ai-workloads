@@ -6,8 +6,9 @@ This document describes the multi-step AWS Step Functions state machine that orc
 stateDiagram-v2
     file_ingestion --> check_workflow
     check_workflow --> load_prompts
-    load_prompts --> "run_prompts (Map)"
-    "run_prompts (Map)" --> file_summary
+    load_prompts --> run_prompts_map
+    state "run_prompts (Map)" as run_prompts_map
+    run_prompts_map --> file_summary
     file_summary --> file_assemble
 ```
 
