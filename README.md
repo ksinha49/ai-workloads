@@ -25,88 +25,9 @@ The repository includes the following directories under `services/`:
 
 Shared dependencies are packaged as layers in `common/layers/`.
 
-### Service descriptions
+Detailed descriptions of each service are available in
+[services/README.md](services/README.md).
 
-#### file-assembly
-Merges summary pages produced by the summarization workflow back into the
-original PDF and uploads the result to S3.
-
-#### file-ingestion
-Copies files to the IDP bucket and waits for text extraction before starting
-RAG ingestion.
-
-#### idp
-Implements the Intelligent Document Processing pipeline with steps for
-classification, page splitting, text extraction, OCR and posting the final JSON
-to an external API.
-
-#### zip-processing
-Unpacks uploaded ZIP archives, processes each PDF through the summarization
-workflow and assembles a new archive with the merged outputs.
-
-#### rag-ingestion
-Splits text documents into overlapping chunks, generates embeddings using
-`embed-lambda` and stores them in Milvus via the `vector-db` functions.
-
-#### vector-db
-Provides Lambda functions for creating collections, inserting, updating and
-searching embeddings stored in Milvus. Similarity search is implemented in
-`vector-search-lambda` for pure vector queries and `hybrid-search-lambda` for
-vector search with optional keyword filtering. The stack exports the ARNs
-`VectorSearchFunctionArn` and `HybridSearchFunctionArn` for these functions.
-
-#### rag-retrieval
-Queries the vector database for relevant context and forwards results to
-summarization, content extraction or entity extraction endpoints. The retrieval
-Lambdas invoke whichever search function name is stored in the
-`VECTOR_SEARCH_FUNCTION` environment variable. Pointing this variable to the
-`HybridSearchFunctionArn` exported by the `vector-db` stack toggles the service
-from pure vector search to hybrid search.
-
-#### summarization
-Step Function workflow that depends on the `file-ingestion` stack to copy a
-file to the IDP bucket and wait for text extraction. It then generates
-summaries with `file-summary-lambda`, which can output PDF, DOCX, JSON or XML
-files based on an `output_format` field, and merges them back with the original
-PDF when applicable. When a `workflow_id`
-is supplied the workflow fetches the corresponding prompt collection from the
-Prompt Engine and automatically loads the workflow's system prompt. The service
-accepts a `PromptEngineEndpoint` environment variable to override the engine URL.
-See [docs/summarization_workflow.md](docs/summarization_workflow.md) for details.
-
-#### prompt-engine
-Loads templates from a DynamoDB table, renders them with the provided variables
-and forwards the final prompt to the router service.
-
-#### llm-router
-Routes prompts to Amazon Bedrock or local Ollama using heuristic, predictive and
-cascading strategies. Requests are now queued on SQS so backend invocation
-happens asynchronously.
-
-#### llm-invocation
-Forwards OpenAI-style requests to the chosen LLM backend with configurable
-generation parameters. The handler consumes events from the router's queue and
-uses dataclass models for type‑safe payloads.
-
-#### knowledge-base
-Provides a lightweight API to ingest short text documents and query them using
-the retrieval and summarization stack. Query requests are also published to the
-summarization queue for asynchronous processing.
-
-#### sensitive-info-detection
-Detects PII, PHI and legal entities in text using regex patterns and optional
-machine learning models. Domain-specific models and regex overrides can be
-configured via environment variables.
-
-#### entity-tokenization
-Replaces sensitive entity values with consistent tokens. Existing mappings are
-looked up in DynamoDB and new tokens are generated using an optional salt.
-
-#### text-anonymization
-Replaces or masks entities detected in text. The Lambda supports three modes:
-`mask` to overwrite spans with `[REMOVED]`, `pseudo` to generate synthetic
-values, or `token` to invoke the tokenization service for stable replacements.
-The service relies on the entity detection output to locate spans.
 
 ## Repository Structure
 
