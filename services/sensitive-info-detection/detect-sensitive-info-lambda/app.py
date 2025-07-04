@@ -198,15 +198,18 @@ def _regex_entities(text: str, patterns: Dict[str, str] | None = None) -> List[D
 
     matches: List[Dict[str, Any]] = []
     for typ, pattern in patterns.items():
-        for match in re.finditer(pattern, text):
-            matches.append(
-                {
-                    "text": match.group(0),
-                    "type": typ,
-                    "start": match.start(),
-                    "end": match.end(),
-                }
-            )
+        try:
+            for match in re.finditer(pattern, text):
+                matches.append(
+                    {
+                        "text": match.group(0),
+                        "type": typ,
+                        "start": match.start(),
+                        "end": match.end(),
+                    }
+                )
+        except re.error as exc:  # pragma: no cover - runtime safety
+            logger.exception("Invalid regex pattern for %s: %s", typ, exc)
     return matches
 
 
@@ -220,47 +223,58 @@ def _ml_entities(text: str, model_info: Tuple[str, Any] | None = None) -> List[D
 
     kind, model = model_info
     entities: List[Dict[str, Any]] = []
-    if kind == "spacy":
-        doc = model(text)
-        for ent in doc.ents:
-            entities.append(
-                {
-                    "text": ent.text,
-                    "type": ent.label_,
-                    "start": ent.start_char,
-                    "end": ent.end_char,
-                }
-            )
-    else:
-        results = model(text)
-        for ent in results:
-            entities.append(
-                {
-                    "text": ent.get("word"),
-                    "type": ent.get("entity_group"),
-                    "start": ent.get("start"),
-                    "end": ent.get("end"),
-                }
-            )
+    try:
+        if kind == "spacy":
+            doc = model(text)
+            for ent in doc.ents:
+                entities.append(
+                    {
+                        "text": ent.text,
+                        "type": ent.label_,
+                        "start": ent.start_char,
+                        "end": ent.end_char,
+                    }
+                )
+        else:
+            results = model(text)
+            for ent in results:
+                entities.append(
+                    {
+                        "text": ent.get("word"),
+                        "type": ent.get("entity_group"),
+                        "start": ent.get("start"),
+                        "end": ent.get("end"),
+                    }
+                )
+    except Exception as exc:  # pragma: no cover - runtime safety
+        logger.exception("ML entity extraction failed: %s", exc)
+        return []
     return entities
 
 
 def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     """Return detected PII entities from the input text."""
+    try:
+        text = event.get("text", "")
+        if not isinstance(text, str):
+            logger.error("Invalid text input: %r", text)
+            return {"entities": []}
 
-    text = event.get("text", "")
-    domain = (event.get("domain") or event.get("classification") or "").title()
+        domain = (event.get("domain") or event.get("classification") or "").title()
 
-    regex_patterns = _REGEX_PATTERNS
-    model_info: Tuple[str, Any] | None = None
+        regex_patterns = _REGEX_PATTERNS
+        model_info: Tuple[str, Any] | None = None
 
-    if domain == "Medical":
-        model_info = _load_medical_model()
-    elif domain == "Legal":
-        model_info = _load_legal_model()
-        regex_patterns = {**_REGEX_PATTERNS, **_LEGAL_REGEX_PATTERNS}
-    else:
-        model_info = _load_model()
+        if domain == "Medical":
+            model_info = _load_medical_model()
+        elif domain == "Legal":
+            model_info = _load_legal_model()
+            regex_patterns = {**_REGEX_PATTERNS, **_LEGAL_REGEX_PATTERNS}
+        else:
+            model_info = _load_model()
 
-    entities = _regex_entities(text, regex_patterns) + _ml_entities(text, model_info)
-    return {"entities": entities}
+        entities = _regex_entities(text, regex_patterns) + _ml_entities(text, model_info)
+        return {"entities": entities}
+    except Exception as exc:  # pragma: no cover - runtime safety
+        logger.exception("lambda_handler failed: %s", exc)
+        return {"entities": []}
