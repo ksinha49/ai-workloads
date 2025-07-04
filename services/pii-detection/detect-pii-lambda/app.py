@@ -17,6 +17,7 @@ logger = configure_logger(__name__)
 
 _MODEL: Tuple[str, Any] | None = None
 _MEDICAL_MODEL: Tuple[str, Any] | None = None
+_LEGAL_MODEL: Tuple[str, Any] | None = None
 
 
 def _load_model() -> Tuple[str, Any] | None:
@@ -93,6 +94,46 @@ def _load_medical_model() -> Tuple[str, Any] | None:
             logger.exception("Failed to load medical HF model: %s", exc)
             _MEDICAL_MODEL = None
     return _MEDICAL_MODEL
+
+
+def _load_legal_model() -> Tuple[str, Any] | None:
+    """Load a Legal-specific model based on environment variables."""
+
+    global _LEGAL_MODEL
+    if _LEGAL_MODEL is not None:
+        return _LEGAL_MODEL
+
+    library = os.environ.get("NER_LIBRARY", "spacy").lower()
+    if library == "spacy":
+        try:  # pragma: no cover - optional dependency
+            import spacy  # type: ignore
+
+            model_name = os.environ.get(
+                "LEGAL_MODEL", os.environ.get("SPACY_MODEL", "en_core_web_sm")
+            )
+            _LEGAL_MODEL = ("spacy", spacy.load(model_name))
+        except Exception as exc:  # pragma: no cover - runtime safety
+            logger.exception("Failed to load legal spaCy model: %s", exc)
+            _LEGAL_MODEL = None
+    else:
+        try:  # pragma: no cover - optional dependency
+            from transformers import pipeline  # type: ignore
+
+            model_name = os.environ.get(
+                "LEGAL_MODEL", os.environ.get("HF_MODEL", "dslim/bert-base-NER")
+            )
+            _LEGAL_MODEL = (
+                "hf",
+                pipeline(
+                    "ner",
+                    model=model_name,
+                    aggregation_strategy="simple",
+                ),
+            )
+        except Exception as exc:  # pragma: no cover - runtime safety
+            logger.exception("Failed to load legal HF model: %s", exc)
+            _LEGAL_MODEL = None
+    return _LEGAL_MODEL
 
 
 _DEFAULT_REGEX_PATTERNS = {
@@ -199,10 +240,11 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
 
     if domain == "Medical":
         model_info = _load_medical_model()
+    elif domain == "Legal":
+        model_info = _load_legal_model()
+        regex_patterns = {**_REGEX_PATTERNS, **_LEGAL_REGEX_PATTERNS}
     else:
         model_info = _load_model()
-        if domain == "Legal":
-            regex_patterns = {**_REGEX_PATTERNS, **_LEGAL_REGEX_PATTERNS}
 
     entities = _regex_entities(text, regex_patterns) + _ml_entities(text, model_info)
     return {"entities": entities}
