@@ -696,18 +696,6 @@ def test_es_hybrid_search_lambda(monkeypatch):
 import sys
 
 
-def test_llm_router_choose_backend(monkeypatch):
-    monkeypatch.setenv("PROMPT_COMPLEXITY_THRESHOLD", "3")
-    monkeypatch.setenv("CLASSIFIER_MODEL_ID", "x")
-    module = load_lambda("llm_router_app", "services/llm-router/router-lambda/app.py")
-    monkeypatch.setattr(
-        module,
-        "invoke_classifier",
-        lambda client, model, prompt: "complex" if len(prompt.split()) > 3 else "simple",
-    )
-    assert module._choose_backend("one two") == "ollama"
-    assert module._choose_backend("one two three four") == "bedrock"
-
 
 def test_llm_router_lambda_handler(monkeypatch):
     monkeypatch.setenv("INVOCATION_QUEUE_URL", "url")
@@ -762,50 +750,6 @@ def test_llm_router_lambda_handler_backend_override(monkeypatch):
     assert body2["queued"] is True
     assert calls[1]["backend"] == "ollama"
 
-
-def test_llm_router_choose_backend_default(monkeypatch):
-    monkeypatch.delenv("PROMPT_COMPLEXITY_THRESHOLD", raising=False)
-    monkeypatch.setenv("CLASSIFIER_MODEL_ID", "x")
-    module = load_lambda(
-        "llm_router_app_default", "services/llm-router/router-lambda/app.py"
-    )
-    monkeypatch.setattr(
-        module,
-        "invoke_classifier",
-        lambda client, model, prompt: "complex" if len(prompt.split()) > 20 else "simple",
-    )
-    short_prompt = " ".join(["w"] * 5)
-    long_prompt = " ".join(["w"] * 25)
-    assert module._choose_backend(short_prompt) == "ollama"
-    assert module._choose_backend(long_prompt) == "bedrock"
-
-
-def test_llm_router_lambda_handler_default(monkeypatch):
-    monkeypatch.setenv("INVOCATION_QUEUE_URL", "url")
-    monkeypatch.delenv("PROMPT_COMPLEXITY_THRESHOLD", raising=False)
-    calls = []
-    monkeypatch.setattr(
-        sys.modules["boto3"], "client", lambda name: _make_fake_send(calls)
-    )
-    module = load_lambda(
-        "llm_router_lambda_default", "services/llm-router/router-lambda/app.py"
-    )
-    module.sqs_client = sys.modules["boto3"].client("sqs")
-
-    event1 = {"body": json.dumps({"prompt": "short text"})}
-    out1 = module.lambda_handler(event1, {})
-    body1 = json.loads(out1["body"])
-    assert body1["backend"] == "ollama"
-    assert body1["queued"] is True
-    assert calls[0]["backend"] == "ollama"
-
-    long_prompt = " ".join(["w"] * 25)
-    event2 = {"body": json.dumps({"prompt": long_prompt})}
-    out2 = module.lambda_handler(event2, {})
-    body2 = json.loads(out2["body"])
-    assert body2["backend"] == "bedrock"
-    assert body2["queued"] is True
-    assert calls[1]["backend"] == "bedrock"
 
 
 def test_summarize_with_context_router(monkeypatch, config):

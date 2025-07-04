@@ -73,3 +73,8 @@ aws lambda invoke \
 The response includes a `backend` field indicating which service handled the request. You may set `backend` in the payload to force a specific destination. When omitted the router uses the heuristic strategy described above.
 
 Requests are now placed on the SQS queue configured by `INVOCATION_QUEUE_URL` so the invocation Lambda processes them asynchronously.
+
+The heuristic strategy is implemented by the `HeuristicRouter` module in the
+shared layer.  By default it chooses Bedrock once the prompt length exceeds
+`PROMPT_COMPLEXITY_THRESHOLD` words. Additional rules can be supplied via the
+`HEURISTIC_ROUTER_CONFIG` environment variable.

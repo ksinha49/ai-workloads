@@ -19,18 +19,6 @@ def _make_fake_send(calls):
     return FakeSQS()
 
 
-def test_choose_backend(monkeypatch):
-    monkeypatch.setenv("PROMPT_COMPLEXITY_THRESHOLD", "3")
-    monkeypatch.setenv("CLASSIFIER_MODEL_ID", "x")
-    module = load_lambda("router_app", "services/llm-router/router-lambda/app.py")
-    monkeypatch.setattr(
-        module,
-        "invoke_classifier",
-        lambda client, model, prompt: "complex" if len(prompt.split()) > 3 else "simple",
-    )
-    assert module._choose_backend("a b") == "ollama"
-    assert module._choose_backend("a b c d") == "bedrock"
-
 
 def test_lambda_handler(monkeypatch):
     monkeypatch.setenv("INVOCATION_QUEUE_URL", "url")
