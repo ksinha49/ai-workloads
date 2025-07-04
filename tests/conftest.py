@@ -33,6 +33,10 @@ class DummyS3:
             raise self.exceptions.ClientError({"Error": {"Code": "404"}}, "head_object")
         return {}
 
+    def delete_object(self, Bucket, Key):
+        self.objects.pop((Bucket, Key), None)
+        return {}
+
     def get_object_tagging(self, Bucket, Key):
         tagset = [
             {"Key": k, "Value": v}

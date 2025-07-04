@@ -1111,7 +1111,7 @@ def test_vector_search_guid_filter(monkeypatch, config):
     assert len(res["matches"]) == 1 and res["matches"][0]["metadata"]["file_guid"] == "g2"
 
 
-def test_file_processing_passthrough(monkeypatch):
+def test_file_processing_passthrough(monkeypatch, s3_stub):
     module = load_lambda(
         "file_proc2", "services/file-ingestion/file-processing-lambda/app.py"
     )

@@ -76,6 +76,14 @@ def process_files(event: FileProcessingEvent, context) -> dict:
         logger.info("Copying %s/%s to IDP bucket", bucket_name, bucket_key)
         dest_uri = copy_file_to_idp(bucket_name, bucket_key)
 
+        # Delete the source file now that it has been copied. This prevents the
+        # same document from being processed multiple times and more closely
+        # mirrors a move operation.
+        try:
+            _s3_client.delete_object(Bucket=bucket_name, Key=bucket_key)
+        except AttributeError:
+            logger.warning("S3 client not available for deletion of %s/%s", bucket_name, bucket_key)
+
         document_id = os.path.splitext(os.path.basename(bucket_key))[0]
         file_name = os.path.basename(bucket_key)
         file_guid = uuid.uuid4().hex

@@ -36,3 +36,5 @@ def test_file_processing_lambda(monkeypatch, s3_stub, config):
     assert body['document_id'] == 'test'
     assert body['s3_location'] == 's3://dest-bucket/raw/test.docx'
     assert body['collection_name'] == 'c'
+    # ensure the source file was removed after processing
+    assert ('bucket', 'path/test.docx') not in s3_stub.objects
