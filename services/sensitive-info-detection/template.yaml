@@ -33,10 +33,10 @@ Globals:
     MemorySize: 512
 
 Resources:
-  DetectPiiFunction:
+  DetectSensitiveInfoFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: ./detect-pii-lambda/
+      CodeUri: ./detect-sensitive-info-lambda/
       Environment:
         Variables:
           NER_LIBRARY: !Ref NerLibrary
@@ -54,6 +54,6 @@ Resources:
             Method: post
 
 Outputs:
-  DetectPiiFunctionArn:
-    Description: ARN of the PII detection Lambda
-    Value: !GetAtt DetectPiiFunction.Arn
+  DetectSensitiveInfoFunctionArn:
+    Description: ARN of the sensitive info detection Lambda
+    Value: !GetAtt DetectSensitiveInfoFunction.Arn

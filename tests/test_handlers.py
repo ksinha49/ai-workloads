@@ -1289,7 +1289,7 @@ def test_vector_search_guid_filter(monkeypatch, config):
 
 def test_detect_pii_ml(monkeypatch):
     module = load_lambda(
-        "detect_pii_ml", "services/sensitive-info-detection/detect-pii-lambda/app.py"
+        "detect_pii_ml", "services/sensitive-info-detection/detect-sensitive-info-lambda/app.py"
     )
 
     class DummyEnt:
@@ -1316,7 +1316,7 @@ def test_detect_pii_ml(monkeypatch):
 
 def test_detect_pii_regex(monkeypatch):
     module = load_lambda(
-        "detect_pii_regex", "services/sensitive-info-detection/detect-pii-lambda/app.py"
+        "detect_pii_regex", "services/sensitive-info-detection/detect-sensitive-info-lambda/app.py"
     )
     monkeypatch.setattr(module, "_load_model", lambda: None)
 
@@ -1326,7 +1326,7 @@ def test_detect_pii_regex(monkeypatch):
 
 def test_detect_pii_medical_domain(monkeypatch):
     module = load_lambda(
-        "detect_pii_medical", "services/sensitive-info-detection/detect-pii-lambda/app.py"
+        "detect_pii_medical", "services/sensitive-info-detection/detect-sensitive-info-lambda/app.py"
     )
 
     class DummyEnt:
@@ -1347,7 +1347,7 @@ def test_detect_pii_medical_domain(monkeypatch):
 
 def test_detect_pii_legal_regex(monkeypatch):
     module = load_lambda(
-        "detect_pii_legal", "services/sensitive-info-detection/detect-pii-lambda/app.py"
+        "detect_pii_legal", "services/sensitive-info-detection/detect-sensitive-info-lambda/app.py"
     )
 
     monkeypatch.setattr(module, "_load_legal_model", lambda: None)
@@ -1358,7 +1358,7 @@ def test_detect_pii_legal_regex(monkeypatch):
 
 def test_detect_pii_legal_domain(monkeypatch):
     module = load_lambda(
-        "detect_pii_legal_domain", "services/sensitive-info-detection/detect-pii-lambda/app.py"
+        "detect_pii_legal_domain", "services/sensitive-info-detection/detect-sensitive-info-lambda/app.py"
     )
 
     class DummyEnt:
@@ -1389,7 +1389,7 @@ def test_detect_pii_custom_regex(monkeypatch):
     pattern = {"FOO": r"foo\d+"}
     monkeypatch.setenv("REGEX_PATTERNS", json.dumps(pattern))
     module = load_lambda(
-        "detect_pii_custom", "services/sensitive-info-detection/detect-pii-lambda/app.py"
+        "detect_pii_custom", "services/sensitive-info-detection/detect-sensitive-info-lambda/app.py"
     )
 
     monkeypatch.setattr(module, "_load_model", lambda: None)

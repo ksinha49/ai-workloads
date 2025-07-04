@@ -7,7 +7,7 @@ model to recognise entities.
 
 ## Lambda
 
-- **detect-pii-lambda/app.py** – returns a JSON list of detected entities.
+- **detect-sensitive-info-lambda/app.py** – returns a JSON list of detected entities.
 
 ## Parameters and environment variables
 
@@ -30,7 +30,7 @@ These detectors can be overridden by providing JSON strings via the
 
 ### Domain-based configuration
 
-`detect-pii-lambda` accepts an optional `domain` or `classification` field in
+`detect-sensitive-info-lambda` accepts an optional `domain` or `classification` field in
 the event. When this value is `Medical` the Lambda loads the model defined by
 `MEDICAL_MODEL`. When set to `Legal` it loads the model from `LEGAL_MODEL` and
 applies additional legal regex patterns.
@@ -57,4 +57,4 @@ Deploy the stack with SAM:
 sam deploy --template-file services/sensitive-info-detection/template.yaml --stack-name sensitive-info
 ```
 
-The output exports `DetectPiiFunctionArn` which can be used by other services.
+The output exports `DetectSensitiveInfoFunctionArn` which can be used by other services.
