@@ -10,6 +10,7 @@ from .get_ssm import (
     parse_s3_uri,
     get_config,
 )
+from .get_secret import get_secret
 from .milvus_client import MilvusClient, VectorItem, SearchResult, GetResult
 from .elasticsearch_client import ElasticsearchClient
 from .entity_extraction import extract_entities
@@ -20,6 +21,7 @@ __all__ = [
     "get_environment_prefix",
     "parse_s3_uri",
     "get_config",
+    "get_secret",
     "MilvusClient",
     "VectorItem",
     "SearchResult",

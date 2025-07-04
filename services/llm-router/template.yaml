@@ -6,7 +6,7 @@ Parameters:
   BedrockOpenAIEndpoint:
     Type: String
     Default: ''
-  BedrockApiKey:
+  BedrockSecretName:
     Type: String
     Default: ''
   OllamaEndpoint:
@@ -48,7 +48,7 @@ Resources:
       Environment:
         Variables:
           BEDROCK_OPENAI_ENDPOINTS: !Ref BedrockOpenAIEndpoint
-          BEDROCK_API_KEY: !Ref BedrockApiKey
+          BEDROCK_SECRET_NAME: !Ref BedrockSecretName
           OLLAMA_ENDPOINTS: !Ref OllamaEndpoint
           OLLAMA_DEFAULT_MODEL: !Ref OllamaDefaultModel
           PROMPT_COMPLEXITY_THRESHOLD: !Ref PromptComplexityThreshold

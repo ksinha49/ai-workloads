@@ -7,7 +7,7 @@ This document details the environment variables used by the router Lambda and ho
 | Name | Description |
 | ---- | ----------- |
 | `BEDROCK_OPENAI_ENDPOINTS` | Comma‑separated Bedrock endpoints implementing the OpenAI API. |
-| `BEDROCK_API_KEY` | API key to authenticate when calling Bedrock. |
+| `BEDROCK_SECRET_NAME` | Name or ARN of the Bedrock API key secret. |
 | `BEDROCK_TEMPERATURE` | Sampling temperature for Bedrock models (default `0.5`). |
 | `BEDROCK_NUM_CTX` | Context length for Bedrock calls (default `4096`). |
 | `BEDROCK_MAX_TOKENS` | Maximum tokens to generate (default `2048`). |

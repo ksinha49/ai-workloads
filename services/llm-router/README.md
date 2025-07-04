@@ -23,7 +23,7 @@ The routing logic is split into small modules which can also be reused outside t
 | Parameter | Environment variable | Description |
 |-----------|----------------------|-------------|
 | `BedrockOpenAIEndpoint` | `BEDROCK_OPENAI_ENDPOINTS` | Comma-separated Bedrock OpenAI endpoints |
-| `BedrockApiKey` | `BEDROCK_API_KEY` | API key when calling Bedrock |
+| `BedrockSecretName` | `BEDROCK_SECRET_NAME` | Name or ARN of the Bedrock API key secret |
 | `OllamaEndpoint` | `OLLAMA_ENDPOINTS` | URLs of Ollama services |
 | `OllamaDefaultModel` | `OLLAMA_DEFAULT_MODEL` | Default model when none supplied |
 | `PromptComplexityThreshold` | `PROMPT_COMPLEXITY_THRESHOLD` | Word threshold used by the heuristic router |

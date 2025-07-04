@@ -16,7 +16,7 @@ Parameters defined in `template.yaml` map directly to environment variables used
 
 ### Bedrock options
 - `BEDROCK_OPENAI_ENDPOINTS` – comma-separated endpoints for the Bedrock OpenAI API.
-- `BEDROCK_API_KEY` – API key used when contacting Bedrock.
+ - `BEDROCK_SECRET_NAME` – name or ARN of the Bedrock API key secret.
 - `BEDROCK_TEMPERATURE`, `BEDROCK_NUM_CTX`, `BEDROCK_MAX_TOKENS`,
   `BEDROCK_TOP_P`, `BEDROCK_TOP_K`, `BEDROCK_MAX_TOKENS_TO_SAMPLE` – sampling
   settings applied to each Bedrock request.

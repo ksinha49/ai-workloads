@@ -275,6 +275,19 @@ def chunking_layer_path():
     sys.path.insert(0, os.path.join(os.getcwd(), 'common/layers/chunking-layer/python'))
     yield
 
+
+@pytest.fixture(autouse=True)
+def common_utils_path():
+    import sys, os
+    sys.path.insert(0, os.path.join(os.getcwd(), 'common/layers/common-utils/python'))
+    import importlib, types
+    sec = importlib.import_module('common_utils.get_secret')
+    sec._SECRET_CACHE.clear()
+    sec._secrets_client = type('C', (), {'get_secret_value': lambda self, SecretId=None: {'SecretString': 'dummy'}})()
+    es_mod = importlib.import_module('common_utils.elasticsearch_client')
+    es_mod.Elasticsearch = lambda *a, **k: types.SimpleNamespace(index=lambda **kw: None, delete=lambda **kw: None, search=lambda **kw: {'hits': {'hits': []}}, indices=types.SimpleNamespace(create=lambda **kw: None, delete=lambda **kw: None))
+    yield
+
 @pytest.fixture
 def validate_schema():
     def _check(obj):
