@@ -10,7 +10,9 @@ import time
 
 import boto3
 import httpx
+from common_utils import configure_logger
 
+logger = configure_logger(__name__)
 
 BEDROCK_API_KEY = os.environ.get("BEDROCK_API_KEY")
 OLLAMA_DEFAULT_MODEL = os.environ.get("OLLAMA_DEFAULT_MODEL", "")
@@ -186,14 +188,18 @@ def invoke_bedrock_runtime(
         }
     )
 
-    resp = runtime.invoke_model(
-        modelId=model_id,
-        body=body,
-        contentType="application/json",
-        accept="application/json",
-    )
+    try:
+        resp = runtime.invoke_model(
+            modelId=model_id,
+            body=body,
+            contentType="application/json",
+            accept="application/json",
+        )
+        data = json.loads(resp.get("body").read())
+    except Exception as exc:  # pragma: no cover - network/runtime failures
+        logger.error("Bedrock runtime invocation failed: %s", exc)
+        raise
 
-    data = json.loads(resp.get("body").read())
     reply = (
         data.get("choices", [{}])[0]
         .get("message", {})
