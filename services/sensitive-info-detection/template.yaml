@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: Lambda to detect PII entities.
+Description: Lambda to detect sensitive information such as PII or PHI.
 
 Parameters:
   NerLibrary:

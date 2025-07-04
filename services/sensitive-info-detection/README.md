@@ -1,4 +1,4 @@
-# PII Detection Service
+# Sensitive Info Detection Service
 
 This service exposes a single Lambda for detecting personally identifiable
 information (PII), protected health information (PHI) and legal entities in text.
@@ -54,7 +54,7 @@ Each entity includes the text span, label, and character offsets.
 Deploy the stack with SAM:
 
 ```bash
-sam deploy --template-file services/pii-detection/template.yaml --stack-name pii
+sam deploy --template-file services/sensitive-info-detection/template.yaml --stack-name sensitive-info
 ```
 
 The output exports `DetectPiiFunctionArn` which can be used by other services.

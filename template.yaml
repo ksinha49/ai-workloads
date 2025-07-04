@@ -138,10 +138,10 @@ Resources:
     Properties:
       Location: services/prompt-engine/template.yaml
 
-  PIIDetectionService:
+  SensitiveInfoDetectionService:
     Type: AWS::Serverless::Application
     Properties:
-      Location: services/pii-detection/template.yaml
+      Location: services/sensitive-info-detection/template.yaml
 
 Outputs:
   FileIngestionStateMachineArn:
@@ -149,5 +149,5 @@ Outputs:
     Value: !GetAtt FileIngestionService.Outputs.FileIngestionStateMachineArn
   DetectPiiFunctionArn:
     Description: ARN of the PII detection Lambda
-    Value: !GetAtt PIIDetectionService.Outputs.DetectPiiFunctionArn
+    Value: !GetAtt SensitiveInfoDetectionService.Outputs.DetectPiiFunctionArn
 
