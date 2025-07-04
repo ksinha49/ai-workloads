@@ -24,3 +24,36 @@ The script builds each service image and pushes it to `ACCOUNT_ID.dkr.ecr.REGION
 ```
 
 After pushing, the images can be referenced from your Lambda function configurations without affecting the existing SAM-based deployment process.
+
+## Deploying Lambdas from ECR Images
+
+The container images produced by `scripts/push_ecr.sh` can be deployed by
+referencing the ECR URI in your SAM template or by updating an existing Lambda
+function with the AWS CLI.
+
+### SAM Template Update
+
+Add the following properties to the function resource in your SAM template:
+
+```yaml
+MyFunction:
+  Type: AWS::Serverless::Function
+  Properties:
+    PackageType: Image
+    ImageUri: <ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com/<service>:<tag>
+```
+
+Deploy the stack with `sam deploy` to create or update the function using the
+container image.
+
+### Updating an Existing Function
+
+To update a Lambda directly, provide the image URI to `update-function-code`:
+
+```bash
+aws lambda update-function-code --function-name <name> \
+  --image-uri <ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com/<service>:<tag>
+```
+
+You can find the correct URI with `aws ecr describe-images` or from the output
+of `scripts/push_ecr.sh`.

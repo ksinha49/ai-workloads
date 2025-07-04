@@ -107,3 +107,4 @@ Additional documentation is available in the `docs/` directory:
 - [docs/file_ingestion_workflow.md](docs/file_ingestion_workflow.md)
 - [docs/rag_ingestion_workflow.md](docs/rag_ingestion_workflow.md)
 - [docs/ecr_deployment.md](docs/ecr_deployment.md)
+- [Deploying Lambdas from ECR Images](docs/ecr_deployment.md#deploying-lambdas-from-ecr-images)
