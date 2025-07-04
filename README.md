@@ -82,6 +82,14 @@ complete list of common variables used across the services.
 
 Deploy a service with `sam deploy --template-file services/<service>/template.yaml --stack-name <name>` and provide any required parameters. See each service's README for details.
 
+Container images for all services can be built and pushed to ECR using:
+
+```bash
+./scripts/push_ecr.sh <account-id> <region> [tag]
+```
+
+This does not alter the existing SAM deployment process but allows functions to reference ECR images if desired.
+
 ## Documentation
 
 Additional documentation is available in the `docs/` directory:
@@ -98,3 +106,4 @@ Additional documentation is available in the `docs/` directory:
 - [docs/environment_variables.md](docs/environment_variables.md)
 - [docs/file_ingestion_workflow.md](docs/file_ingestion_workflow.md)
 - [docs/rag_ingestion_workflow.md](docs/rag_ingestion_workflow.md)
+- [docs/ecr_deployment.md](docs/ecr_deployment.md)
