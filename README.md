@@ -90,6 +90,11 @@ Container images for all services can be built and pushed to ECR using:
 
 This does not alter the existing SAM deployment process but allows functions to reference ECR images if desired.
 
+If your dependencies or models exceed the Lambda package limit, mount an EFS access
+point and install the packages to that volume. Set the environment variables
+`EFS_DEPENDENCY_PATH` and `MODEL_EFS_PATH` (or provide them via Parameter Store)
+so services can import modules and load models directly from EFS.
+
 ## Documentation
 
 Additional documentation is available in the `docs/` directory:

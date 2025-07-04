@@ -66,6 +66,11 @@ def _sbert_embed(text: str) -> list[float]:
             get_config("SBERT_MODEL")
             or os.environ.get("SBERT_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
         )
+        efs_dir = get_config("MODEL_EFS_PATH") or os.environ.get("MODEL_EFS_PATH")
+        if efs_dir:
+            candidate = os.path.join(efs_dir, os.path.basename(model_path))
+            if os.path.exists(candidate):
+                model_path = candidate
         if model_path.startswith("s3://"):
             import boto3
             from common_utils import parse_s3_uri

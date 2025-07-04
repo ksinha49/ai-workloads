@@ -8,6 +8,8 @@ from typing import Any, Tuple
 from common_utils import configure_logger
 from common_utils.get_ssm import get_config
 
+MODEL_EFS_PATH = os.environ.get("MODEL_EFS_PATH") or get_config("MODEL_EFS_PATH")
+
 logger = configure_logger(__name__)
 
 # Cache keyed by (spacy_env, hf_env)
@@ -32,6 +34,10 @@ def load_ner_model(spacy_env: str, hf_env: str, default: str = "en_core_web_sm")
                 or get_config("SPACY_MODEL")
                 or os.environ.get("SPACY_MODEL", default)
             )
+            if MODEL_EFS_PATH:
+                efs_candidate = os.path.join(MODEL_EFS_PATH, os.path.basename(model_name))
+                if os.path.exists(efs_candidate):
+                    model_name = efs_candidate
             _MODEL_CACHE[key] = ("spacy", spacy.load(model_name))
         except Exception as exc:  # pragma: no cover - runtime safety
             logger.exception("Failed to load spaCy model: %s", exc)
@@ -46,6 +52,10 @@ def load_ner_model(spacy_env: str, hf_env: str, default: str = "en_core_web_sm")
                 or get_config("HF_MODEL")
                 or os.environ.get("HF_MODEL", "dslim/bert-base-NER")
             )
+            if MODEL_EFS_PATH:
+                efs_candidate = os.path.join(MODEL_EFS_PATH, os.path.basename(model_name))
+                if os.path.exists(efs_candidate):
+                    model_name = efs_candidate
             _MODEL_CACHE[key] = (
                 "hf",
                 pipeline("ner", model=model_name, aggregation_strategy="simple"),

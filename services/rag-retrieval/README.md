@@ -32,11 +32,13 @@ The retrieval logic calls the search Lambda defined by the `VECTOR_SEARCH_FUNCTI
 - `CROSS_ENCODER_MODEL` – model name or S3 path for the cross-encoder.
 - `CROSS_ENCODER_EFS_PATH` – local path to load the cross encoder from an
   attached EFS volume.
+- `MODEL_EFS_PATH` – base directory on EFS for additional models.
 - `RERANK_PROVIDER` – rerank provider (`huggingface`, `cohere` or `nvidia`).
 - `NVIDIA_SECRET_NAME` – name or ARN of the NVIDIA API key secret.
 - `VECTOR_SEARCH_CANDIDATES` – number of candidates retrieved before re-ranking.
 
 Values can be stored in Parameter Store and loaded with the shared `get_config` helper.
+`CROSS_ENCODER_EFS_PATH` and `MODEL_EFS_PATH` may also be provided via Parameter Store.
 
 ## Mounting an EFS access point
 
