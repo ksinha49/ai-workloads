@@ -31,8 +31,8 @@ These detectors can be overridden by providing JSON strings via the
 
 `detect-pii-lambda` accepts an optional `domain` or `classification` field in
 the event. When this value is `Medical` the Lambda loads the model defined by
-`MEDICAL_MODEL`. When set to `Legal` it runs the normal model and applies
-additional legal regex patterns.
+`MEDICAL_MODEL`. When set to `Legal` it loads the model from `LEGAL_MODEL` and
+applies additional legal regex patterns.
 
 ## Response format
 
