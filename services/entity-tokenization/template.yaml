@@ -1,0 +1,61 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Tokenize sensitive entities and store mappings.
+
+Parameters:
+  TokenSalt:
+    Type: String
+    Default: ''
+  TokenPrefix:
+    Type: String
+    Default: 'ent_'
+  TokenTableName:
+    Type: String
+    Default: 'entity-token-table'
+
+Globals:
+  Function:
+    Handler: app.lambda_handler
+    Runtime: python3.13
+    Timeout: 60
+    MemorySize: 512
+
+Resources:
+  EntityTokenTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: token
+          AttributeType: S
+      KeySchema:
+        - AttributeName: token
+          KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
+      TableName: !Ref TokenTableName
+
+  TokenizeEntityFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./tokenize-entity-lambda/
+      Environment:
+        Variables:
+          TOKEN_TABLE: !Ref TokenTableName
+          TOKEN_PREFIX: !Ref TokenPrefix
+          TOKEN_SALT: !Ref TokenSalt
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref EntityTokenTable
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /tokenize-entity
+            Method: post
+
+Outputs:
+  TokenizeEntityFunctionArn:
+    Description: ARN of the tokenization Lambda
+    Value: !GetAtt TokenizeEntityFunction.Arn
+  TokenTableName:
+    Description: Name of the token table
+    Value: !Ref EntityTokenTable
