@@ -68,7 +68,7 @@ def _extract_xlsx(body: bytes) -> list[str]:
         pages.append(convert_to_markdown(text, i))
     return pages
 
-def _process_record(record: dict) -> None:
+def _process_record(record: dict, document_id: str | None = None) -> None:
     """Extract text from an Office document referenced by ``record``.
 
     The object is read from S3, converted into Markdown pages depending on
@@ -110,11 +110,11 @@ def _process_record(record: dict) -> None:
         pages = _extract_xlsx(body)
         typ = "xlsx"
 
-    document_id = os.path.splitext(os.path.basename(key))[0]
-    dest_key = f"{text_doc_prefix}{document_id}.json"
+    doc_id = document_id or os.path.splitext(os.path.basename(key))[0]
+    dest_key = f"{text_doc_prefix}{doc_id}.json"
 
     payload = {
-        "documentId": document_id,
+        "documentId": doc_id,
         "type": typ,
         "pageCount": len(pages),
         "pages": pages,
@@ -146,9 +146,12 @@ def lambda_handler(event: S3Event, context: dict) -> LambdaResponse:
     """
 
     logger.info("Received event for 2-office-extractor: %s", event)
+    doc_id = getattr(event, "document_id", None)
+    if isinstance(event, dict):
+        doc_id = event.get("document_id", doc_id)
     for rec in iter_s3_records(event):
         try:
-            _process_record(rec)
+            _process_record(rec, doc_id)
         except Exception as exc:  # pragma: no cover - runtime safety
             logger.error("Error processing record %s: %s", rec, exc)
     return {

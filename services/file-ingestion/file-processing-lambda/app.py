@@ -153,7 +153,7 @@ def process_files(event: FileProcessingEvent, context) -> dict:
         except AttributeError:
             logger.warning("S3 client not available for deletion of %s/%s", bucket_name, bucket_key)
 
-        document_id = os.path.splitext(os.path.basename(bucket_key))[0]
+        document_id = uuid.uuid4().hex
         file_name = os.path.basename(bucket_key)
         file_guid = uuid.uuid4().hex
 
