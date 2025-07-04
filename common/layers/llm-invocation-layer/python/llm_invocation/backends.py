@@ -10,6 +10,7 @@ import time
 
 import boto3
 import httpx
+import asyncio
 from common_utils import configure_logger
 
 logger = configure_logger(__name__)
@@ -163,10 +164,10 @@ def choose_ollama_endpoint() -> str:
     return _ollama_selector.choose()
 
 
-def invoke_bedrock_runtime(
+async def invoke_bedrock_runtime(
     prompt: str, model_id: str | None = None, system_prompt: str | None = None
 ) -> Dict[str, Any]:
-    """Call Bedrock using its OpenAI compatible runtime."""
+    """Call Bedrock using its OpenAI compatible runtime asynchronously."""
 
     runtime = boto3.client("bedrock-runtime")
     model_id = model_id or os.environ.get("STRONG_MODEL_ID") or os.environ.get("WEAK_MODEL_ID")
@@ -188,13 +189,16 @@ def invoke_bedrock_runtime(
         }
     )
 
-    try:
-        resp = runtime.invoke_model(
+    def _invoke() -> Dict[str, Any]:
+        return runtime.invoke_model(
             modelId=model_id,
             body=body,
             contentType="application/json",
             accept="application/json",
         )
+
+    try:
+        resp = await asyncio.to_thread(_invoke)
         data = json.loads(resp.get("body").read())
     except Exception as exc:  # pragma: no cover - network/runtime failures
         logger.error("Bedrock runtime invocation failed: %s", exc)
