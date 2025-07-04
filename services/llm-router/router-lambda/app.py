@@ -19,7 +19,7 @@ from typing import Any, Dict
 
 import boto3
 import json
-from common_utils import configure_logger
+from common_utils import configure_logger, get_config
 from models import LlmRouterEvent, LambdaResponse
 from main_router import route_event
 from predictive_router import invoke_classifier
@@ -39,7 +39,18 @@ PROMPT_COMPLEXITY_THRESHOLD = int(
 )
 
 # allowlist of permitted backends
-ALLOWED_BACKENDS = {"bedrock", "ollama"}
+DEFAULT_ALLOWED_BACKENDS = {"bedrock", "ollama"}
+_raw_backends = os.environ.get("ALLOWED_BACKENDS")
+if not _raw_backends:
+    try:  # pragma: no cover - SSM may be unavailable in tests
+        _raw_backends = get_config("ALLOWED_BACKENDS")
+    except Exception:
+        _raw_backends = None
+
+if _raw_backends:
+    ALLOWED_BACKENDS = {b.strip().lower() for b in _raw_backends.split(",") if b.strip()}
+else:
+    ALLOWED_BACKENDS = DEFAULT_ALLOWED_BACKENDS
 # maximum prompt length accepted by the router
 MAX_PROMPT_LENGTH = int(os.environ.get("MAX_PROMPT_LENGTH", "4096"))
 

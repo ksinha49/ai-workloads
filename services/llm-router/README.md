@@ -31,6 +31,7 @@ The routing logic is split into small modules which can also be reused outside t
 | `ClassifierModelId` | `CLASSIFIER_MODEL_ID` | Optional model used to classify prompt complexity |
 | `InvocationQueueUrl` | `INVOCATION_QUEUE_URL` | SQS queue used for async invocation |
 | `MaxPromptLength` | `MAX_PROMPT_LENGTH` | Maximum length of the accepted prompt |
+| `AllowedBackends` | `ALLOWED_BACKENDS` | Comma-separated list of permitted backends (default `bedrock,ollama`) |
 
 Enabling `ClassifierModelId` activates predictive routing. The router will call
 the classifier model to decide between the weak and strong Bedrock models
