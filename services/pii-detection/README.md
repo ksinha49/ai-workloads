@@ -1,8 +1,9 @@
 # PII Detection Service
 
 This service exposes a single Lambda for detecting personally identifiable
-information (PII) in text. The handler combines regex based patterns with an
-optional machine learning model to recognise entities.
+information (PII), protected health information (PHI) and legal entities in text.
+The handler combines regex based patterns with an optional machine learning
+model to recognise entities.
 
 ## Lambda
 
