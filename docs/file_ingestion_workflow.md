@@ -88,3 +88,16 @@ sequence via S3 triggers:
    single JSON document.
 8. **output** – posts the combined result to an external API and writes any
    response to `OUTPUT_PREFIX`.
+
+## Document Audit Table
+
+The workflow records progress in a DynamoDB table named `DocumentAudit`. A
+record is inserted when the file is uploaded and updated throughout the IDP
+pipeline.
+
+| Status | Meaning |
+| ------ | ------- |
+| `UPLOADED` | File copied to the IDP bucket. |
+| `SPLIT` | PDF pages created and page count stored. |
+| `COMBINED` | All pages processed and merged into one document. |
+| `MISSING_PAGES` | Combine step ran before all pages were available. |

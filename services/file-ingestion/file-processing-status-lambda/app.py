@@ -37,6 +37,18 @@ logger = configure_logger(__name__)
 # No proxy configuration is required for SSM access when running within AWS.
 
 s3_client = boto3.client("s3")
+try:  # pragma: no cover - boto3 may be stubbed
+    dynamo = boto3.resource("dynamodb")
+except AttributeError:
+    dynamo = None
+try:
+    _audit_table_name = get_values_from_ssm(
+        f"{get_environment_prefix()}/DOCUMENT_AUDIT_TABLE"
+    )
+except Exception:  # pragma: no cover - SSM unavailable
+    _audit_table_name = None
+_audit_table_name = _audit_table_name or os.getenv("DOCUMENT_AUDIT_TABLE")
+audit_table = dynamo.Table(_audit_table_name) if dynamo and _audit_table_name else None
 
 def _get_param(name: str) -> str | None:
     """Return ``name`` from environment or SSM."""
@@ -64,11 +76,29 @@ def check_file_processing_status(event: ProcessingStatusEvent, context) -> dict:
     except s3_client.exceptions.ClientError as exc:
         if exc.response.get("Error", {}).get("Code") == "404":
             event_body["fileupload_status"] = "PROCESSING"
+            if audit_table:
+                try:
+                    item = audit_table.get_item(Key={"document_id": document_id}).get("Item")
+                    if item:
+                        event_body["status"] = item.get("status")
+                        if "page_count" in item:
+                            event_body["page_count"] = item["page_count"]
+                except Exception as exc:  # pragma: no cover - best effort
+                    logger.warning("Failed to read audit record: %s", exc)
             return event_body
         raise
 
     event_body["fileupload_status"] = "COMPLETE"
     event_body["text_doc_key"] = key
+    if audit_table:
+        try:
+            item = audit_table.get_item(Key={"document_id": document_id}).get("Item")
+            if item:
+                event_body["status"] = item.get("status")
+                if "page_count" in item:
+                    event_body["page_count"] = item["page_count"]
+        except Exception as exc:  # pragma: no cover - best effort
+            logger.warning("Failed to read audit record: %s", exc)
     return event_body
 
 

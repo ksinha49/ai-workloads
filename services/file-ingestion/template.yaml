@@ -80,6 +80,18 @@ Resources:
       CompatibleRuntimes:
         - python3.13
 
+  DocumentAuditTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Ref DocumentAuditTableName
+      AttributeDefinitions:
+        - AttributeName: document_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: document_id
+          KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
+
   FileProcessingLambdaFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -104,8 +116,10 @@ Resources:
       Environment:
         Variables:
           AWS_ACCOUNT_NAME: !Ref AWSAccountName
+          DOCUMENT_AUDIT_TABLE: !Ref DocumentAuditTableName
           IDP_BUCKET: !Ref IDPBucketName
           RAW_PREFIX: !Ref IDPRawPrefix
+          DOCUMENT_AUDIT_TABLE: !Ref DocumentAuditTableName
 
   FileProcessingLambdaS3Policy:
     Type: AWS::IAM::Policy
@@ -159,6 +173,22 @@ Resources:
             Action:
               - s3:GetObject
             Resource: !Sub 'arn:aws:s3:::${IDPBucketName}/*'
+
+  DocumentAuditDynamoPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Sub '${AWSAccountName}-${AWS::StackName}-document-audit-dynamo'
+      Roles:
+        - !Select [1, !Split ['/', !Ref LambdaIAMRoleARN]]
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - dynamodb:PutItem
+              - dynamodb:UpdateItem
+              - dynamodb:GetItem
+            Resource: !GetAtt DocumentAuditTable.Arn
 
   FileIngestionSFInvokePolicy:
     Type: AWS::IAM::Policy
@@ -254,3 +284,6 @@ Outputs:
   FileProcessingStatusLambdaArn:
     Description: ARN of the file processing status Lambda
     Value: !GetAtt FileProcessingStatusLambdaFunction.Arn
+  DocumentAuditTableName:
+    Description: Name of the document audit table
+    Value: !Ref DocumentAuditTable
