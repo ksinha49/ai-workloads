@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.11] - 2025-07-04
+### Added
+- Lightweight `BaseModel` for event validation in `common_utils.pydantic`.
+- `load_ner_model` helper for spaCy/HuggingFace NER models.
+- `iter_s3_records` utility and refactored IDP Lambdas.
+- RAG architecture overview and workflow diagrams for ingestion, tokenization and summarization.
+- Standard Python `.gitignore` template.
+
+### Changed
+- Improved exception handling across services.
+- README links to new ingestion workflow documentation.
+
 ## [1.0.10] - 2025-07-04
 ### Added
 - Entity Tokenization service for deterministic replacement of sensitive values.
