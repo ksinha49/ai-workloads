@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 import re
@@ -94,14 +95,42 @@ def _load_medical_model() -> Tuple[str, Any] | None:
     return _MEDICAL_MODEL
 
 
-_REGEX_PATTERNS = {
+_DEFAULT_REGEX_PATTERNS = {
     "SSN": r"\b\d{3}-\d{2}-\d{4}\b",
     "CREDIT_CARD": r"\b(?:\d[ -]*?){13,16}\b",
 }
 
-_LEGAL_REGEX_PATTERNS = {
+_DEFAULT_LEGAL_REGEX_PATTERNS = {
     "CASE_NUMBER": r"\b\d{2}-\d{5}\b",
 }
+
+_REGEX_PATTERNS: Dict[str, str] = {}
+_LEGAL_REGEX_PATTERNS: Dict[str, str] = {}
+
+
+def _load_regex_patterns() -> None:
+    """Load regex patterns from environment variables."""
+
+    global _REGEX_PATTERNS, _LEGAL_REGEX_PATTERNS
+    _REGEX_PATTERNS = dict(_DEFAULT_REGEX_PATTERNS)
+    _LEGAL_REGEX_PATTERNS = dict(_DEFAULT_LEGAL_REGEX_PATTERNS)
+
+    env_patterns = os.environ.get("REGEX_PATTERNS")
+    if env_patterns:
+        try:
+            _REGEX_PATTERNS.update(json.loads(env_patterns))
+        except Exception as exc:  # pragma: no cover - runtime safety
+            logger.exception("Invalid REGEX_PATTERNS: %s", exc)
+
+    env_legal = os.environ.get("LEGAL_REGEX_PATTERNS")
+    if env_legal:
+        try:
+            _LEGAL_REGEX_PATTERNS.update(json.loads(env_legal))
+        except Exception as exc:  # pragma: no cover - runtime safety
+            logger.exception("Invalid LEGAL_REGEX_PATTERNS: %s", exc)
+
+
+_load_regex_patterns()
 
 
 def _regex_entities(text: str, patterns: Dict[str, str] | None = None) -> List[Dict[str, Any]]:

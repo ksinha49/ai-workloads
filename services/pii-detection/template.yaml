@@ -18,6 +18,12 @@ Parameters:
   LegalModel:
     Type: String
     Default: 'dslim/bert-base-NER'
+  RegexPatterns:
+    Type: String
+    Default: '{"SSN": "\\b\\d{3}-\\d{2}-\\d{4}\\b", "CREDIT_CARD": "\\b(?:\\d[ -]*?){13,16}\\b"}'
+  LegalRegexPatterns:
+    Type: String
+    Default: '{"CASE_NUMBER": "\\b\\d{2}-\\d{5}\\b"}'
 
 Globals:
   Function:
@@ -38,6 +44,8 @@ Resources:
           HF_MODEL: !Ref HFModel
           MEDICAL_MODEL: !Ref MedicalModel
           LEGAL_MODEL: !Ref LegalModel
+          REGEX_PATTERNS: !Ref RegexPatterns
+          LEGAL_REGEX_PATTERNS: !Ref LegalRegexPatterns
       Events:
         Api:
           Type: Api
