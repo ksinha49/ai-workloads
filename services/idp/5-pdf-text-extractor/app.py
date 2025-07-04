@@ -187,26 +187,39 @@ def _handle_record(record: dict) -> None:
         logger.info("Key %s is not a PDF - skipping", key)
         return
 
-    obj = s3_client.get_object(Bucket=bucket_name, Key=key)
-    body = obj["Body"].read()
     try:
-        text_md = _extract_text(body)
-    except (fitz.FileDataError, ValueError) as exc:  # pragma: no cover - expected
-        logger.error("Failed to extract text from %s: %s", key, exc)
-        return
-    except Exception as exc:  # pragma: no cover - unexpected
-        logger.exception("Unexpected error extracting text from %s", key)
-        return
+        try:
+            obj = s3_client.get_object(Bucket=bucket_name, Key=key)
+        except (ClientError, BotoCoreError) as exc:
+            logger.error("S3 download error for %s: %s", key, exc)
+            return
 
-    rel_key = key[len(pdf_text_page_prefix):]
-    dest_key = text_page_prefix + os.path.splitext(rel_key)[0] + ".md"
-    s3_client.put_object(
-        Bucket=bucket_name,
-        Key=dest_key,
-        Body=text_md.encode("utf-8"),
-        ContentType="text/markdown",
-    )
-    logger.info("Wrote %s", dest_key)
+        body = obj["Body"].read()
+
+        try:
+            text_md = _extract_text(body)
+        except (fitz.FileDataError, ValueError) as exc:  # pragma: no cover - expected
+            logger.error("PDF parsing error for %s: %s", key, exc)
+            return
+
+        rel_key = key[len(pdf_text_page_prefix):]
+        dest_key = text_page_prefix + os.path.splitext(rel_key)[0] + ".md"
+
+        try:
+            s3_client.put_object(
+                Bucket=bucket_name,
+                Key=dest_key,
+                Body=text_md.encode("utf-8"),
+                ContentType="text/markdown",
+            )
+        except (ClientError, BotoCoreError) as exc:
+            logger.error("S3 upload error for %s: %s", dest_key, exc)
+            return
+
+        logger.info("Wrote %s", dest_key)
+    except Exception as exc:  # pragma: no cover - unexpected
+        logger.exception("Unexpected error processing key %s", key)
+        raise
 
 def lambda_handler(event: S3Event, context: dict) -> LambdaResponse:
     """Triggered by pages in ``PDF_TEXT_PAGE_PREFIX``.
