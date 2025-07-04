@@ -3,6 +3,23 @@
 This document explains how the entity tokenization service converts sensitive values into stable tokens and how the tokens can be re-anonymized.
 See [entity_tokenization_service.md](entity_tokenization_service.md) for deployment parameters and examples.
 
+```mermaid
+flowchart TD
+    A["Request with entity, type & domain"] --> B{"Mapping exists?"}
+    B -- Yes --> C["Return stored token"]
+    B -- No --> D["Prepend TOKEN_SALT"]
+    D --> E["Hash SHA-256"]
+    E --> F["Take first 8 chars"]
+    F --> G["Prefix with TOKEN_PREFIX"]
+    G --> H["Store mapping"]
+    H --> C
+
+    subgraph "Re-anonymization Options"
+        I("Change TOKEN_SALT & clear table")
+        J("Use new TOKEN_PREFIX or table")
+    end
+```
+
 ## Consistent Token Generation
 
 1. Incoming requests provide an `entity`, its `entity_type` and optional `domain`.
