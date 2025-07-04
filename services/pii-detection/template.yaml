@@ -12,6 +12,12 @@ Parameters:
   HFModel:
     Type: String
     Default: 'dslim/bert-base-NER'
+  MedicalModel:
+    Type: String
+    Default: 'emilyalsentzer/Bio_ClinicalBERT'
+  LegalModel:
+    Type: String
+    Default: 'dslim/bert-base-NER'
 
 Globals:
   Function:
@@ -30,6 +36,8 @@ Resources:
           NER_LIBRARY: !Ref NerLibrary
           SPACY_MODEL: !Ref SpacyModel
           HF_MODEL: !Ref HFModel
+          MEDICAL_MODEL: !Ref MedicalModel
+          LEGAL_MODEL: !Ref LegalModel
       Events:
         Api:
           Type: Api

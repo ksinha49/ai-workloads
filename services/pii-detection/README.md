@@ -18,8 +18,17 @@ model. Each parameter becomes an environment variable for the Lambda:
 | `NerLibrary` | `NER_LIBRARY`       | `spacy` or `hf` to select the library.     |
 | `SpacyModel` | `SPACY_MODEL`       | spaCy model name when using `spacy`.       |
 | `HFModel`    | `HF_MODEL`          | HuggingFace model name when using `hf`.    |
+| `MedicalModel` | `MEDICAL_MODEL`   | Model used when `domain` is `Medical`. |
+| `LegalModel` | `LEGAL_MODEL`       | Model used when `domain` is `Legal`. |
 
 The Lambda always runs a small set of regex detectors in addition to any model.
+
+### Domain-based configuration
+
+`detect-pii-lambda` accepts an optional `domain` or `classification` field in
+the event. When this value is `Medical` the Lambda loads the model defined by
+`MEDICAL_MODEL`. When set to `Legal` it runs the normal model and applies
+additional legal regex patterns.
 
 ## Response format
 

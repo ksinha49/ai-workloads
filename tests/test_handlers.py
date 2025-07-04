@@ -1322,3 +1322,35 @@ def test_detect_pii_regex(monkeypatch):
 
     out = module.lambda_handler({"text": "Card 4111 1111 1111 1111"}, {})
     assert any(e["type"] == "CREDIT_CARD" for e in out["entities"])
+
+
+def test_detect_pii_medical_domain(monkeypatch):
+    module = load_lambda(
+        "detect_pii_medical", "services/pii-detection/detect-pii-lambda/app.py"
+    )
+
+    class DummyEnt:
+        def __init__(self, text, label, start, end):
+            self.text = text
+            self.label_ = label
+            self.start_char = start
+            self.end_char = end
+
+    def fake_model(text):
+        return type("Doc", (), {"ents": [DummyEnt("Jane", "PATIENT", 0, 4)]})()
+
+    monkeypatch.setattr(module, "_load_medical_model", lambda: ("spacy", fake_model))
+
+    out = module.lambda_handler({"text": "Jane", "domain": "Medical"}, {})
+    assert any(e["type"] == "PATIENT" for e in out["entities"])
+
+
+def test_detect_pii_legal_regex(monkeypatch):
+    module = load_lambda(
+        "detect_pii_legal", "services/pii-detection/detect-pii-lambda/app.py"
+    )
+
+    monkeypatch.setattr(module, "_load_model", lambda: None)
+    text = "case 12-12345"
+    out = module.lambda_handler({"text": text, "classification": "Legal"}, {})
+    assert any(e["type"] == "CASE_NUMBER" for e in out["entities"])

@@ -147,4 +147,7 @@ Outputs:
   FileIngestionStateMachineArn:
     Description: ARN of the file ingestion state machine
     Value: !GetAtt FileIngestionService.Outputs.FileIngestionStateMachineArn
+  DetectPiiFunctionArn:
+    Description: ARN of the PII detection Lambda
+    Value: !GetAtt PIIDetectionService.Outputs.DetectPiiFunctionArn
 

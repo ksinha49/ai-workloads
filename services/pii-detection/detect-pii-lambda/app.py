@@ -15,6 +15,7 @@ from common_utils import configure_logger
 logger = configure_logger(__name__)
 
 _MODEL: Tuple[str, Any] | None = None
+_MEDICAL_MODEL: Tuple[str, Any] | None = None
 
 
 def _load_model() -> Tuple[str, Any] | None:
@@ -53,17 +54,64 @@ def _load_model() -> Tuple[str, Any] | None:
     return _MODEL
 
 
+def _load_medical_model() -> Tuple[str, Any] | None:
+    """Load a PHI-specific model based on environment variables."""
+
+    global _MEDICAL_MODEL
+    if _MEDICAL_MODEL is not None:
+        return _MEDICAL_MODEL
+
+    library = os.environ.get("NER_LIBRARY", "spacy").lower()
+    if library == "spacy":
+        try:  # pragma: no cover - optional dependency
+            import spacy  # type: ignore
+
+            model_name = os.environ.get(
+                "MEDICAL_MODEL", os.environ.get("SPACY_MODEL", "en_core_web_sm")
+            )
+            _MEDICAL_MODEL = ("spacy", spacy.load(model_name))
+        except Exception as exc:  # pragma: no cover - runtime safety
+            logger.exception("Failed to load medical spaCy model: %s", exc)
+            _MEDICAL_MODEL = None
+    else:
+        try:  # pragma: no cover - optional dependency
+            from transformers import pipeline  # type: ignore
+
+            model_name = os.environ.get(
+                "MEDICAL_MODEL", os.environ.get("HF_MODEL", "dslim/bert-base-NER")
+            )
+            _MEDICAL_MODEL = (
+                "hf",
+                pipeline(
+                    "ner",
+                    model=model_name,
+                    aggregation_strategy="simple",
+                ),
+            )
+        except Exception as exc:  # pragma: no cover - runtime safety
+            logger.exception("Failed to load medical HF model: %s", exc)
+            _MEDICAL_MODEL = None
+    return _MEDICAL_MODEL
+
+
 _REGEX_PATTERNS = {
     "SSN": r"\b\d{3}-\d{2}-\d{4}\b",
     "CREDIT_CARD": r"\b(?:\d[ -]*?){13,16}\b",
 }
 
+_LEGAL_REGEX_PATTERNS = {
+    "CASE_NUMBER": r"\b\d{2}-\d{5}\b",
+}
 
-def _regex_entities(text: str) -> List[Dict[str, Any]]:
+
+def _regex_entities(text: str, patterns: Dict[str, str] | None = None) -> List[Dict[str, Any]]:
     """Return regex-based PII matches."""
 
+    if patterns is None:
+        patterns = _REGEX_PATTERNS
+
     matches: List[Dict[str, Any]] = []
-    for typ, pattern in _REGEX_PATTERNS.items():
+    for typ, pattern in patterns.items():
         for match in re.finditer(pattern, text):
             matches.append(
                 {
@@ -76,10 +124,11 @@ def _regex_entities(text: str) -> List[Dict[str, Any]]:
     return matches
 
 
-def _ml_entities(text: str) -> List[Dict[str, Any]]:
+def _ml_entities(text: str, model_info: Tuple[str, Any] | None = None) -> List[Dict[str, Any]]:
     """Extract entities using the configured ML model."""
 
-    model_info = _load_model()
+    if model_info is None:
+        model_info = _load_model()
     if model_info is None:
         return []
 
@@ -114,5 +163,17 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     """Return detected PII entities from the input text."""
 
     text = event.get("text", "")
-    entities = _regex_entities(text) + _ml_entities(text)
+    domain = (event.get("domain") or event.get("classification") or "").title()
+
+    regex_patterns = _REGEX_PATTERNS
+    model_info: Tuple[str, Any] | None = None
+
+    if domain == "Medical":
+        model_info = _load_medical_model()
+    else:
+        model_info = _load_model()
+        if domain == "Legal":
+            regex_patterns = {**_REGEX_PATTERNS, **_LEGAL_REGEX_PATTERNS}
+
+    entities = _regex_entities(text, regex_patterns) + _ml_entities(text, model_info)
     return {"entities": entities}
