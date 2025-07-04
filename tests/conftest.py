@@ -31,6 +31,14 @@ class DummyS3:
     def head_object(self, Bucket, Key):
         if (Bucket, Key) not in self.objects:
             raise self.exceptions.ClientError({"Error": {"Code": "404"}}, "head_object")
+        import hashlib
+        data = self.objects[(Bucket, Key)]
+        etag = '"' + hashlib.md5(data).hexdigest() + '"'
+        return {"ETag": etag, "ContentLength": len(data)}
+
+    def copy_object(self, Bucket=None, Key=None, CopySource=None):
+        src = (CopySource["Bucket"], CopySource["Key"])
+        self.objects[(Bucket, Key)] = self.objects.get(src, b"")
         return {}
 
     def delete_object(self, Bucket, Key):

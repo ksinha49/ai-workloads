@@ -109,11 +109,20 @@ def copy_file_to_idp(bucket_name: str, bucket_key: str) -> str:
 
     file_name = os.path.basename(bucket_key)
     dest_key = f"{raw_prefix}{file_name}"
+
+    src_head = _s3_client.head_object(Bucket=bucket_name, Key=bucket_key)
+    src_etag = src_head.get("ETag")
+    src_len = src_head.get("ContentLength")
+
     _s3_client.copy_object(
         Bucket=idp_bucket,
         Key=dest_key,
         CopySource={"Bucket": bucket_name, "Key": bucket_key},
     )
+
+    dest_head = _s3_client.head_object(Bucket=idp_bucket, Key=dest_key)
+    if dest_head.get("ETag") != src_etag or dest_head.get("ContentLength") != src_len:
+        raise ClientError({"Error": {"Code": "CopyVerificationFailed", "Message": "Copy verification failed"}}, "copy_object")
 
     return f"s3://{idp_bucket}/{dest_key}"
 
