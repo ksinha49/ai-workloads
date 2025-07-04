@@ -98,3 +98,11 @@ Each service loads its configuration from Parameter Store or the Lambda environm
 - `TOKEN_TABLE` – DynamoDB table for entity/token mappings.
 - `TOKEN_PREFIX` – Prefix prepended to generated tokens.
 - `TOKEN_SALT` – Optional salt for deterministic hashing.
+
+### Text Anonymization
+
+- `ANON_MODE` – how to anonymize text: `mask`, `pseudo` or `token`.
+- `TOKEN_API_URL` – endpoint for tokenization when using token mode.
+- `ANON_TIMEOUT` – seconds before falling back to `[REMOVED]`.
+
+See [services/text-anonymization/README.md](../services/text-anonymization/README.md) for more details.
