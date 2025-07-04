@@ -38,3 +38,19 @@ def test_file_processing_lambda(monkeypatch, s3_stub, config):
     assert body['collection_name'] == 'c'
     # ensure the source file was removed after processing
     assert ('bucket', 'path/test.docx') not in s3_stub.objects
+
+
+def test_file_processing_lambda_invalid_path(monkeypatch, config):
+    config['/parameters/aio/ameritasAI/SERVER_ENV'] = 'dev'
+    module = load_lambda('file_proc_inv', 'services/file-ingestion/file-processing-lambda/app.py')
+    event = FileProcessingEvent(file='foo', collection_name='c')
+    resp = module.lambda_handler(event, {})
+    assert resp['statusCode'] == 400
+
+
+def test_file_processing_lambda_bad_collection(monkeypatch, config):
+    config['/parameters/aio/ameritasAI/SERVER_ENV'] = 'dev'
+    module = load_lambda('file_proc_col', 'services/file-ingestion/file-processing-lambda/app.py')
+    event = FileProcessingEvent(file='s3://bucket/test.pdf', collection_name='@@@')
+    resp = module.lambda_handler(event, {})
+    assert resp['statusCode'] == 400
