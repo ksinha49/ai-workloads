@@ -64,6 +64,7 @@ class S3Event:
     """Wrapper for S3 event records used by the IDP Lambdas."""
 
     Records: List[Dict[str, Any]]
+    document_id: Optional[str] = None
 
 
 @dataclass

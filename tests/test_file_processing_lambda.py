@@ -26,7 +26,7 @@ def test_file_processing_lambda(monkeypatch, s3_stub, config):
     resp = module.lambda_handler(event, {})
     assert resp['statusCode'] == 200
     body = resp['body']
-    assert body['document_id'] == 'test'
+    assert len(body['document_id']) == 32 and all(c in '0123456789abcdef' for c in body['document_id'])
     assert body['s3_location'] == 's3://dest-bucket/raw/test.docx'
     assert body['collection_name'] == 'c'
     # ensure the source file was removed after processing

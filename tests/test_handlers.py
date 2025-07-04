@@ -41,6 +41,7 @@ def test_office_extractor(monkeypatch, s3_stub, validate_schema, config):
     monkeypatch.setattr(module, "_extract_xlsx", lambda b: ["## Page 1\n\ntext\n"])
 
     event = {
+        "document_id": "doc123",
         "Records": [
             {
                 "s3": {
@@ -52,9 +53,9 @@ def test_office_extractor(monkeypatch, s3_stub, validate_schema, config):
     }
     module.lambda_handler(event, {})
 
-    out_key = "text-docs/test.json"
+    out_key = "text-docs/doc123.json"
     payload = json.loads(s3_stub.objects[("bucket", out_key)].decode())
-    assert payload["documentId"] == "test"
+    assert payload["documentId"] == "doc123"
     assert payload["pageCount"] == 1
     page = {
         "documentId": payload["documentId"],

@@ -44,12 +44,14 @@ s3_client = boto3.client("s3")
 
 
 
-def _split_pdf(bucket_name: str, pdf_page_prefix: str, key: str) -> None:
+def _split_pdf(
+    bucket_name: str, pdf_page_prefix: str, key: str, document_id: str | None = None
+) -> None:
     """Split the PDF stored at *key* into per-page files."""
     obj = s3_client.get_object(Bucket=bucket_name, Key=key)
     pdf_bytes = obj["Body"].read()
     doc = PdfReader(io.BytesIO(pdf_bytes))
-    doc_id = os.path.splitext(os.path.basename(key))[0]
+    doc_id = document_id or os.path.splitext(os.path.basename(key))[0]
     for idx, page in enumerate(doc.pages, start=1):
         writer = PdfWriter()
         writer.add_page(page)
@@ -79,7 +81,7 @@ def _split_pdf(bucket_name: str, pdf_page_prefix: str, key: str) -> None:
     logger.info("Wrote %s", manifest_key)
 
 
-def _handle_record(record: dict) -> None:
+def _handle_record(record: dict, document_id: str | None = None) -> None:
     """Process a single S3 event record."""
     bucket = record.get("s3", {}).get("bucket", {}).get("name")
     key = record.get("s3", {}).get("object", {}).get("key")
@@ -100,7 +102,7 @@ def _handle_record(record: dict) -> None:
         logger.info("Key %s is not a PDF - skipping", key)
         return
     logger.info("Splitting %s", key)
-    _split_pdf(bucket_name, pdf_page_prefix, key)
+    _split_pdf(bucket_name, pdf_page_prefix, key, document_id)
 
 def lambda_handler(event: S3Event, context: dict) -> LambdaResponse:
     """Triggered by PDFs uploaded to ``PDF_RAW_PREFIX``.
@@ -120,9 +122,12 @@ def lambda_handler(event: S3Event, context: dict) -> LambdaResponse:
         200 status once splitting is complete.
     """
     logger.info("Received event for 3-pdf-split: %s", event)
+    doc_id = getattr(event, "document_id", None)
+    if isinstance(event, dict):
+        doc_id = event.get("document_id", doc_id)
     for rec in iter_s3_records(event):
         try:
-            _handle_record(rec)
+            _handle_record(rec, doc_id)
         except Exception as exc:  # pragma: no cover - runtime safety
             logger.error("Error processing record %s: %s", rec, exc)
     return {

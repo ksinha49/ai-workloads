@@ -42,6 +42,8 @@ stateDiagram-v2
   `arn:aws:states:::lambda:invoke`. The entire event is forwarded as the payload
   so the lambda can copy the uploaded file from the staging bucket into
   `IDP_BUCKET/RAW_PREFIX`. A retry policy handles transient Lambda errors.
+  The handler assigns a new random `document_id` using `uuid.uuid4().hex` and
+  includes it in the response for downstream services.
 
 **Wait**
 : Waits `StatusPollSeconds` seconds before checking the file's status again.
