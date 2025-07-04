@@ -20,7 +20,7 @@ logger = configure_logger(__name__)
 try:  # pragma: no cover - optional dependency
     from pymilvus import Collection, connections
     from pymilvus.exceptions import MilvusException
-except Exception:  # pragma: no cover - allow import without pymilvus
+except ImportError:  # pragma: no cover - allow import without pymilvus
     Collection = None  # type: ignore
     connections = None  # type: ignore
     MilvusException = Exception  # type: ignore

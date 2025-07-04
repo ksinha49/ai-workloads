@@ -84,9 +84,12 @@ def test_lambda_handler_invoke_error(monkeypatch):
     monkeypatch.setenv("INVOCATION_QUEUE_URL", "url")
     monkeypatch.setenv("PROMPT_COMPLEXITY_THRESHOLD", "3")
 
+    class ClientError(Exception):
+        pass
+
     class ErrorLambda:
         def send_message(self, QueueUrl=None, MessageBody=None):
-            raise RuntimeError("boom")
+            raise ClientError("boom")
 
     monkeypatch.setattr(sys.modules["boto3"], "client", lambda name: ErrorLambda())
     module = load_lambda("router_lambda_error", "services/llm-router/router-lambda/app.py")

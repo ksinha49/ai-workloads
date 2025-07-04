@@ -11,7 +11,7 @@ from typing import Any, Dict, Optional, List
 import boto3
 try:  # pragma: no cover - optional dependency
     from langdetect.lang_detect_exception import LangDetectException
-except Exception:  # pragma: no cover - allow import without langdetect
+except ImportError:  # pragma: no cover - allow import without langdetect
     LangDetectException = Exception  # type: ignore
 from generative_router import invoke_bedrock_model
 from common_utils.get_ssm import get_config

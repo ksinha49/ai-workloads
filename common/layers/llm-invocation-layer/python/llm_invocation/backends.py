@@ -12,11 +12,11 @@ import boto3
 import httpx
 try:  # pragma: no cover - optional dependency
     from botocore.exceptions import BotoCoreError
-except Exception:  # pragma: no cover - allow import without botocore
+except ImportError:  # pragma: no cover - allow import without botocore
     BotoCoreError = Exception  # type: ignore
 try:  # pragma: no cover - optional dependency
     from httpx import HTTPError
-except Exception:  # pragma: no cover - allow import without httpx
+except ImportError:  # pragma: no cover - allow import without httpx
     class HTTPError(Exception):
         pass
 from common_utils import configure_logger

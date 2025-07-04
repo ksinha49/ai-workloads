@@ -8,7 +8,7 @@ from typing import Optional
 import boto3
 try:  # pragma: no cover - optional dependency
     from botocore.exceptions import BotoCoreError, ClientError
-except Exception:  # pragma: no cover - allow import without botocore
+except ImportError:  # pragma: no cover - allow import without botocore
     BotoCoreError = ClientError = Exception  # type: ignore
 
 from common_utils import configure_logger

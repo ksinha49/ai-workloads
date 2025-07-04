@@ -81,7 +81,7 @@ def test_lambda_handler_error(monkeypatch):
     module = load_lambda("handler_err", "services/file-assembly/file-assemble-lambda/app.py")
 
     def boom(event, context, s3_client):
-        raise RuntimeError("boom")
+        raise ValueError("boom")
 
     monkeypatch.setattr(module, "assemble_files", boom)
     monkeypatch.setattr(module, "lambda_response", lambda s, b: {"statusCode": s, "body": b})
