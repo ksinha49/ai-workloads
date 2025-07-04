@@ -250,6 +250,12 @@ environment. The table below summarises the most common variables.
 - `REGEX_PATTERNS` – JSON map of custom regex detectors.
 - `LEGAL_REGEX_PATTERNS` – JSON map of legal-specific patterns.
 
+### Entity Tokenization
+
+- `TOKEN_TABLE` – DynamoDB table for entity/token mappings.
+- `TOKEN_PREFIX` – Prefix prepended to generated tokens.
+- `TOKEN_SALT` – Optional salt for deterministic hashing.
+
 ## Deployment
 
 Deploy a service with `sam deploy --template-file services/<service>/template.yaml --stack-name <name>` and provide any required parameters. See each service's README for details.
