@@ -24,10 +24,7 @@ def invoke_ollama(payload):
 
 def invoke_bedrock_runtime(prompt, model_id=None, system_prompt=None):
     """Invoke the Bedrock runtime directly."""
-    import asyncio
-    return asyncio.run(
-        _invoke_bedrock_runtime(prompt, model_id, system_prompt)
-    )
+    return _invoke_bedrock_runtime(prompt, model_id, system_prompt)
 
 
 def invoke_bedrock_openai(payload):
