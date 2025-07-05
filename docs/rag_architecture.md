@@ -5,7 +5,7 @@ This guide illustrates how the retrieval augmented generation components connect
 ## Components
 
 - **rag-ingestion** – chunks documents and generates embeddings.
-- **rag-ingestion-worker** – polls `IngestionQueue` and starts the ingestion workflow, moving failed messages to a DLQ.
+- **rag-ingestion-worker** – polls `IngestionQueue` and starts the ingestion workflow, moving failed messages to a DLQ. The queue URL is exported as `IngestionQueueUrl` for other stacks.
 - **vector-db** – maintains Milvus collections used for semantic search.
 - **knowledge-base** – stores metadata for ingested chunks and exposes `/kb/*` endpoints.
 - **rag-retrieval** – performs vector search and orchestrates summarization with context.

@@ -87,4 +87,5 @@ embeddings and metadata to the Milvus insert step.
 Large ingestion jobs may be placed on an SQS queue instead of calling the state
 machine directly. The `rag-ingestion-worker` Lambda monitors this queue and
 starts `IngestionStateMachine` for each message. Any failed messages are moved to
-`IngestionDLQ` and retried automatically.
+`IngestionDLQ` and retried automatically. The queue URL is exported from the
+stack as `IngestionQueueUrl`.
