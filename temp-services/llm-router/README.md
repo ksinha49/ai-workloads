@@ -1,5 +1,7 @@
 # LLM Router Service
 
+**Note:** routing logic is now included in the `llm-gateway` service.
+
 This service routes prompts to different Large Language Model backends such as Amazon Bedrock or a local Ollama instance. `router-lambda/app.py` implements the Lambda entry point and relies on utilities shipped in the shared layer `common/layers/router-layer`.
 
 Handler type hints reference dataclasses defined in ``models.py``:

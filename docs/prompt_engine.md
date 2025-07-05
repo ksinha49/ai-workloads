@@ -1,6 +1,6 @@
 # Prompt Engine
 
-The prompt engine is a lightweight Lambda that renders text templates stored in a DynamoDB table and forwards the result to the LLM router. Templates are addressed by a `prompt_id` and `version` so multiple revisions can be stored.
+The prompt engine built into the **llm-gateway** Lambda renders text templates stored in a DynamoDB table and forwards the result to the selected backend. Templates are addressed by a `prompt_id` and `version` so multiple revisions can be stored.
 
 ## DynamoDB Items
 
@@ -56,7 +56,7 @@ aws dynamodb put-item \
 
 ## Invocation
 
-Send a JSON payload containing the desired `prompt_id` and any variables to the Lambda's endpoint. The rendered prompt is forwarded to the router service and the response is returned unchanged:
+Send a JSON payload containing the desired `prompt_id` and any variables to the Lambda's endpoint. The rendered prompt is forwarded to the gateway's target backend and the response is returned unchanged:
 
 ```json
 {"prompt_id": "summary-v1", "variables": {"text": "example content"}}
