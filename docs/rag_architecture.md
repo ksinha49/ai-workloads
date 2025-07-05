@@ -4,8 +4,9 @@ This guide illustrates how the retrieval augmented generation components connect
 
 ## Components
 
+- **file-ingestion** – extracts text from uploaded files and enqueues ingestion jobs.
 - **rag-ingestion** – chunks documents and generates embeddings.
-- **rag-ingestion-worker** – dequeues requests and starts the ingestion workflow.
+- **rag-ingestion-worker** – polls `IngestionQueue` and starts the ingestion workflow, moving failed messages to a DLQ. The queue URL is exported as `IngestionQueueUrl` for other stacks.
 - **vector-db** – maintains Milvus collections used for semantic search.
 - **knowledge-base** – stores metadata for ingested chunks and exposes `/kb/*` endpoints.
 - **rag-retrieval** – performs vector search and orchestrates summarization with context.
@@ -18,13 +19,19 @@ The ingestion services generate embeddings and store metadata. Retrieval functio
 ```mermaid
 sequenceDiagram
     participant Client
+    participant FileIng as file-ingestion
+    participant Queue as IngestionQueue
+    participant Worker as rag-ingestion-worker
     participant Ingestion as rag-ingestion
     participant DB as vector-db
     participant KB as knowledge-base
     participant Retrieval as rag-retrieval
     participant Sum as summarization
 
-    Client->>Ingestion: upload document
+    Client->>FileIng: upload file
+    FileIng-->>Queue: publish job
+    Worker->>Queue: receive
+    Worker->>Ingestion: start workflow
     Ingestion->>DB: store embeddings
     Ingestion->>KB: save chunk metadata
     Client->>Retrieval: query for context
@@ -34,7 +41,12 @@ sequenceDiagram
     Sum-->>Client: return summary
 ```
 
-The summarization Step Function may invoke retrieval during its workflow to supply relevant context before generating the final response. Both ingestion and retrieval rely on the `vector-db` service to manage Milvus collections.
+The summarization Step Function may invoke retrieval during its workflow to supply
+relevant context before generating the final response. Both ingestion and
+retrieval rely on the `vector-db` service to manage Milvus collections.
 
-Ingestion requests can also be published to an SQS queue. The `rag-ingestion-worker`
-Lambda polls this queue and triggers the `IngestionStateMachine` for each message.
+In a typical flow the `file-ingestion` Step Function extracts text from the
+uploaded file and publishes the ingestion parameters to `IngestionQueue`. The
+`rag-ingestion-worker` Lambda dequeues these messages and starts the
+`IngestionStateMachine`. Failed jobs are moved to a dead letter queue and retried
+automatically using the `batchItemFailures` response format.
