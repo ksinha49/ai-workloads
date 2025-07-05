@@ -37,7 +37,7 @@ def test_generate_token(monkeypatch):
     monkeypatch.setenv('TOKEN_TABLE', 'tbl')
     monkeypatch.setenv('TOKEN_PREFIX', 'tok-')
     monkeypatch.setenv('TOKEN_SALT', 's')
-    module = load_lambda('tokenize', 'services/entity-tokenization/tokenize-entity-lambda/app.py')
+    module = load_lambda('tokenize', 'services/anonymization/src/tokenize_entities_lambda.py')
     out = module.lambda_handler({'entity': 'Bob', 'entity_type': 'NAME', 'domain': 'gen'}, {})
     expected = 'tok-' + hashlib.sha256('sBob'.encode()).hexdigest()[:8]
     assert out['token'] == expected
@@ -51,7 +51,7 @@ def test_existing_token(monkeypatch):
     monkeypatch.setenv('TOKEN_TABLE', 'tbl')
     monkeypatch.setenv('TOKEN_PREFIX', 'tok-')
     monkeypatch.delenv('TOKEN_SALT', raising=False)
-    module = load_lambda('tokenize2', 'services/entity-tokenization/tokenize-entity-lambda/app.py')
+    module = load_lambda('tokenize2', 'services/anonymization/src/tokenize_entities_lambda.py')
     out = module.lambda_handler({'entity': 'Bob', 'entity_type': 'NAME', 'domain': 'gen'}, {})
     assert out['token'] == 'tok-1234'
     assert len(table.items) == 1
@@ -63,7 +63,7 @@ def test_uuid_generation(monkeypatch):
     monkeypatch.setenv('TOKEN_TABLE', 'tbl')
     monkeypatch.setenv('TOKEN_PREFIX', 'pre_')
     monkeypatch.delenv('TOKEN_SALT', raising=False)
-    module = load_lambda('tokenize3', 'services/entity-tokenization/tokenize-entity-lambda/app.py')
+    module = load_lambda('tokenize3', 'services/anonymization/src/tokenize_entities_lambda.py')
     out = module.lambda_handler({'entity': 'A', 'entity_type': 'TYPE', 'domain': ''}, {})
     assert out['token'].startswith('pre_')
     assert len(out['token']) == len('pre_') + 8

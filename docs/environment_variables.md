@@ -118,4 +118,4 @@ Each service loads its configuration from Parameter Store or the Lambda environm
 
 Both variables may also be supplied via Parameter Store using the same names.
 
-See [services/text-anonymization/README.md](../services/text-anonymization/README.md) for more details.
+See [services/anonymization/README.md](../services/anonymization/README.md) for more details.

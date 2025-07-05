@@ -1,0 +1,135 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Lambdas for detecting and anonymizing sensitive information.
+
+Parameters:
+  NerLibrary:
+    Type: String
+    Default: 'spacy'
+  SpacyModel:
+    Type: String
+    Default: 'en_core_web_sm'
+  HFModel:
+    Type: String
+    Default: 'dslim/bert-base-NER'
+  MedicalModel:
+    Type: String
+    Default: 'emilyalsentzer/Bio_ClinicalBERT'
+  LegalModel:
+    Type: String
+    Default: 'dslim/bert-base-NER'
+  RegexPatterns:
+    Type: String
+    Default: '{"SSN": "\\b\\d{3}-\\d{2}-\\d{4}\\b", "CREDIT_CARD": "\\b(?:\\d[ -]*?){13,16}\\b"}'
+  LegalRegexPatterns:
+    Type: String
+    Default: '{"CASE_NUMBER": "\\b\\d{2}-\\d{5}\\b"}'
+  TokenSalt:
+    Type: String
+    Default: ''
+  TokenPrefix:
+    Type: String
+    Default: 'ent_'
+  TokenTableName:
+    Type: String
+    Default: 'entity-token-table'
+  AnonymizationMode:
+    Type: String
+    Default: 'mask'
+  TokenApiUrl:
+    Type: String
+    Default: ''
+  AnonymizationTimeout:
+    Type: Number
+    Default: 3
+
+Globals:
+  Function:
+    Runtime: python3.13
+    Timeout: 60
+    MemorySize: 512
+
+Resources:
+  DetectSensitiveInfoFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./src/
+      Handler: detect_sensitive_info_lambda.lambda_handler
+      Environment:
+        Variables:
+          NER_LIBRARY: !Ref NerLibrary
+          SPACY_MODEL: !Ref SpacyModel
+          HF_MODEL: !Ref HFModel
+          MEDICAL_MODEL: !Ref MedicalModel
+          LEGAL_MODEL: !Ref LegalModel
+          REGEX_PATTERNS: !Ref RegexPatterns
+          LEGAL_REGEX_PATTERNS: !Ref LegalRegexPatterns
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /detect-pii
+            Method: post
+
+  EntityTokenTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: token
+          AttributeType: S
+      KeySchema:
+        - AttributeName: token
+          KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
+      TableName: !Ref TokenTableName
+
+  TokenizeEntityFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./src/
+      Handler: tokenize_entities_lambda.lambda_handler
+      Environment:
+        Variables:
+          TOKEN_TABLE: !Ref TokenTableName
+          TOKEN_PREFIX: !Ref TokenPrefix
+          TOKEN_SALT: !Ref TokenSalt
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref EntityTokenTable
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /tokenize-entity
+            Method: post
+
+  AnonymizeTextFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./src/
+      Handler: mask_text_lambda.lambda_handler
+      Environment:
+        Variables:
+          ANON_MODE: !Ref AnonymizationMode
+          TOKEN_API_URL: !Ref TokenApiUrl
+          ANON_TIMEOUT: !Ref AnonymizationTimeout
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /anonymize-text
+            Method: post
+
+Outputs:
+  DetectSensitiveInfoFunctionArn:
+    Description: ARN of the sensitive info detection Lambda
+    Value: !GetAtt DetectSensitiveInfoFunction.Arn
+  TokenizeEntityFunctionArn:
+    Description: ARN of the tokenization Lambda
+    Value: !GetAtt TokenizeEntityFunction.Arn
+  TokenTableName:
+    Description: Name of the token table
+    Value: !Ref EntityTokenTable
+  AnonymizeTextFunctionArn:
+    Description: ARN of the anonymization Lambda
+    Value: !GetAtt AnonymizeTextFunction.Arn
