@@ -1122,7 +1122,7 @@ def test_summary_lambda_forwards(monkeypatch):
     sys.modules["unidecode"].unidecode = lambda x: x
 
     module = load_lambda(
-        "sum_lambda", "services/summarization/file-summary-lambda/app.py"
+        "sum_lambda", "temp-services/summarization/file-summary-lambda/app.py"
     )
     captured = {}
 
@@ -1157,7 +1157,7 @@ def test_summary_lambda_docx(monkeypatch):
     sys.modules["unidecode"].unidecode = lambda x: x
 
     module = load_lambda(
-        "sum_lambda2", "services/summarization/file-summary-lambda/app.py"
+        "sum_lambda2", "temp-services/summarization/file-summary-lambda/app.py"
     )
     captured = {}
 

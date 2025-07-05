@@ -35,7 +35,7 @@ def test_load_prompts(monkeypatch):
 
     monkeypatch.setattr(sys.modules["httpx"], "post", fake_post)
 
-    module = load_lambda("load", "services/summarization/load-prompts-lambda/app.py")
+    module = load_lambda("load", "temp-services/summarization/load-prompts-lambda/app.py")
     out = module.lambda_handler({"workflow_id": "aps"}, {})
     assert sent == [
         {"url": "http://engine", "json": {"workflow_id": "aps"}},
