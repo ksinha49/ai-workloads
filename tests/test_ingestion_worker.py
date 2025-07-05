@@ -35,3 +35,24 @@ def test_worker_starts_state_machine(monkeypatch):
 
     assert started["arn"] == "arn"
     assert started["input"]["text"] == "t"
+
+
+def test_worker_reports_failed_messages(monkeypatch):
+    module = load_lambda("worker", "services/rag-ingestion-worker/worker-lambda/app.py")
+
+    def fake_process(record):
+        if record.get("messageId") == "bad":
+            raise Exception("boom")
+
+    monkeypatch.setattr(module, "_process_record", fake_process)
+
+    event = {
+        "Records": [
+            {"body": "{}", "messageId": "ok"},
+            {"body": "{}", "messageId": "bad"},
+        ]
+    }
+
+    resp = module.lambda_handler(event, {})
+
+    assert resp["batchItemFailures"] == [{"itemIdentifier": "bad"}]

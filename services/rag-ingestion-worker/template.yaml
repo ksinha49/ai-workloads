@@ -68,7 +68,7 @@ Resources:
           Type: SQS
           Properties:
             Queue: !GetAtt IngestionQueue.Arn
-            BatchSize: 1
+            BatchSize: 10
 
   WorkerSQSPolicy:
     Type: AWS::IAM::Policy
