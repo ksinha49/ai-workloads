@@ -53,15 +53,15 @@ The Step Function expects a list of prompt objects under `body.prompts` when the
 
 1. **Execution input** – Pass the `prompts` array directly in the `StartExecution` payload.
 2. **S3 object** – Store the prompts JSON in S3 and include the bucket/key in the input. A Lambda (not shown here) can load the file and inject the array into `body.prompts` before the `Map` state runs.
-3. **Workflow ID** – Provide a `workflow_id` value. The `load_prompts` state retrieves all prompts tagged with this ID from the Prompt Engine and populates `body.prompts` automatically. It also loads the workflow's system prompt and sets `body.llm_params.system_prompt`.
+3. **Workflow ID** – Provide a `workflow_id` value. The `load_prompts` state retrieves all prompts tagged with this ID from the LLM Gateway and populates `body.prompts` automatically. It also loads the workflow's system prompt and sets `body.llm_params.system_prompt`.
 
 ## Role of `file-summary-lambda`
 
 Previously this Lambda generated the summaries itself. The revised workflow delegates summarization to the `run_prompts` `Map` state. `file-summary-lambda` now receives the pre-generated summaries, formats them according to an optional `output_format` field (PDF, DOCX, JSON or XML), and uploads the resulting file back to S3.
 
-## Prompt Engine Integration
+## LLM Gateway Integration
 
-Each object in `body.prompts` may optionally include a `prompt_id` value. When present, the `summarize-worker-lambda` sends this identifier to the Prompt Engine before invoking the summarization logic. The engine loads the matching template from the DynamoDB table defined by the **prompt-engine** stack, substitutes any variables and forwards the rendered prompt to the router service. Only the side effect of calling the engine is required&mdash;the worker still passes the original `query` to the summarization Lambda.
+Each object in `body.prompts` may optionally include a `prompt_id` value. When present, the `summarize-worker-lambda` sends this identifier to the LLM Gateway before invoking the summarization logic. The gateway loads the matching template from its DynamoDB table, substitutes any variables and forwards the rendered prompt to the selected backend. Only the side effect of calling the gateway is required&mdash;the worker still passes the original `query` to the summarization Lambda.
 
 Example entry in `body.prompts`:
 
@@ -73,11 +73,11 @@ Example entry in `body.prompts`:
 }
 ```
 
-Sample templates such as `aps_prompts.json` can be loaded into the prompt engine's DynamoDB table. Listing the corresponding `prompt_id`s in the execution input ensures the Step Function pushes each prompt to the queue where the worker contacts the engine.
+Sample templates such as `aps_prompts.json` can be loaded into the gateway's DynamoDB table. Listing the corresponding `prompt_id`s in the execution input ensures the Step Function pushes each prompt to the queue where the worker contacts the service.
 
 ## Supplying a System Prompt
 
-Model parameters are provided under `body.llm_params`. To control the LLM's behaviour you can add a `system_prompt` entry. The queue worker forwards `llm_params` to the `llm-invocation` Lambda which applies the system prompt when calling the model. An example prompt is located in `file-summary-lambda/system_prompt.json`.
+Model parameters are provided under `body.llm_params`. To control the LLM's behaviour you can add a `system_prompt` entry. The queue worker forwards `llm_params` to the `llm-gateway` Lambda which applies the system prompt when calling the model. An example prompt is located in `file-summary-lambda/system_prompt.json`.
 
 ```json
 {

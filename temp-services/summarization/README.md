@@ -19,7 +19,7 @@ The SAM template exposes a few parameters which become environment variables for
 - `FileAssembleFunctionArn` – ARN of the file assembly Lambda used to merge summaries with the original PDF.
 - `RunPromptsConcurrency` – number of prompts processed in parallel by the `run_prompts` map state.
 - The service now provisions an SQS queue consumed by a worker Lambda. `RunPromptsConcurrency` controls how many messages are sent in parallel.
-- `PromptEngineEndpoint` – optional URL of the prompt engine service used for templated prompts.
+- `PromptEngineEndpoint` – optional URL of the LLM Gateway service used for templated prompts.
 
 
 ## Deployment
@@ -62,17 +62,17 @@ A unique `file_guid` is generated during the file-processing step. This value fl
 ## Prompt templates
 
 Each entry in `body.prompts` may specify a `prompt_id` that refers to a template
-stored in the prompt engine. When present, the worker Lambda sends
-`prompt_id` and an optional `variables` dictionary to the engine before invoking
-the summarization logic. The engine renders the template and forwards it to the
-LLM router, but the queue worker ignores the response – the original
+stored in the LLM Gateway. When present, the worker Lambda sends
+`prompt_id` and an optional `variables` dictionary to the gateway before invoking
+the summarization logic. The gateway renders the template and forwards it to the
+LLM backend, but the queue worker ignores the response – the original
 ``query`` value is still passed to ``RAG_SUMMARY_FUNCTION_ARN`` unchanged.
 
 ## `workflow_id`
 
 Instead of providing the prompts list directly you can specify a ``workflow_id``
 which references a stored set of prompts. The Step Function invokes the
-``load-prompts`` Lambda to fetch the list from the Prompt Engine before running
+``load-prompts`` Lambda to fetch the list from the LLM Gateway before running
 
 the summaries. The same Lambda also loads the workflow's system prompt and
 populates ``body.llm_params.system_prompt`` automatically.
@@ -109,7 +109,7 @@ Function execution. To supply a system prompt for the LLM add a
 
 An example prompt is available in
 [`file-summary-lambda/system_prompt.json`](file-summary-lambda/system_prompt.json).
-The queue worker passes ``llm_params`` to the ``llm-invocation`` Lambda which
+The queue worker passes ``llm_params`` to the ``llm-gateway`` Lambda which
 forwards ``system_prompt`` to the selected backend.
 
 

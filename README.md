@@ -17,9 +17,7 @@ The repository includes the following directories under `services/`:
 - `vector-db` – manages Milvus collections and search Lambdas
 - `rag-retrieval` – retrieval functions and API endpoints for summarization or entity extraction
 - `summarization` – Step Function workflow orchestrating file processing and summary generation
-- `prompt-engine` – renders templates from DynamoDB and forwards them to the router
-- `llm-router` – routes prompts via heuristic, predictive and cascading strategies to Amazon Bedrock or local Ollama
-- `llm-invocation` – forwards OpenAI-style requests to a specific LLM backend
+- `llm-gateway` – renders templates and routes requests to the selected LLM backend
 - `knowledge-base` – ingest text snippets and query them through the retrieval stack
 - `sensitive-info-detection` – PII/PHI detection for text including legal entities
 - `entity-tokenization` – replaces sensitive entities with stable tokens

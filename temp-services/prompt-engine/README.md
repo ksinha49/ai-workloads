@@ -1,9 +1,11 @@
 # Prompt Engine Service
 
+**Note:** this functionality is now provided by the `llm-gateway` service.
+
 This service provides a simple Lambda for rendering prompts stored in a DynamoDB
  table. The function loads a template from `PromptLibraryTable`, substitutes
 variables passed in the request and forwards the final prompt to the LLM router
-specified by `RouterEndpoint`.
+ specified by `RouterEndpoint`.
 
 ## Parameters
 

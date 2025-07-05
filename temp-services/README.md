@@ -59,25 +59,13 @@ Retrieves relevant context from the vector database and forwards it to summariza
 Orchestrates file ingestion, prompt execution and summary generation.
 
 - Generates PDF, DOCX, JSON or XML summaries
-- Integrates with the prompt engine using `workflow_id`
+- Integrates with the LLM Gateway using `workflow_id`
 
-## prompt-engine
-Renders prompt templates stored in DynamoDB and sends the final prompt to the LLM router.
+## llm-gateway
+Renders templates, routes prompts and forwards requests to the configured LLM backend.
 
 - Parameterised by `PromptLibraryTable` and `RouterEndpoint`
-- Accepts `prompt_id` and `variables` in requests
-
-## llm-router
-Routes prompts to Amazon Bedrock or a local Ollama instance using heuristic, predictive and cascading strategies.
-
-- Requests are queued on SQS for asynchronous processing
-- Returns which backend produced the response
-
-## llm-invocation
-Forwards OpenAI-style requests to the configured backend with optional system prompts.
-
-- Can be invoked directly or via the router queue
-- Uses dataclass models for type-safe payloads
+- Supports direct invocation or queued requests
 
 ## knowledge-base
 Provides a lightweight API to ingest short text documents and query them using the retrieval stack.
