@@ -5,6 +5,7 @@ This guide illustrates how the retrieval augmented generation components connect
 ## Components
 
 - **rag-ingestion** – chunks documents and generates embeddings.
+- **rag-ingestion-worker** – dequeues requests and starts the ingestion workflow.
 - **vector-db** – maintains Milvus collections used for semantic search.
 - **knowledge-base** – stores metadata for ingested chunks and exposes `/kb/*` endpoints.
 - **rag-retrieval** – performs vector search and orchestrates summarization with context.
@@ -34,3 +35,6 @@ sequenceDiagram
 ```
 
 The summarization Step Function may invoke retrieval during its workflow to supply relevant context before generating the final response. Both ingestion and retrieval rely on the `vector-db` service to manage Milvus collections.
+
+Ingestion requests can also be published to an SQS queue. The `rag-ingestion-worker`
+Lambda polls this queue and triggers the `IngestionStateMachine` for each message.
