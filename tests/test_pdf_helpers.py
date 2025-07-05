@@ -9,7 +9,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 def load_module():
     spec = importlib.util.spec_from_file_location(
-        "pdf", "services/summarization/file-summary-lambda/app.py"
+        "pdf", "services/summarization/src/2_consolidate_summary_lambda.py"
     )
     module = importlib.util.module_from_spec(spec)
     import sys
