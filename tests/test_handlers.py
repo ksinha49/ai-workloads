@@ -706,7 +706,7 @@ def test_llm_router_lambda_handler(monkeypatch):
         sys.modules["boto3"], "client", lambda name: _make_fake_send(calls)
     )
     module = load_lambda(
-        "llm_router_lambda", "services/llm-router/router-lambda/app.py"
+        "llm_router_lambda", "services/llm-gateway/src/2_llm_router_lambda.py"
     )
     module.sqs_client = sys.modules["boto3"].client("sqs")
 
@@ -733,7 +733,7 @@ def test_llm_router_lambda_handler_backend_override(monkeypatch):
         sys.modules["boto3"], "client", lambda name: _make_fake_send(calls)
     )
     module = load_lambda(
-        "llm_router_lambda_override", "services/llm-router/router-lambda/app.py"
+        "llm_router_lambda_override", "services/llm-gateway/src/2_llm_router_lambda.py"
     )
     module.sqs_client = sys.modules["boto3"].client("sqs")
 
@@ -774,7 +774,7 @@ def test_summarize_with_context_router(monkeypatch, config):
     fake_invoke.calls = []
 
     module = load_lambda(
-        "summ_ctx", "services/rag-retrieval/summarize-with-context-lambda/app.py"
+        "summ_ctx", "services/rag-stack/src/2_retrieval_lambda.py"
     )
     monkeypatch.setattr(
         module, "lambda_client", type("C", (), {"invoke": staticmethod(fake_invoke)})()
@@ -879,7 +879,7 @@ def test_summarize_with_rerank(monkeypatch, config):
     fake_invoke.rerank = None
 
     module = load_lambda(
-        "summ_ctx_rerank", "services/rag-retrieval/summarize-with-context-lambda/app.py"
+        "summ_ctx_rerank", "services/rag-stack/src/2_retrieval_lambda.py"
     )
     monkeypatch.setattr(
         module, "lambda_client", type("C", (), {"invoke": staticmethod(fake_invoke)})()
@@ -1122,7 +1122,7 @@ def test_summary_lambda_forwards(monkeypatch):
     sys.modules["unidecode"].unidecode = lambda x: x
 
     module = load_lambda(
-        "sum_lambda", "services/summarization/file-summary-lambda/app.py"
+        "sum_lambda", "services/summarization/src/2_consolidate_summary_lambda.py"
     )
     captured = {}
 
@@ -1157,7 +1157,7 @@ def test_summary_lambda_docx(monkeypatch):
     sys.modules["unidecode"].unidecode = lambda x: x
 
     module = load_lambda(
-        "sum_lambda2", "services/summarization/file-summary-lambda/app.py"
+        "sum_lambda2", "services/summarization/src/2_consolidate_summary_lambda.py"
     )
     captured = {}
 
@@ -1273,7 +1273,7 @@ def test_vector_search_guid_filter(monkeypatch, config):
 
 def test_detect_pii_ml(monkeypatch):
     module = load_lambda(
-        "detect_pii_ml", "services/sensitive-info-detection/detect-sensitive-info-lambda/app.py"
+        "detect_pii_ml", "services/anonymization/src/1_detect_sensitive_info_lambda.py"
     )
 
     class DummyEnt:
@@ -1300,7 +1300,7 @@ def test_detect_pii_ml(monkeypatch):
 
 def test_detect_pii_regex(monkeypatch):
     module = load_lambda(
-        "detect_pii_regex", "services/sensitive-info-detection/detect-sensitive-info-lambda/app.py"
+        "detect_pii_regex", "services/anonymization/src/1_detect_sensitive_info_lambda.py"
     )
     monkeypatch.setattr(module, "load_ner_model", lambda *a, **k: None)
 
@@ -1310,7 +1310,7 @@ def test_detect_pii_regex(monkeypatch):
 
 def test_detect_pii_medical_domain(monkeypatch):
     module = load_lambda(
-        "detect_pii_medical", "services/sensitive-info-detection/detect-sensitive-info-lambda/app.py"
+        "detect_pii_medical", "services/anonymization/src/1_detect_sensitive_info_lambda.py"
     )
 
     class DummyEnt:
@@ -1331,7 +1331,7 @@ def test_detect_pii_medical_domain(monkeypatch):
 
 def test_detect_pii_legal_regex(monkeypatch):
     module = load_lambda(
-        "detect_pii_legal", "services/sensitive-info-detection/detect-sensitive-info-lambda/app.py"
+        "detect_pii_legal", "services/anonymization/src/1_detect_sensitive_info_lambda.py"
     )
 
     monkeypatch.setattr(module, "load_ner_model", lambda *a, **k: None)
@@ -1342,7 +1342,7 @@ def test_detect_pii_legal_regex(monkeypatch):
 
 def test_detect_pii_legal_domain(monkeypatch):
     module = load_lambda(
-        "detect_pii_legal_domain", "services/sensitive-info-detection/detect-sensitive-info-lambda/app.py"
+        "detect_pii_legal_domain", "services/anonymization/src/1_detect_sensitive_info_lambda.py"
     )
 
     class DummyEnt:
@@ -1373,7 +1373,7 @@ def test_detect_pii_custom_regex(monkeypatch):
     pattern = {"FOO": r"foo\d+"}
     monkeypatch.setenv("REGEX_PATTERNS", json.dumps(pattern))
     module = load_lambda(
-        "detect_pii_custom", "services/sensitive-info-detection/detect-sensitive-info-lambda/app.py"
+        "detect_pii_custom", "services/anonymization/src/1_detect_sensitive_info_lambda.py"
     )
 
     monkeypatch.setattr(module, "load_ner_model", lambda *a, **k: None)

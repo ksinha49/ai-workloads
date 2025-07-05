@@ -43,7 +43,7 @@ def test_worker_prompt_engine(monkeypatch):
 
     monkeypatch.setattr(sys.modules["httpx"], "post", fake_post)
 
-    module = load_lambda("worker", "services/summarization/summarize-worker-lambda/app.py")
+    module = load_lambda("worker", "services/summarization/src/1_run_prompts_lambda.py")
     event = {"Records": [{"body": json.dumps({"token": "tok", "query": "q", "collection_name": "c", "Title": "T", "prompt_id": "p1", "variables": {"a": 1}})}]}
     module.lambda_handler(event, {})
 
