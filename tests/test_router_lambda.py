@@ -26,7 +26,7 @@ def test_lambda_handler(monkeypatch):
 
     calls = []
     monkeypatch.setattr(sys.modules["boto3"], "client", lambda name: _make_fake_send(calls))
-    module = load_lambda("router_lambda", "services/llm-router/router-lambda/app.py")
+    module = load_lambda("router_lambda", "services/llm-gateway/src/llm_router_lambda.py")
     module.sqs_client = sys.modules["boto3"].client("sqs")
 
     event1 = {"body": json.dumps({"prompt": "short"})}
@@ -48,7 +48,7 @@ def test_lambda_handler_backend_override(monkeypatch):
 
     calls = []
     monkeypatch.setattr(sys.modules["boto3"], "client", lambda name: _make_fake_send(calls))
-    module = load_lambda("router_lambda_override", "services/llm-router/router-lambda/app.py")
+    module = load_lambda("router_lambda_override", "services/llm-gateway/src/llm_router_lambda.py")
     module.sqs_client = sys.modules["boto3"].client("sqs")
 
     event = {"body": json.dumps({"prompt": "short", "backend": "bedrock"})}
@@ -70,7 +70,7 @@ def test_lambda_handler_strategy(monkeypatch):
 
     calls = []
     monkeypatch.setattr(sys.modules["boto3"], "client", lambda name: _make_fake_send(calls))
-    module = load_lambda("router_lambda_strategy", "services/llm-router/router-lambda/app.py")
+    module = load_lambda("router_lambda_strategy", "services/llm-gateway/src/llm_router_lambda.py")
     module.sqs_client = sys.modules["boto3"].client("sqs")
 
     event = {"body": json.dumps({"prompt": "short", "strategy": "complexity"})}
@@ -92,7 +92,7 @@ def test_lambda_handler_invoke_error(monkeypatch):
             raise ClientError("boom")
 
     monkeypatch.setattr(sys.modules["boto3"], "client", lambda name: ErrorLambda())
-    module = load_lambda("router_lambda_error", "services/llm-router/router-lambda/app.py")
+    module = load_lambda("router_lambda_error", "services/llm-gateway/src/llm_router_lambda.py")
     module.sqs_client = sys.modules["boto3"].client("sqs")
 
     event = {"body": json.dumps({"prompt": "short"})}
@@ -106,7 +106,7 @@ def test_lambda_handler_malicious_prompt(monkeypatch):
     monkeypatch.setenv("INVOCATION_QUEUE_URL", "url")
     calls = []
     monkeypatch.setattr(sys.modules["boto3"], "client", lambda name: _make_fake_send(calls))
-    module = load_lambda("router_lambda_malicious", "services/llm-router/router-lambda/app.py")
+    module = load_lambda("router_lambda_malicious", "services/llm-gateway/src/llm_router_lambda.py")
     module.sqs_client = sys.modules["boto3"].client("sqs")
 
     event = {"body": json.dumps({"prompt": "<script>alert('x')</script>"})}
@@ -123,7 +123,7 @@ def test_lambda_handler_bad_prompt_type(monkeypatch):
     monkeypatch.setenv("INVOCATION_QUEUE_URL", "url")
     calls = []
     monkeypatch.setattr(sys.modules["boto3"], "client", lambda name: _make_fake_send(calls))
-    module = load_lambda("router_lambda_bad", "services/llm-router/router-lambda/app.py")
+    module = load_lambda("router_lambda_bad", "services/llm-gateway/src/llm_router_lambda.py")
     module.sqs_client = sys.modules["boto3"].client("sqs")
 
     event = {"body": json.dumps({"prompt": ["bad"]})}

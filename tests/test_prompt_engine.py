@@ -84,7 +84,7 @@ def test_render_prompt(monkeypatch):
 
     monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
 
-    module = load_lambda("engine", "services/prompt-engine/prompt-engine-lambda/app.py")
+    module = load_lambda("engine", "services/llm-gateway/src/prompt_engine_lambda.py")
     out = module.lambda_handler({"prompt_id": "p1", "variables": {"name": "Bob"}}, {})
     assert sent["url"] == "http://router"
     assert sent["data"]["prompt"] == "Hi Bob"
@@ -99,7 +99,7 @@ def test_missing_variable(monkeypatch):
     monkeypatch.setenv("ROUTER_ENDPOINT", "http://router")
     monkeypatch.setattr(urllib.request, "urlopen", lambda r: (_ for _ in ()).throw(AssertionError("should not call")))
 
-    module = load_lambda("engine_missing", "services/prompt-engine/prompt-engine-lambda/app.py")
+    module = load_lambda("engine_missing", "services/llm-gateway/src/prompt_engine_lambda.py")
     with pytest.raises(ValueError):
         module.lambda_handler({"prompt_id": "p1"}, {})
 
@@ -113,7 +113,7 @@ def test_dynamo_failure(monkeypatch):
     monkeypatch.setattr(sys.modules["boto3"], "resource", lambda name: FakeResource(table), raising=False)
     monkeypatch.setenv("PROMPT_LIBRARY_TABLE", "tbl")
     monkeypatch.setenv("ROUTER_ENDPOINT", "http://router")
-    module = load_lambda("engine_db", "services/prompt-engine/prompt-engine-lambda/app.py")
+    module = load_lambda("engine_db", "services/llm-gateway/src/prompt_engine_lambda.py")
     out = module.lambda_handler({"prompt_id": "p1"}, {})
     assert "db boom" in out["error"]
 
@@ -126,7 +126,7 @@ def test_router_failure(monkeypatch):
     monkeypatch.setenv("ROUTER_ENDPOINT", "http://router")
     monkeypatch.setattr(urllib.request, "urlopen", lambda r: (_ for _ in ()).throw(RuntimeError("net")))
 
-    module = load_lambda("engine_route", "services/prompt-engine/prompt-engine-lambda/app.py")
+    module = load_lambda("engine_route", "services/llm-gateway/src/prompt_engine_lambda.py")
     out = module.lambda_handler({"prompt_id": "p1"}, {})
     assert "net" in out["error"]
 
@@ -142,6 +142,6 @@ def test_get_workflow_prompts(monkeypatch):
     monkeypatch.setenv("PROMPT_LIBRARY_TABLE", "tbl")
     monkeypatch.setenv("ROUTER_ENDPOINT", "http://router")
 
-    module = load_lambda("engine_wf", "services/prompt-engine/prompt-engine-lambda/app.py")
+    module = load_lambda("engine_wf", "services/llm-gateway/src/prompt_engine_lambda.py")
     result = module.lambda_handler({"workflow_id": "wf"}, {})
     assert result == items
