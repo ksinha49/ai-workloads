@@ -36,9 +36,6 @@ Parameters:
   ClassifierModelId:
     Type: String
     Default: ''
-  LlmInvocationFunctionName:
-    Type: String
-    Default: ''
 
 Resources:
   IDPService:
@@ -107,28 +104,17 @@ Resources:
       Parameters:
         VectorSearchFunctionArn: !GetAtt VectorDBService.Outputs.VectorSearchFunctionArn
 
-  LLMInvocationService:
+  LLMGatewayService:
     Type: AWS::Serverless::Application
     Properties:
-      Location: services/llm-invocation/template.yaml
+      Location: services/llm-gateway/template.yaml
       Parameters:
         BedrockOpenAIEndpoint: !Ref BedrockOpenAIEndpoint
-        BedrockApiKey: !Ref BedrockApiKey
-        OllamaEndpoint: !Ref OllamaEndpoint
-        OllamaDefaultModel: !Ref OllamaDefaultModel
-
-  LLMRouterService:
-    Type: AWS::Serverless::Application
-    Properties:
-      Location: services/llm-router/template.yaml
-      Parameters:
-        BedrockOpenAIEndpoint: !Ref BedrockOpenAIEndpoint
-        BedrockApiKey: !Ref BedrockApiKey
+        BedrockSecretName: !Ref BedrockApiKey
         OllamaEndpoint: !Ref OllamaEndpoint
         OllamaDefaultModel: !Ref OllamaDefaultModel
         PromptComplexityThreshold: !Ref PromptComplexityThreshold
         ClassifierModelId: !Ref ClassifierModelId
-        LlmInvocationFunctionName: !GetAtt LLMInvocationService.Outputs.InvokeLLMLambdaArn
 
   KnowledgeBaseService:
     Type: AWS::Serverless::Application
@@ -139,10 +125,6 @@ Resources:
         FileIngestionStateMachineArn: !GetAtt FileIngestionService.Outputs.FileIngestionStateMachineArn
         SummarizeQueueUrl: !GetAtt SummarizationService.Outputs.SummaryQueueUrl
 
-  PromptEngineService:
-    Type: AWS::Serverless::Application
-    Properties:
-      Location: services/prompt-engine/template.yaml
 
   AnonymizationService:
     Type: AWS::Serverless::Application
