@@ -36,13 +36,32 @@ This consolidated service groups three Lambdas that work together to process Lar
 
 ### llm_invocation_lambda
 
-Parameters mirror the environment variables controlling each backend. The most common ones are:
+These parameters configure the backends invoked by the Lambda. They map
+directly to environment variables used in the code.
 
-- `BEDROCK_TEMPERATURE`, `BEDROCK_NUM_CTX`, `BEDROCK_MAX_TOKENS`,
-  `BEDROCK_TOP_P`, `BEDROCK_TOP_K`, `BEDROCK_MAX_TOKENS_TO_SAMPLE`
-- `OLLAMA_NUM_CTX`, `OLLAMA_REPEAT_LAST_N`, `OLLAMA_REPEAT_PENALTY`,
-  `OLLAMA_TEMPERATURE`, `OLLAMA_SEED`, `OLLAMA_STOP`, `OLLAMA_NUM_PREDICT`,
-  `OLLAMA_TOP_K`, `OLLAMA_TOP_P`, `OLLAMA_MIN_P`
+| Parameter | Environment variable | Description |
+|-----------|---------------------|-------------|
+| `BedrockOpenAIEndpoint` | `BEDROCK_OPENAI_ENDPOINTS` | Comma-separated Bedrock OpenAI endpoints |
+| `BedrockSecretName` | `BEDROCK_SECRET_NAME` | Name or ARN of the Bedrock API key secret |
+| `BedrockTemperature` | `BEDROCK_TEMPERATURE` | Sampling temperature for Bedrock models |
+| `BedrockNumCtx` | `BEDROCK_NUM_CTX` | Context window size |
+| `BedrockMaxTokens` | `BEDROCK_MAX_TOKENS` | Maximum tokens in the completion |
+| `BedrockTopP` | `BEDROCK_TOP_P` | Nucleus sampling parameter |
+| `BedrockTopK` | `BEDROCK_TOP_K` | Top-K sampling parameter |
+| `BedrockMaxTokensToSample` | `BEDROCK_MAX_TOKENS_TO_SAMPLE` | Streaming token limit for Claude models |
+| `OllamaEndpoint` | `OLLAMA_ENDPOINTS` | URLs of Ollama services |
+| `OllamaDefaultModel` | `OLLAMA_DEFAULT_MODEL` | Default model when none supplied |
+| `OllamaNumCtx` | `OLLAMA_NUM_CTX` | Context window size |
+| `OllamaRepeatLastN` | `OLLAMA_REPEAT_LAST_N` | Repeat penalty look-back |
+| `OllamaRepeatPenalty` | `OLLAMA_REPEAT_PENALTY` | Penalize repeating tokens |
+| `OllamaTemperature` | `OLLAMA_TEMPERATURE` | Sampling temperature for Ollama models |
+| `OllamaSeed` | `OLLAMA_SEED` | Seed for reproducible outputs |
+| `OllamaStop` | `OLLAMA_STOP` | Stop sequences separated by commas |
+| `OllamaNumPredict` | `OLLAMA_NUM_PREDICT` | Maximum tokens to generate |
+| `OllamaTopK` | `OLLAMA_TOP_K` | Top-K sampling parameter |
+| `OllamaTopP` | `OLLAMA_TOP_P` | Nucleus sampling parameter |
+| `OllamaMinP` | `OLLAMA_MIN_P` | Minimum probability threshold |
+
 
 ## Deployment
 
