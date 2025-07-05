@@ -50,10 +50,10 @@ so that messages are not returned to the queue while they are still being
 processed. You can change the timeout in `template.yaml` if ingestion jobs
 regularly take longer.
 
-For production deployments it is recommended to attach a dead letter queue
-(DLQ) to `IngestionQueue` using an SQS `RedrivePolicy`. Messages that fail
-repeatedly will then be moved to the DLQ for manual inspection instead of
-being retried indefinitely.
+`IngestionQueue` now has an associated dead letter queue (DLQ) defined in the
+template. Messages that fail processing more than five times are automatically
+sent to `IngestionDLQ` for manual inspection instead of being retried
+indefinitely.
 
 ## Failure handling and retries
 
@@ -62,7 +62,7 @@ Step Function execution fails and the Lambda invocation raises an error, the
 message remains on the queue and becomes visible again after the visibility
 timeout, triggering a retry. Because messages are deleted only after
 successful processing, the same payload is retried until it succeeds or
-exceeds the maximum receives configured by any DLQ.
+exceeds the maximum receives (five by default) configured by the DLQ.
 
 ## Scaling the worker
 

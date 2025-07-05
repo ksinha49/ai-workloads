@@ -29,10 +29,18 @@ Globals:
       LogFormat: JSON
 
 Resources:
+  IngestionDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      MessageRetentionPeriod: 1209600
+
   IngestionQueue:
     Type: AWS::SQS::Queue
     Properties:
       VisibilityTimeout: 300
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt IngestionDLQ.Arn
+        maxReceiveCount: 5
 
   WorkerFunction:
     Type: AWS::Serverless::Function
