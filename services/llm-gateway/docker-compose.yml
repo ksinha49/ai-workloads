@@ -1,0 +1,12 @@
+version: '3.8'
+services:
+  app:
+    build:
+      context: ../..
+      dockerfile: services/llm-gateway/Dockerfile
+    environment:
+      PROMPT_LIBRARY_TABLE: prompts
+      ROUTER_ENDPOINT: http://router
+      INVOCATION_QUEUE_URL: http://queue
+    ports:
+      - "9007:8080"
