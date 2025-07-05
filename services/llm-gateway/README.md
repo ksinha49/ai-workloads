@@ -62,6 +62,7 @@ directly to environment variables used in the code.
 | `OllamaTopP` | `OLLAMA_TOP_P` | Nucleus sampling parameter |
 | `OllamaMinP` | `OLLAMA_MIN_P` | Minimum probability threshold |
 
+
 ## Deployment
 
 Deploy the stack with SAM:
