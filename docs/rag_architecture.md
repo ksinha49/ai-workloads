@@ -23,6 +23,8 @@ sequenceDiagram
     participant Queue as IngestionQueue
     participant Worker as rag-ingestion-worker
     participant Ingestion as rag-ingestion
+    participant Queue as IngestionQueue
+    participant Worker as rag-ingestion-worker
     participant DB as vector-db
     participant KB as knowledge-base
     participant Retrieval as rag-retrieval
@@ -34,6 +36,9 @@ sequenceDiagram
     Worker->>Ingestion: start workflow
     Ingestion->>DB: store embeddings
     Ingestion->>KB: save chunk metadata
+    Ingestion-->>Queue: publish job
+    Worker->>Queue: receive
+    Worker->>Ingestion: start workflow
     Client->>Retrieval: query for context
     Retrieval->>DB: vector search
     Retrieval->>KB: filter by metadata
@@ -50,3 +55,4 @@ uploaded file and publishes the ingestion parameters to `IngestionQueue`. The
 `rag-ingestion-worker` Lambda dequeues these messages and starts the
 `IngestionStateMachine`. Failed jobs are moved to a dead letter queue and retried
 automatically using the `batchItemFailures` response format.
+
