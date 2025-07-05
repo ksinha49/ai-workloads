@@ -5,7 +5,7 @@ This guide illustrates how the retrieval augmented generation components connect
 ## Components
 
 - **rag-ingestion** – chunks documents and generates embeddings.
-- **rag-ingestion-worker** – dequeues requests and starts the ingestion workflow.
+- **rag-ingestion-worker** – polls `IngestionQueue` and starts the ingestion workflow, moving failed messages to a DLQ. The queue URL is exported as `IngestionQueueUrl` for other stacks.
 - **vector-db** – maintains Milvus collections used for semantic search.
 - **knowledge-base** – stores metadata for ingested chunks and exposes `/kb/*` endpoints.
 - **rag-retrieval** – performs vector search and orchestrates summarization with context.
@@ -19,6 +19,8 @@ The ingestion services generate embeddings and store metadata. Retrieval functio
 sequenceDiagram
     participant Client
     participant Ingestion as rag-ingestion
+    participant Queue as IngestionQueue
+    participant Worker as rag-ingestion-worker
     participant DB as vector-db
     participant KB as knowledge-base
     participant Retrieval as rag-retrieval
@@ -27,6 +29,9 @@ sequenceDiagram
     Client->>Ingestion: upload document
     Ingestion->>DB: store embeddings
     Ingestion->>KB: save chunk metadata
+    Ingestion-->>Queue: publish job
+    Worker->>Queue: receive
+    Worker->>Ingestion: start workflow
     Client->>Retrieval: query for context
     Retrieval->>DB: vector search
     Retrieval->>KB: filter by metadata
@@ -38,3 +43,5 @@ The summarization Step Function may invoke retrieval during its workflow to supp
 
 Ingestion requests can also be published to an SQS queue. The `rag-ingestion-worker`
 Lambda polls this queue and triggers the `IngestionStateMachine` for each message.
+Failed jobs are moved to a dead letter queue and retried automatically using the
+`batchItemFailures` response format.

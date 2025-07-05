@@ -81,3 +81,11 @@ Environment variables used:
 
 The lambda embeds each chunk with the resolved provider and forwards the
 embeddings and metadata to the Milvus insert step.
+
+## Queue-based Invocation
+
+Large ingestion jobs may be placed on an SQS queue instead of calling the state
+machine directly. The `rag-ingestion-worker` Lambda monitors this queue and
+starts `IngestionStateMachine` for each message. Any failed messages are moved to
+`IngestionDLQ` and retried automatically. The queue URL is exported from the
+stack as `IngestionQueueUrl`.
