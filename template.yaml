@@ -144,15 +144,10 @@ Resources:
     Properties:
       Location: services/prompt-engine/template.yaml
 
-  SensitiveInfoDetectionService:
+  AnonymizationService:
     Type: AWS::Serverless::Application
     Properties:
-      Location: services/sensitive-info-detection/template.yaml
-
-  EntityTokenizationService:
-    Type: AWS::Serverless::Application
-    Properties:
-      Location: services/entity-tokenization/template.yaml
+      Location: services/anonymization/template.yaml
 
 Outputs:
   FileIngestionStateMachineArn:
@@ -160,13 +155,16 @@ Outputs:
     Value: !GetAtt FileIngestionService.Outputs.FileIngestionStateMachineArn
   DetectSensitiveInfoFunctionArn:
     Description: ARN of the sensitive info detection Lambda
-    Value: !GetAtt SensitiveInfoDetectionService.Outputs.DetectSensitiveInfoFunctionArn
+    Value: !GetAtt AnonymizationService.Outputs.DetectSensitiveInfoFunctionArn
   TokenizeEntityFunctionArn:
     Description: ARN of the entity tokenization Lambda
-    Value: !GetAtt EntityTokenizationService.Outputs.TokenizeEntityFunctionArn
+    Value: !GetAtt AnonymizationService.Outputs.TokenizeEntityFunctionArn
   TokenTableName:
     Description: Name of the entity token table
-    Value: !GetAtt EntityTokenizationService.Outputs.TokenTableName
+    Value: !GetAtt AnonymizationService.Outputs.TokenTableName
+  AnonymizeTextFunctionArn:
+    Description: ARN of the anonymization Lambda
+    Value: !GetAtt AnonymizationService.Outputs.AnonymizeTextFunctionArn
   DocumentAuditTableName:
     Description: Name of the document audit table
     Value: !GetAtt FileIngestionService.Outputs.DocumentAuditTableName

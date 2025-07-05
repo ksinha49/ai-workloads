@@ -40,7 +40,7 @@ def faker_stub(monkeypatch):
 @pytest.fixture
 def load_app(monkeypatch, faker_stub):
     def _load():
-        return load_lambda("anon_app", "services/text-anonymization/anonymize-text-lambda/app.py")
+        return load_lambda("anon_app", "services/anonymization/src/mask_text_lambda.py")
     return _load
 
 

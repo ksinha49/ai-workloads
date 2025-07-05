@@ -1,0 +1,16 @@
+version: '3.8'
+services:
+  app:
+    build:
+      context: ../..
+      dockerfile: services/anonymization/Dockerfile
+    environment:
+      NER_LIBRARY: spacy
+      TOKEN_TABLE: token-table
+      TOKEN_PREFIX: ent_
+      TOKEN_SALT: ""
+      TOKEN_API_URL: ""
+      ANON_TIMEOUT: 3
+      ANON_MODE: mask
+    ports:
+      - "9012:8080"
