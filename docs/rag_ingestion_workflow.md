@@ -2,11 +2,11 @@
 
 This document describes the `IngestionStateMachine` defined in
 `services/rag-ingestion/template.yaml`. The workflow is typically started by the
-`rag-ingestion-worker` after the `file-ingestion` service extracts text from an
-uploaded file and enqueues a message. New objects placed under
-`TextDocPrefix` in the configured S3 bucket can also trigger the workflow
-directly. The state machine splits the text into chunks, generates embeddings
-and stores them in Milvus.
+`rag-ingestion-worker` after the `file-ingestion` Step Function runs the IDP
+pipeline to extract text from an uploaded file and enqueues a message. New
+objects placed under `TextDocPrefix` in the configured S3 bucket can also
+trigger the workflow directly. The state machine splits the text into chunks,
+generates embeddings and stores them in Milvus.
 
 ```mermaid
 stateDiagram-v2
@@ -88,8 +88,9 @@ embeddings and metadata to the Milvus insert step.
 ## Queue-based Invocation
 
 Large ingestion jobs may be placed on an SQS queue instead of calling the state
-machine directly. This is normally done by the `file-ingestion` service once it
-has parsed a document. The `rag-ingestion-worker` Lambda monitors the queue and
-starts `IngestionStateMachine` for each message. Any failed messages are moved to
+machine directly. This is normally done by the `file-ingestion` service after
+the IDP pipeline finishes extracting text from a document. The
+`rag-ingestion-worker` Lambda monitors the queue and starts
+`IngestionStateMachine` for each message. Any failed messages are moved to
 `IngestionDLQ` and retried automatically. The queue URL is exported from the
 stack as `IngestionQueueUrl`.
