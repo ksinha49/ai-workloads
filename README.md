@@ -62,6 +62,10 @@ Python packages are installed into each Lambda's layer under `common/layers/` du
 ## Configuration
 
 Runtime settings are stored in AWS Systems Manager Parameter Store using the path `/parameters/aio/ameritasAI/<ENV>/<NAME>`. S3 object tags with the same keys may override these values for individual files.
+Values are cached by the shared `get_values_from_ssm` helper using
+[AWS Lambda Powertools](https://awslabs.github.io/aws-lambda-powertools-python/latest/utilities/parameters/).
+When the `SSM_CACHE_TABLE` environment variable is defined, the cache
+uses DynamoDB to persist entries across cold starts.
 
 ### OCR Engine
 

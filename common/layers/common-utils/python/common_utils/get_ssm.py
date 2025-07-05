@@ -1,6 +1,7 @@
 """Shared helpers for retrieving SSM parameters and parsing S3 URIs."""
 
 from typing import Optional, Tuple
+import os
 import boto3
 try:  # pragma: no cover - optional dependency
     from botocore.exceptions import BotoCoreError, ClientError
@@ -15,10 +16,22 @@ __modified_by__ = "Koushik Sinha"
 
 logger = configure_logger(__name__)
 _ssm_client = boto3.client("ssm")
+try:
+    from aws_lambda_powertools.utilities.parameters import SSMProvider
+    from aws_lambda_powertools.utilities.parameters.caches.dynamodb import DynamoDBCache
+except Exception:  # pragma: no cover - optional dependency
+    SSMProvider = None  # type: ignore
+    DynamoDBCache = None  # type: ignore
 
-# Simple in-memory cache so functions within a single Lambda invocation
-# don't repeatedly hit SSM
+# Backwards compatible local cache for tests
 _SSM_CACHE: dict[str, str] = {}
+
+if SSMProvider:
+    table_name = os.environ.get("SSM_CACHE_TABLE")
+    cache = DynamoDBCache(table_name=table_name) if table_name else None
+    _ssm_provider = SSMProvider(boto3_client=_ssm_client, cache=cache)
+else:  # pragma: no cover - fallback when powertools is unavailable
+    _ssm_provider = None
 s3_client = boto3.client("s3")
 
 def get_values_from_ssm(name: str, decrypt: bool = False) -> Optional[str]:
@@ -26,12 +39,15 @@ def get_values_from_ssm(name: str, decrypt: bool = False) -> Optional[str]:
     if name in _SSM_CACHE:
         return _SSM_CACHE[name]
     try:
-        resp = _ssm_client.get_parameter(Name=name, WithDecryption=decrypt)
-        value = resp["Parameter"]["Value"]
+        if _ssm_provider:
+            value = _ssm_provider.get(name, decrypt=decrypt)
+        else:  # pragma: no cover - fallback when powertools is unavailable
+            resp = _ssm_client.get_parameter(Name=name, WithDecryption=decrypt)
+            value = resp["Parameter"]["Value"]
         _SSM_CACHE[name] = value
         logger.info("Parameter Value for %s: %s", name, value)
         return value
-    except (BotoCoreError, ClientError) as exc:
+    except (BotoCoreError, ClientError, Exception) as exc:
         logger.error("Error retrieving parameter %s: %s", name, exc)
         raise
 

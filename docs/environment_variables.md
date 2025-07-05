@@ -5,6 +5,7 @@ Each service loads its configuration from Parameter Store or the Lambda environm
 ### Core services
 
 - `AWS_ACCOUNT_NAME` – scopes stack resources for the file‑assembly, zip‑processing and summarization stacks.
+- `SSM_CACHE_TABLE` – DynamoDB table used by the SSM caching layer.
 
 ### Intelligent Document Processing (IDP)
 
