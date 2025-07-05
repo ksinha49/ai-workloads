@@ -38,11 +38,27 @@ def _process_record(record: Dict[str, Any]) -> None:
 
 def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     records = event.get("Records")
+    triggered_by_sqs = records is not None
     if not records and QUEUE_URL:
         resp = sqs_client.receive_message(QueueUrl=QUEUE_URL, MaxNumberOfMessages=10)
         records = resp.get("Messages", [])
+
+    failures = []
     for record in records or []:
-        _process_record(record)
-        if "ReceiptHandle" in record and QUEUE_URL:
-            sqs_client.delete_message(QueueUrl=QUEUE_URL, ReceiptHandle=record["ReceiptHandle"])
-    return {"statusCode": 200}
+        try:
+            _process_record(record)
+            if "ReceiptHandle" in record and QUEUE_URL:
+                sqs_client.delete_message(QueueUrl=QUEUE_URL, ReceiptHandle=record["ReceiptHandle"])
+        except Exception:  # pragma: no cover - runtime issues
+            logger.exception("Error processing record")
+            if triggered_by_sqs:
+                mid = record.get("messageId") or record.get("MessageId")
+                if mid:
+                    failures.append({"itemIdentifier": mid})
+            else:
+                raise
+
+    response = {"statusCode": 200}
+    if triggered_by_sqs:
+        response["batchItemFailures"] = failures
+    return response
