@@ -1,0 +1,232 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Lambdas for rendering prompts, routing requests and invoking models.
+
+Parameters:
+  AWSAccountName:
+    Type: String
+    Description: AWS Account Name
+  LambdaSubnet1ID:
+    Type: String
+    Description: Subnet ID for Lambda function
+  LambdaSubnet2ID:
+    Type: String
+    Description: Subnet ID for Lambda function
+  LambdaSecurityGroupID1:
+    Type: String
+    Description: Security Group ID for Lambda functions
+  LambdaSecurityGroupID2:
+    Type: String
+    Description: Security Group ID for Lambda functions
+  LambdaIAMRoleARN:
+    Type: String
+    Description: IAM Role ARN for Lambda functions
+  TableName:
+    Type: String
+    Description: DynamoDB table storing prompt templates
+  RouterEndpoint:
+    Type: String
+    Description: URL of the router service
+  BedrockOpenAIEndpoint:
+    Type: String
+    Default: ''
+  BedrockSecretName:
+    Type: String
+    Default: ''
+  BedrockTemperature:
+    Type: String
+    Default: ''
+  BedrockNumCtx:
+    Type: String
+    Default: ''
+  BedrockMaxTokens:
+    Type: String
+    Default: ''
+  BedrockTopP:
+    Type: String
+    Default: ''
+  BedrockTopK:
+    Type: String
+    Default: ''
+  BedrockMaxTokensToSample:
+    Type: String
+    Default: ''
+  OllamaEndpoint:
+    Type: String
+    Default: ''
+  OllamaDefaultModel:
+    Type: String
+    Default: ''
+  OllamaNumCtx:
+    Type: String
+    Default: ''
+  OllamaRepeatLastN:
+    Type: String
+    Default: ''
+  OllamaRepeatPenalty:
+    Type: String
+    Default: ''
+  OllamaTemperature:
+    Type: String
+    Default: ''
+  OllamaSeed:
+    Type: String
+    Default: ''
+  OllamaStop:
+    Type: String
+    Default: ''
+  OllamaNumPredict:
+    Type: String
+    Default: ''
+  OllamaTopK:
+    Type: String
+    Default: ''
+  OllamaTopP:
+    Type: String
+    Default: ''
+  OllamaMinP:
+    Type: String
+    Default: ''
+  PromptComplexityThreshold:
+    Type: String
+    Default: '20'
+  ClassifierModelId:
+    Type: String
+    Default: ''
+  LlmInvocationFunctionName:
+    Type: String
+    Default: ''
+
+Globals:
+  Function:
+    Runtime: python3.13
+    Timeout: 60
+    MemorySize: 512
+
+Resources:
+  PromptLibraryTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Ref TableName
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
+
+  RouterLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: llm-router-layer
+      Description: Helpers for router lambda
+      ContentUri: ../../common/layers/router-layer/
+      CompatibleRuntimes:
+        - python3.13
+      RetentionPolicy: Delete
+
+  LlmInvocationLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: llm-invocation-layer
+      Description: Helpers for invoking LLMs
+      ContentUri: ../../common/layers/llm-invocation-layer/
+      CompatibleRuntimes:
+        - python3.13
+      RetentionPolicy: Delete
+
+  PromptEngineFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./src/
+      Handler: prompt_engine_lambda.lambda_handler
+      Role: !Ref LambdaIAMRoleARN
+      VpcConfig:
+        SecurityGroupIds:
+          - !Ref LambdaSecurityGroupID1
+          - !Ref LambdaSecurityGroupID2
+        SubnetIds:
+          - !Ref LambdaSubnet1ID
+          - !Ref LambdaSubnet2ID
+      Environment:
+        Variables:
+          PROMPT_LIBRARY_TABLE: !Ref TableName
+          ROUTER_ENDPOINT: !Ref RouterEndpoint
+          AWS_ACCOUNT_NAME: !Ref AWSAccountName
+
+  RouterFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./src/
+      Handler: llm_router_lambda.lambda_handler
+      Layers:
+        - !Ref RouterLayer
+      Environment:
+        Variables:
+          BEDROCK_OPENAI_ENDPOINTS: !Ref BedrockOpenAIEndpoint
+          BEDROCK_SECRET_NAME: !Ref BedrockSecretName
+          OLLAMA_ENDPOINTS: !Ref OllamaEndpoint
+          OLLAMA_DEFAULT_MODEL: !Ref OllamaDefaultModel
+          PROMPT_COMPLEXITY_THRESHOLD: !Ref PromptComplexityThreshold
+          LLM_INVOCATION_FUNCTION: !Ref LlmInvocationFunctionName
+          CLASSIFIER_MODEL_ID: !Ref ClassifierModelId
+
+  LlmInvocationFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./src/
+      Handler: llm_invocation_lambda.lambda_handler
+      Layers:
+        - !Ref LlmInvocationLayer
+      Environment:
+        Variables:
+          BEDROCK_OPENAI_ENDPOINTS: !Ref BedrockOpenAIEndpoint
+          BEDROCK_SECRET_NAME: !Ref BedrockSecretName
+          BEDROCK_TEMPERATURE: !Ref BedrockTemperature
+          BEDROCK_NUM_CTX: !Ref BedrockNumCtx
+          BEDROCK_MAX_TOKENS: !Ref BedrockMaxTokens
+          BEDROCK_TOP_P: !Ref BedrockTopP
+          BEDROCK_TOP_K: !Ref BedrockTopK
+          BEDROCK_MAX_TOKENS_TO_SAMPLE: !Ref BedrockMaxTokensToSample
+          OLLAMA_ENDPOINTS: !Ref OllamaEndpoint
+          OLLAMA_DEFAULT_MODEL: !Ref OllamaDefaultModel
+          OLLAMA_NUM_CTX: !Ref OllamaNumCtx
+          OLLAMA_REPEAT_LAST_N: !Ref OllamaRepeatLastN
+          OLLAMA_REPEAT_PENALTY: !Ref OllamaRepeatPenalty
+          OLLAMA_TEMPERATURE: !Ref OllamaTemperature
+          OLLAMA_SEED: !Ref OllamaSeed
+          OLLAMA_STOP: !Ref OllamaStop
+          OLLAMA_NUM_PREDICT: !Ref OllamaNumPredict
+          OLLAMA_TOP_K: !Ref OllamaTopK
+          OLLAMA_TOP_P: !Ref OllamaTopP
+          OLLAMA_MIN_P: !Ref OllamaMinP
+
+  PromptEnginePolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Sub '${AWSAccountName}-${AWS::StackName}-dynamo'
+      Roles:
+        - !Select [1, !Split ['/', !Ref LambdaIAMRoleARN]]
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - dynamodb:GetItem
+              - dynamodb:PutItem
+              - dynamodb:UpdateItem
+              - dynamodb:Scan
+              - dynamodb:Query
+            Resource: !GetAtt PromptLibraryTable.Arn
+
+Outputs:
+  PromptEngineFunctionArn:
+    Description: ARN of the prompt engine Lambda
+    Value: !GetAtt PromptEngineFunction.Arn
+  RouterFunctionArn:
+    Description: ARN of the router lambda
+    Value: !GetAtt RouterFunction.Arn
+  LlmInvocationFunctionArn:
+    Description: ARN of the invocation lambda
+    Value: !GetAtt LlmInvocationFunction.Arn
