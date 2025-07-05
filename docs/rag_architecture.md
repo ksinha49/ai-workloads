@@ -2,7 +2,7 @@
 
 This guide illustrates how the retrieval augmented generation components connect across services. It covers document ingestion, embedding creation, vector search and summarization.
 
--## Components
+## Components
 
 - **file-ingestion** – orchestrates text extraction and enqueues ingestion jobs.
 - **idp** – Intelligent Document Processing pipeline used by file-ingestion for OCR and classification.
