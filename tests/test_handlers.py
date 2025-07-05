@@ -706,7 +706,7 @@ def test_llm_router_lambda_handler(monkeypatch):
         sys.modules["boto3"], "client", lambda name: _make_fake_send(calls)
     )
     module = load_lambda(
-        "llm_router_lambda", "services/llm-router/router-lambda/app.py"
+        "llm_router_lambda", "services/llm-gateway/src/llm_router_lambda.py"
     )
     module.sqs_client = sys.modules["boto3"].client("sqs")
 
@@ -733,7 +733,7 @@ def test_llm_router_lambda_handler_backend_override(monkeypatch):
         sys.modules["boto3"], "client", lambda name: _make_fake_send(calls)
     )
     module = load_lambda(
-        "llm_router_lambda_override", "services/llm-router/router-lambda/app.py"
+        "llm_router_lambda_override", "services/llm-gateway/src/llm_router_lambda.py"
     )
     module.sqs_client = sys.modules["boto3"].client("sqs")
 

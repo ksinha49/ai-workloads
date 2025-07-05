@@ -19,7 +19,7 @@ def test_invoke_ollama(monkeypatch):
     monkeypatch.setenv('OLLAMA_DEFAULT_MODEL', 'phi')
     import importlib, llm_invocation.backends
     importlib.reload(llm_invocation.backends)
-    module = load_lambda('invoke', 'services/llm-invocation/invoke-lambda/app.py')
+    module = load_lambda('invoke', 'services/llm-gateway/src/llm_invocation_lambda.py')
 
     class FakeResponse:
         def __init__(self, payload):
@@ -48,7 +48,7 @@ def test_invoke_bedrock_runtime(monkeypatch):
     monkeypatch.setenv('BEDROCK_MAX_TOKENS_TO_SAMPLE', '33')
     import importlib, llm_invocation.backends
     importlib.reload(llm_invocation.backends)
-    module = load_lambda('invoke', 'services/llm-invocation/invoke-lambda/app.py')
+    module = load_lambda('invoke', 'services/llm-gateway/src/llm_invocation_lambda.py')
 
     class FakeRuntime:
         def invoke_model(self, body=None, modelId=None, contentType=None, accept=None):
@@ -77,7 +77,7 @@ def test_round_robin_ollama(monkeypatch):
     monkeypatch.setenv('OLLAMA_ENDPOINTS', 'http://o1,http://o2')
     import importlib, llm_invocation.backends
     importlib.reload(llm_invocation.backends)
-    module = load_lambda('invoke', 'services/llm-invocation/invoke-lambda/app.py')
+    module = load_lambda('invoke', 'services/llm-gateway/src/llm_invocation_lambda.py')
 
     calls = []
 
@@ -105,7 +105,7 @@ def test_round_robin_bedrock_openai(monkeypatch):
     monkeypatch.setenv('BEDROCK_OPENAI_ENDPOINTS', 'http://b1,http://b2')
     import importlib, llm_invocation.backends
     importlib.reload(llm_invocation.backends)
-    module = load_lambda('invoke', 'services/llm-invocation/invoke-lambda/app.py')
+    module = load_lambda('invoke', 'services/llm-gateway/src/llm_invocation_lambda.py')
 
     calls = []
 
@@ -139,7 +139,7 @@ def test_bedrock_openai_defaults(monkeypatch):
     monkeypatch.setenv('BEDROCK_MAX_TOKENS_TO_SAMPLE', '123')
     import importlib, llm_invocation.backends
     importlib.reload(llm_invocation.backends)
-    module = load_lambda('invoke', 'services/llm-invocation/invoke-lambda/app.py')
+    module = load_lambda('invoke', 'services/llm-gateway/src/llm_invocation_lambda.py')
 
     captured = {}
 
@@ -183,7 +183,7 @@ def test_ollama_defaults(monkeypatch):
     monkeypatch.setenv('OLLAMA_MIN_P', '0.02')
     import importlib, llm_invocation.backends
     importlib.reload(llm_invocation.backends)
-    module = load_lambda('invoke', 'services/llm-invocation/invoke-lambda/app.py')
+    module = load_lambda('invoke', 'services/llm-gateway/src/llm_invocation_lambda.py')
 
     captured = {}
 
@@ -221,7 +221,7 @@ def test__invoke_bedrock_openai(monkeypatch):
     monkeypatch.setenv('BEDROCK_OPENAI_ENDPOINTS', 'http://b1')
     import importlib, llm_invocation.backends
     importlib.reload(llm_invocation.backends)
-    module = load_lambda('invoke', 'services/llm-invocation/invoke-lambda/app.py')
+    module = load_lambda('invoke', 'services/llm-gateway/src/llm_invocation_lambda.py')
 
     class FakeResponse:
         def json(self):
@@ -242,7 +242,7 @@ def test_bedrock_openai_messages(monkeypatch):
     monkeypatch.setenv('BEDROCK_OPENAI_ENDPOINTS', 'http://b1')
     import importlib, llm_invocation.backends
     importlib.reload(llm_invocation.backends)
-    module = load_lambda('invoke', 'services/llm-invocation/invoke-lambda/app.py')
+    module = load_lambda('invoke', 'services/llm-gateway/src/llm_invocation_lambda.py')
 
     captured = {}
 
@@ -275,7 +275,7 @@ def test_invoke_bedrock_runtime_with_system(monkeypatch):
     monkeypatch.delenv('BEDROCK_OPENAI_ENDPOINT', raising=False)
     import importlib, llm_invocation.backends
     importlib.reload(llm_invocation.backends)
-    module = load_lambda('invoke', 'services/llm-invocation/invoke-lambda/app.py')
+    module = load_lambda('invoke', 'services/llm-gateway/src/llm_invocation_lambda.py')
 
     captured = {}
 
@@ -300,7 +300,7 @@ def test_ollama_system_prompt(monkeypatch):
     monkeypatch.setenv('OLLAMA_ENDPOINT', 'http://o')
     import importlib, llm_invocation.backends
     importlib.reload(llm_invocation.backends)
-    module = load_lambda('invoke', 'services/llm-invocation/invoke-lambda/app.py')
+    module = load_lambda('invoke', 'services/llm-gateway/src/llm_invocation_lambda.py')
 
     captured = {}
 
@@ -349,7 +349,7 @@ def test_failed_endpoint_skipped(monkeypatch):
     monkeypatch.setenv('OLLAMA_ENDPOINTS', 'http://o1,http://o2')
     import importlib, llm_invocation.backends
     importlib.reload(llm_invocation.backends)
-    module = load_lambda('invoke', 'services/llm-invocation/invoke-lambda/app.py')
+    module = load_lambda('invoke', 'services/llm-gateway/src/llm_invocation_lambda.py')
 
     calls = []
 
