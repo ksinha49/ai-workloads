@@ -54,6 +54,7 @@ sam deploy --template-file services/anonymization/template.yaml --stack-name ano
 
 The stack exports `DetectSensitiveInfoFunctionArn`, `TokenizeEntityFunctionArn`, `AnonymizeTextFunctionArn` and `TokenTableName` for use by other services.
 
+
 ## Local testing
 
 Build and run with Docker Compose:
