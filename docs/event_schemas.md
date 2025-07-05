@@ -155,3 +155,16 @@ Optionally include an `output_format` property to select `pdf`, `docx`, `json` o
   "department": "sales"
 }
 ```
+
+## RAG Ingestion Queue Message
+
+```json
+{
+  "text": "Document text",
+  "collection_name": "my-collection",
+  "docType": "pdf",
+  "department": "sales",
+  "team": "team1",
+  "user": "alice"
+}
+```

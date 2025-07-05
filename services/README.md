@@ -36,6 +36,12 @@ Splits text into overlapping chunks, generates embeddings and stores them in Mil
 
 For a detailed workflow, see [../docs/rag_ingestion_workflow.md](../docs/rag_ingestion_workflow.md).
 
+## rag-ingestion-worker
+Dequeues ingestion requests from SQS and starts the `IngestionStateMachine`.
+
+- **Lambda:** `worker-lambda`
+- Defines an SQS queue exported as `IngestionQueueUrl`
+
 ## vector-db
 Manages Milvus collections and provides search functions.
 

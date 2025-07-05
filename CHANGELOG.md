@@ -3,6 +3,10 @@
 All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.13] - 2025-07-04
+### Added
+- `rag-ingestion-worker` microservice that reads requests from SQS and triggers the RAG ingestion state machine.
+
 ## [1.0.12] - 2025-07-04
 ### Added
 - Dockerfiles and `docker-compose.yml` files for each service.
