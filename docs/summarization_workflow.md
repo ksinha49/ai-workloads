@@ -73,7 +73,7 @@ Example entry in `body.prompts`:
 }
 ```
 
-Sample templates such as `aps_prompts.json` can be loaded into the gateway's DynamoDB table. Listing the corresponding `prompt_id`s in the execution input ensures the Step Function pushes each prompt to the queue where the worker contacts the service.
+Sample templates such as `use-cases/aps-summarization/config/aps_prompts.json` can be loaded into the gateway's DynamoDB table. Listing the corresponding `prompt_id`s in the execution input ensures the Step Function pushes each prompt to the queue where the worker contacts the service.
 
 ## Supplying a System Prompt
 
