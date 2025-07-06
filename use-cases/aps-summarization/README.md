@@ -19,13 +19,16 @@ stateDiagram-v2
 ```
 
 1. **ExtractZip** reads the uploaded archive from S3 and returns the S3 keys of the contained PDFs.
-2. **ProcessAllPdfs** maps each extracted file through the per‑file `FileProcessingStepFunction` from the **summarization** service.
+2. **ProcessAllPdfs** maps each extracted file through a per‑file workflow that
+   invokes the file-ingestion service and then posts a message to the
+   **summarization** service via SQS.
 3. **AssembleZip** collects each generated summary PDF and writes the final ZIP to S3.
 4. **SendToSNS** notifies stakeholders when any file fails.
 
 ## Per‑file Step Function
 
-`FileProcessingStepFunction` orchestrates IDP extraction, prompt loading and summarization for a single PDF.
+This per‑file workflow orchestrates IDP extraction and then enqueues a request
+for `SummarizationWorkflow` to generate the final summary.
 
 ```mermaid
 stateDiagram-v2
@@ -91,8 +94,8 @@ SSM parameter name via the `labels_path` property on the workflow input.
 ## Parameters
 
 - `AWSAccountName` – prefix for stack resources.
-- `SummarizationStateMachineArn` – ARN of the summarization service
-  state machine (`FileProcessingStepFunction` output).
+- `SummarizationStateMachineArn` – ARN of the summarization workflow from the
+  summarization service.
 - `LambdaIAMRoleARN` – IAM role used by the Lambda function and state machine.
 - `LambdaSubnet1ID` / `LambdaSubnet2ID` – subnets for the Lambda function.
 - `LambdaSecurityGroupID1` / `LambdaSecurityGroupID2` – security groups for network access.

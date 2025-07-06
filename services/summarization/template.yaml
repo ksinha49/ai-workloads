@@ -129,20 +129,13 @@ Resources:
         Variables:
           FILE_ASSEMBLE_FUNCTION: !Ref FileAssembleFunctionArn
 
-  FileProcessingStepFunction:
+  SummarizationWorkflow:
     Type: AWS::Serverless::StateMachine
     Properties:
       Definition:
-        Comment: Simple summarization workflow
-        StartAt: IDP
+        Comment: Summarization workflow
+        StartAt: LoadPrompts
         States:
-          IDP:
-            Type: Task
-            Resource: arn:aws:states:::states:startExecution.sync
-            Parameters:
-              StateMachineArn: !Ref FileIngestionStateMachineArn
-              Input.$: $
-            Next: LoadPrompts
           LoadPrompts:
             Type: Task
             Resource: !GetAtt LoadPromptsFunction.Arn
@@ -177,10 +170,11 @@ Resources:
       Role: !Ref LambdaIAMRoleARN
       Type: STANDARD
 
+
 Outputs:
-  FileProcessingStepFunctionArn:
-    Description: ARN of the summarization state machine
-    Value: !Ref FileProcessingStepFunction
+  SummarizationWorkflowArn:
+    Description: ARN of the summarization workflow state machine
+    Value: !Ref SummarizationWorkflow
   SummaryQueueUrl:
     Description: URL of the summary SQS queue
     Value: !Ref SummaryQueue
