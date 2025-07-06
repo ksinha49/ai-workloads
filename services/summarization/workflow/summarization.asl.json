@@ -1,0 +1,94 @@
+{
+  "Comment": "Process prompts and generate summaries",
+  "StartAt": "check_workflow",
+  "States": {
+    "check_workflow": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.body.workflow_id",
+          "IsPresent": true,
+          "Next": "load_prompts"
+        }
+      ],
+      "Default": "run_prompts"
+    },
+    "load_prompts": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Output": "{% $merge([$states.input.body, $states.result.Payload]) %}",
+      "Arguments": {
+        "FunctionName": "${LoadPromptsFunctionArn}",
+        "Payload": "{% {\"workflow_id\": $states.input.body.workflow_id} %}"
+      },
+      "ResultPath": "$.body",
+      "Next": "run_prompts"
+    },
+    "run_prompts": {
+      "Type": "Map",
+      "ItemsPath": "$.body.prompts",
+      "ResultPath": "$.run_prompts",
+      "MaxConcurrency": ${RunPromptsConcurrency},
+      "Iterator": {
+        "StartAt": "summarize",
+        "States": {
+          "summarize": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::sqs:sendMessage.waitForTaskToken",
+            "Parameters": {
+              "QueueUrl": "${SummaryQueueUrl}",
+              "MessageBody": {
+                "token.$": "$$.Task.Token",
+                "query.$": "$$Map.Item.Value.query",
+                "Title.$": "$$Map.Item.Value.Title",
+                "prompt_id.$": "$$Map.Item.Value.prompt_id",
+                "variables.$": "$$Map.Item.Value.variables",
+                "retrieve_params.$": "$states.input.body.retrieve_params",
+                "router_params.$": "$states.input.body.router_params",
+                "llm_params.$": "$states.input.body.llm_params",
+                "collection_name.$": "$states.input.body.collection_name"
+              }
+            },
+            "Next": "add_title"
+          },
+          "add_title": {
+            "Type": "Pass",
+            "Parameters": {
+              "Title.$": "$.Title",
+              "content.$": "$.summary"
+            },
+            "End": true
+          }
+        }
+      },
+      "Next": "file_summary"
+    },
+    "file_summary": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Output": "{% $states.result.Payload %}",
+      "Arguments": {
+        "FunctionName": "${FileSummaryLambdaFunctionArn}",
+        "Payload": "{% $merge([$states.input, {\"summaries\": $.run_prompts, \"collection_name\": $states.input.body.collection_name}]) %}"
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "States.TaskFailed",
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException",
+            "Lambda.TooManyRequestsException"
+          ],
+          "IntervalSeconds": 1,
+          "MaxAttempts": 3,
+          "BackoffRate": 2,
+          "JitterStrategy": "FULL"
+        }
+      ],
+      "End": true
+    }
+    }
+  },
+  "QueryLanguage": "JSONata"
+}
