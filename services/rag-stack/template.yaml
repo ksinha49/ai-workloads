@@ -44,9 +44,6 @@ Parameters:
     Default: ''
   VectorSearchFunctionArn:
     Type: String
-  RerankFunctionArn:
-    Type: String
-    Default: ''
   VectorSearchCandidates:
     Type: String
     Default: '5'
@@ -207,7 +204,7 @@ Resources:
             Action: states:StartExecution
             Resource: !Ref IngestionStateMachine
 
-  SummarizeWithContextFunction:
+  RetrievalFunction:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: ./src/
@@ -215,11 +212,45 @@ Resources:
       Environment:
         Variables:
           VECTOR_SEARCH_FUNCTION: !Ref VectorSearchFunctionArn
-          RERANK_FUNCTION: !Ref RerankFunctionArn
+          RERANK_FUNCTION: !GetAtt RerankFunction.Arn
           VECTOR_SEARCH_CANDIDATES: !Ref VectorSearchCandidates
           SUMMARY_ENDPOINT: !Ref SummaryEndpoint
           ROUTELLM_ENDPOINT: !Ref RouteLlmEndpoint
           COHERE_SECRET_NAME: !Ref CohereSecretName
+
+  ContentExtractionFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./src/
+      Handler: extract_content_lambda.lambda_handler
+      Environment:
+        Variables:
+          VECTOR_SEARCH_FUNCTION: !Ref VectorSearchFunctionArn
+          CONTENT_ENDPOINT: !Ref ContentEndpoint
+
+  EntityExtractionFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./src/
+      Handler: extract_entities_lambda.lambda_handler
+      Environment:
+        Variables:
+          VECTOR_SEARCH_FUNCTION: !Ref VectorSearchFunctionArn
+          ENTITIES_ENDPOINT: !Ref EntitiesEndpoint
+
+  RerankFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./src/
+      Handler: rerank_lambda.lambda_handler
+      Environment:
+        Variables:
+          TOP_K: !Ref VectorSearchCandidates
+          CROSS_ENCODER_MODEL: ''
+          CROSS_ENCODER_EFS_PATH: ''
+          RERANK_PROVIDER: ''
+          COHERE_SECRET_NAME: !Ref CohereSecretName
+          NVIDIA_SECRET_NAME: !Ref NvidiaSecretName
 
 Outputs:
   TextChunkFunctionArn:
@@ -234,6 +265,15 @@ Outputs:
   IngestionQueueUrl:
     Description: URL of the ingestion queue
     Value: !Ref IngestionQueue
-  SummarizeWithContextFunctionArn:
-    Description: ARN of the summarize-with-context Lambda
-    Value: !GetAtt SummarizeWithContextFunction.Arn
+  RetrievalFunctionArn:
+    Description: ARN of the retrieval Lambda
+    Value: !GetAtt RetrievalFunction.Arn
+  ContentExtractionFunctionArn:
+    Description: ARN of the content extraction Lambda
+    Value: !GetAtt ContentExtractionFunction.Arn
+  EntityExtractionFunctionArn:
+    Description: ARN of the entity extraction Lambda
+    Value: !GetAtt EntityExtractionFunction.Arn
+  RerankFunctionArn:
+    Description: ARN of the re-rank Lambda
+    Value: !GetAtt RerankFunction.Arn

@@ -39,7 +39,7 @@ Globals:
 
 Resources:
 
-  SummarizeWithContextFunction:
+  RetrievalFunction:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: ./summarize-with-context-lambda/
@@ -105,7 +105,7 @@ Outputs:
   RerankFunctionArn:
     Description: ARN of the re-rank Lambda
     Value: !GetAtt RerankFunction.Arn
-  SummarizeWithContextFunctionArn:
-    Description: ARN of the summarize-with-context Lambda
-    Value: !GetAtt SummarizeWithContextFunction.Arn
+  RetrievalFunctionArn:
+    Description: ARN of the retrieval Lambda
+    Value: !GetAtt RetrievalFunction.Arn
 
