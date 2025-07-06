@@ -18,6 +18,12 @@ Function.
 * **SummarizationWorkflow** – starts at `LoadPrompts` and runs the summarization
   tasks. Messages posted to `SummaryQueue` trigger this workflow.
 
+The payload passed to `file-summary-lambda` may include an optional
+`output_format` field which determines the format of the summary file.
+Accepted values are `pdf`, `docx`, `json` and `xml`. When omitted the service
+produces a PDF. The full schema is documented in
+[`docs/event_schemas.md`](../../docs/event_schemas.md#summarization-event).
+
 The state machine ARN is exported as `SummarizationWorkflowArn` for use by other
 stacks.
 
