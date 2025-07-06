@@ -60,4 +60,11 @@ aws dynamodb put-item \
 
 `system_prompt.json` contains the default system prompt referenced by `SYSTEM_WORKFLOW_ID` in `load-prompts-lambda`. Additional labels such as section headings are provided in `summary_labels.json` for use when generating the final document.
 
+`file-summary-lambda` automatically looks for `summary_labels.json` inside the
+directory defined by the `FONT_DIR` environment variable.  A different location
+or an SSM parameter name can be supplied via the `labels_path` property in the
+workflow input.  The APS wrapper forwards both `font_dir` and `labels_path`
+properties to the summarization state machine so custom fonts and labels can be
+used without modifying the underlying service.
+
 Together these components transform uploaded APS archives into searchable summaries packaged as a new ZIP.

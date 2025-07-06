@@ -13,6 +13,9 @@ expect `FONT_DIR` to point to a folder containing TrueType fonts.
 The provided template passes the `FontDir` parameter value to both
 functions so PDFs can be generated using `DejaVuSans.ttf` and
 `DejaVuSans-Bold.ttf` shipped in `src/`.
+The `file_summary_lambda` also searches this directory for a
+`summary_labels.json` file.  You can override the location or supply an
+SSM parameter name via the `labels_path` property on the workflow input.
 
 ## Parameters
 
@@ -23,6 +26,12 @@ functions so PDFs can be generated using `DejaVuSans.ttf` and
 - `LambdaSubnet1ID` / `LambdaSubnet2ID` – subnets for the Lambda function.
 - `LambdaSecurityGroupID1` / `LambdaSecurityGroupID2` – security groups for network access.
 - `FontDir` – directory with font files (default `./src`).
+- `LabelsPath` – path or SSM name for `summary_labels.json` (default `./config/summary_labels.json`).
+
+The APS state machine forwards the `FontDir` and `LabelsPath` values as
+`font_dir` and `labels_path` properties when it starts the summarization
+workflow.  These settings allow `file_summary_lambda` to load custom fonts
+and labels without modifying the core service.
 
 ## Deployment
 
@@ -39,5 +48,7 @@ sam deploy \
     LambdaSubnet1ID=<subnet1> \
     LambdaSubnet2ID=<subnet2> \
     LambdaSecurityGroupID1=<sg1> \
-    LambdaSecurityGroupID2=<sg2>
+    LambdaSecurityGroupID2=<sg2> \
+    FontDir=<font_dir> \
+    LabelsPath=<labels_path>
 ```
