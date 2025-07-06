@@ -1,0 +1,239 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: RAG ingestion and retrieval stack.
+
+Parameters:
+  BucketName:
+    Type: String
+  TextDocPrefix:
+    Type: String
+    Default: text-docs/
+  MilvusInsertFunctionArn:
+    Type: String
+  MilvusDeleteFunctionArn:
+    Type: String
+  MilvusUpdateFunctionArn:
+    Type: String
+  MilvusCreateCollectionFunctionArn:
+    Type: String
+  MilvusDropCollectionFunctionArn:
+    Type: String
+  AWSAccountName:
+    Type: String
+  LambdaSubnet1ID:
+    Type: String
+  LambdaSubnet2ID:
+    Type: String
+  LambdaSecurityGroupID1:
+    Type: String
+  LambdaSecurityGroupID2:
+    Type: String
+  LambdaIAMRoleARN:
+    Type: String
+  SummaryEndpoint:
+    Type: String
+    Default: ''
+  ContentEndpoint:
+    Type: String
+    Default: ''
+  EntitiesEndpoint:
+    Type: String
+    Default: ''
+  RouteLlmEndpoint:
+    Type: String
+    Default: ''
+  VectorSearchFunctionArn:
+    Type: String
+  RerankFunctionArn:
+    Type: String
+    Default: ''
+  VectorSearchCandidates:
+    Type: String
+    Default: '5'
+  CohereSecretName:
+    Type: String
+    Default: ''
+  NvidiaSecretName:
+    Type: String
+    Default: ''
+
+Globals:
+  Function:
+    Runtime: python3.13
+    Timeout: 60
+    MemorySize: 512
+
+Resources:
+  ChunkingLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: chunking-layer
+      Description: Utilities for advanced chunking
+      ContentUri: ../../common/layers/chunking-layer/
+      CompatibleRuntimes:
+        - python3.13
+      RetentionPolicy: Delete
+
+  TextChunkFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./src/
+      Handler: text_chunk_lambda.lambda_handler
+      Layers:
+        - !Ref ChunkingLayer
+
+  EmbedFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./src/
+      Handler: embed_lambda.lambda_handler
+
+  IngestionStateMachine:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      Definition:
+        Comment: Sequential ingestion workflow
+        StartAt: TextChunk
+        States:
+          TextChunk:
+            Type: Task
+            Resource: arn:aws:states:::lambda:invoke
+            Output: '{% $states.result.Payload %}'
+            Arguments:
+              FunctionName: !GetAtt TextChunkFunction.Arn
+              Payload: '{% $states.input %}'
+            Next: Embed
+          Embed:
+            Type: Task
+            Resource: arn:aws:states:::lambda:invoke
+            Output: '{% $states.result.Payload %}'
+            Arguments:
+              FunctionName: !GetAtt EmbedFunction.Arn
+              Payload: '{% $states.input %}'
+            Next: MilvusInsert
+          MilvusInsert:
+            Type: Task
+            Resource: arn:aws:states:::lambda:invoke
+            Output: '{% $states.result.Payload %}'
+            Arguments:
+              FunctionName: !Ref MilvusInsertFunctionArn
+              Payload: '{% $states.input %}'
+            End: true
+        QueryLanguage: JSONata
+      Policies:
+        - LambdaInvokePolicy:
+            FunctionName: !Ref TextChunkFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref EmbedFunction
+      Events:
+        NewTextDoc:
+          Type: S3
+          Properties:
+            Bucket: !Ref BucketName
+            Events: s3:ObjectCreated:*
+            Filter:
+              S3Key:
+                Rules:
+                  - Name: prefix
+                    Value: !Ref TextDocPrefix
+
+  IngestionDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      MessageRetentionPeriod: 1209600
+
+  IngestionQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      VisibilityTimeout: 300
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt IngestionDLQ.Arn
+        maxReceiveCount: 5
+
+  WorkerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub '${AWSAccountName}-${AWS::StackName}-ingestion-worker'
+      Handler: ingestion_worker_lambda.lambda_handler
+      Runtime: python3.13
+      CodeUri: ./src/
+      Role: !Ref LambdaIAMRoleARN
+      MemorySize: 512
+      Timeout: 300
+      VpcConfig:
+        SecurityGroupIds:
+          - !Ref LambdaSecurityGroupID1
+          - !Ref LambdaSecurityGroupID2
+        SubnetIds:
+          - !Ref LambdaSubnet1ID
+          - !Ref LambdaSubnet2ID
+      Environment:
+        Variables:
+          STATE_MACHINE_ARN: !Ref IngestionStateMachine
+          QUEUE_URL: !Ref IngestionQueue
+      Events:
+        Queue:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt IngestionQueue.Arn
+            BatchSize: 10
+
+  WorkerSQSPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Sub '${AWSAccountName}-${AWS::StackName}-worker-sqs'
+      Roles:
+        - !Select [1, !Split ['/', !Ref LambdaIAMRoleARN]]
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - sqs:ReceiveMessage
+              - sqs:DeleteMessage
+              - sqs:GetQueueAttributes
+            Resource: !GetAtt IngestionQueue.Arn
+
+  StepFunctionInvokePolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Sub '${AWSAccountName}-${AWS::StackName}-sf-start'
+      Roles:
+        - !Select [1, !Split ['/', !Ref LambdaIAMRoleARN]]
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action: states:StartExecution
+            Resource: !Ref IngestionStateMachine
+
+  SummarizeWithContextFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./src/
+      Handler: retrieval_lambda.lambda_handler
+      Environment:
+        Variables:
+          VECTOR_SEARCH_FUNCTION: !Ref VectorSearchFunctionArn
+          RERANK_FUNCTION: !Ref RerankFunctionArn
+          VECTOR_SEARCH_CANDIDATES: !Ref VectorSearchCandidates
+          SUMMARY_ENDPOINT: !Ref SummaryEndpoint
+          ROUTELLM_ENDPOINT: !Ref RouteLlmEndpoint
+          COHERE_SECRET_NAME: !Ref CohereSecretName
+
+Outputs:
+  TextChunkFunctionArn:
+    Description: ARN of the text chunk Lambda
+    Value: !GetAtt TextChunkFunction.Arn
+  EmbedFunctionArn:
+    Description: ARN of the embed Lambda
+    Value: !GetAtt EmbedFunction.Arn
+  IngestionStateMachineArn:
+    Description: ARN of the ingestion Step Function
+    Value: !Ref IngestionStateMachine
+  IngestionQueueUrl:
+    Description: URL of the ingestion queue
+    Value: !Ref IngestionQueue
+  SummarizeWithContextFunctionArn:
+    Description: ARN of the summarize-with-context Lambda
+    Value: !GetAtt SummarizeWithContextFunction.Arn
