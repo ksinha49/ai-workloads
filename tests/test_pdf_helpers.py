@@ -1,5 +1,6 @@
 import importlib.util
 import importlib
+import json
 import io
 import os
 import sys
@@ -69,3 +70,33 @@ def test_render_table(config):
     data = pdf.output(dest='S')
     text = PdfReader(io.BytesIO(data)).pages[0].extract_text()
     assert "A" in text and "1" in text
+
+
+def test_labels_heading_and_closing(tmp_path):
+    module = load_module()
+    labels = {"summary_heading": "Custom Heading", "summary_closing_text": "--END--"}
+    label_file = tmp_path / "summary_labels.json"
+    label_file.write_text(json.dumps(labels))
+    module._load_labels(str(label_file), None)
+
+    class DummyPDF:
+        def __init__(self):
+            self.texts = []
+
+        def add_page(self):
+            pass
+
+        def set_font(self, *a, **k):
+            pass
+
+        def multi_cell(self, w, h, txt, border=0):
+            self.texts.append(txt)
+
+        def ln(self, *a):
+            pass
+
+    pdf = DummyPDF()
+    module._add_title_page(pdf, 10, 12)
+    module._finish_pdf(pdf, 10, 12)
+    assert "Custom Heading" in pdf.texts[0]
+    assert "--END--" in pdf.texts[-1]
