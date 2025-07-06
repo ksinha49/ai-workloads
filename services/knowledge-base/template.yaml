@@ -24,7 +24,8 @@ Resources:
   IngestFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: ./ingest-lambda/
+      CodeUri: ./src/
+      Handler: ingest_lambda.lambda_handler
       Environment:
         Variables:
           STATE_MACHINE_ARN: !Ref IngestionStateMachineArn
@@ -34,7 +35,8 @@ Resources:
   QueryFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: ./query-lambda/
+      CodeUri: ./src/
+      Handler: query_lambda.lambda_handler
       Environment:
         Variables:
           SUMMARY_QUEUE_URL: !Ref SummarizeQueueUrl

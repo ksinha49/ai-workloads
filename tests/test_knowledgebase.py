@@ -38,7 +38,7 @@ def test_kb_ingest(monkeypatch):
     monkeypatch.setattr(boto3, 'client', lambda name: FakeSFN())
     monkeypatch.setenv("STATE_MACHINE_ARN", "arn")
     monkeypatch.setenv("FILE_INGESTION_STATE_MACHINE_ARN", "filearn")
-    module = load_lambda('ingest', 'temp-services/knowledge-base/ingest-lambda/app.py')
+    module = load_lambda('ingest', 'services/knowledge-base/src/ingest_lambda.py')
     module.sfn = FakeSFN()
     out = module.lambda_handler(
         {'text': 't', 'docType': 'pdf', 'department': 'HR', 'collection_name': 'c'},
@@ -64,7 +64,7 @@ def test_kb_ingest_missing_arn(monkeypatch):
     monkeypatch.setenv('FILE_INGESTION_STATE_MACHINE_ARN', 'filearn')
     monkeypatch.delenv('STATE_MACHINE_ARN', raising=False)
     with pytest.raises(RuntimeError):
-        load_lambda('ingest_noenv', 'temp-services/knowledge-base/ingest-lambda/app.py')
+        load_lambda('ingest_noenv', 'services/knowledge-base/src/ingest_lambda.py')
 
 
 def test_kb_ingest_missing_file_arn(monkeypatch):
@@ -78,7 +78,7 @@ def test_kb_ingest_missing_file_arn(monkeypatch):
     monkeypatch.setenv('STATE_MACHINE_ARN', 'arn')
     monkeypatch.delenv('FILE_INGESTION_STATE_MACHINE_ARN', raising=False)
     with pytest.raises(RuntimeError):
-        load_lambda('ingest_noenv2', 'temp-services/knowledge-base/ingest-lambda/app.py')
+        load_lambda('ingest_noenv2', 'services/knowledge-base/src/ingest_lambda.py')
 
 
 def test_kb_ingest_error(monkeypatch):
@@ -100,7 +100,7 @@ def test_kb_ingest_error(monkeypatch):
     monkeypatch.setattr(boto3, 'client', lambda name: FakeSFN())
     monkeypatch.setenv('STATE_MACHINE_ARN', 'arn')
     monkeypatch.setenv('FILE_INGESTION_STATE_MACHINE_ARN', 'filearn')
-    module = load_lambda('ingest_err', 'temp-services/knowledge-base/ingest-lambda/app.py')
+    module = load_lambda('ingest_err', 'services/knowledge-base/src/ingest_lambda.py')
     module.sfn = FakeSFN()
     out = module.lambda_handler({'text': 't', 'collection_name': 'c'}, {})
     assert out['started'] is False
@@ -118,7 +118,7 @@ def test_kb_query(monkeypatch):
     _stub_botocore(monkeypatch)
     monkeypatch.setattr(boto3, 'client', lambda name: FakeSQS())
     monkeypatch.setenv('SUMMARY_QUEUE_URL', 'url')
-    module = load_lambda('query', 'temp-services/knowledge-base/query-lambda/app.py')
+    module = load_lambda('query', 'services/knowledge-base/src/query_lambda.py')
     module.sqs_client = FakeSQS()
     out = module.lambda_handler({'query': 'hi', 'team': 'x'}, {})
     assert out['queued'] is True
@@ -135,7 +135,7 @@ def test_kb_query_missing_arn(monkeypatch):
 
     monkeypatch.setattr(boto3, 'client', lambda name: FakeSQS())
     monkeypatch.delenv('SUMMARY_QUEUE_URL', raising=False)
-    module = load_lambda('query_noenv', 'temp-services/knowledge-base/query-lambda/app.py')
+    module = load_lambda('query_noenv', 'services/knowledge-base/src/query_lambda.py')
     module.sqs_client = FakeSQS()
     out = module.lambda_handler({'query': 'hi'}, {})
     assert 'SUMMARY_QUEUE_URL' in out['error']
@@ -151,7 +151,7 @@ def test_kb_query_error(monkeypatch):
 
     monkeypatch.setattr(boto3, 'client', lambda name: FakeSQS())
     monkeypatch.setenv('SUMMARY_QUEUE_URL', 'url')
-    module = load_lambda('query_err', 'temp-services/knowledge-base/query-lambda/app.py')
+    module = load_lambda('query_err', 'services/knowledge-base/src/query_lambda.py')
     module.sqs_client = FakeSQS()
     out = module.lambda_handler({'query': 'hi'}, {})
     assert 'bad' in out['error']
