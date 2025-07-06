@@ -47,9 +47,9 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub '${AWSAccountName}-${AWS::StackName}-file-assemble'
-      Handler: app.lambda_handler
+      Handler: file_assembly_lambda.lambda_handler
       Runtime: python3.13
-      CodeUri: ./file-assemble-lambda/
+      CodeUri: ./src/
       Role: !Ref LambdaIAMRoleARN
       MemorySize: 1024
       Timeout: 600

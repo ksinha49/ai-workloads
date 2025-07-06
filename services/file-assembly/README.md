@@ -2,7 +2,7 @@
 
 This service merges summary pages with the original PDF and uploads the merged result to Amazon S3.
 
-- **Lambda**: `file-assemble-lambda/app.py`
+- **Lambda**: `src/file_assembly_lambda.py`
 - **Layer**: `common/layers/file-assemble-lambda-layer/`
 
 The handler signatures reference dataclasses from ``models.py``:
