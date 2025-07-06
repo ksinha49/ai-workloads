@@ -7,8 +7,8 @@ from typing import Any, Dict
 
 from common_utils import configure_logger
 
-from .. import milvus_handler_lambda as milvus_handler
-from .. import elastic_search_handler_lambda as es_handler
+import milvus_handler_lambda as milvus_handler
+import elastic_search_handler_lambda as es_handler
 
 logger = configure_logger(__name__)
 
