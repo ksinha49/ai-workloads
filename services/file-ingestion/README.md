@@ -2,13 +2,13 @@
 
 This service copies uploaded files to the IDP bucket and polls for text extraction results. It provides two Lambdas and a Step Function.
 
-- **file-processing-lambda** – copies the uploaded file to `IDP_BUCKET/RAW_PREFIX`.
+- **file-processing-lambda** – `src/file_processing_lambda.py` copies the uploaded file to `IDP_BUCKET/RAW_PREFIX`.
   The Lambda validates the copy by comparing the source and destination objects'
   `ETag` and `ContentLength` before tagging the original object with
   `pending-delete=true`.
-- **file-processing-status-lambda** – checks S3 for the text document and updates `fileupload_status`.
+- **file-processing-status-lambda** – `src/file_processing_status_lambda.py` checks S3 for the text document and updates `fileupload_status`.
 - **FileIngestionStateMachine** – orchestrates both Lambdas and then triggers the ingestion workflow.
-- **pending-delete-cleanup-lambda** – scheduled daily to remove objects tagged
+- **pending-delete-cleanup-lambda** – `src/pending_delete_cleanup_lambda.py` runs daily to remove objects tagged
   `pending-delete=true` once they are older than `DeleteAfterDays`.
 
 The dataclasses `FileProcessingEvent` and `ProcessingStatusEvent` used by these

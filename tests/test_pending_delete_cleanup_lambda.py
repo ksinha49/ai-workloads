@@ -16,7 +16,7 @@ def test_cleanup_lambda(monkeypatch, s3_stub):
     monkeypatch.setenv('CLEANUP_BUCKETS', 'b')
     monkeypatch.setenv('DELETE_AFTER_DAYS', '1')
     monkeypatch.setattr('common_utils.get_ssm.get_config', lambda name, **_: None)
-    module = load_lambda('cleanup', 'services/file-ingestion/pending-delete-cleanup-lambda/app.py')
+    module = load_lambda('cleanup', 'services/file-ingestion/src/pending_delete_cleanup_lambda.py')
     now = datetime.datetime.utcnow()
     s3_stub.put_object(Bucket='b', Key='old.txt', Body=b'data')
     s3_stub.tags[('b', 'old.txt')] = {'pending-delete': 'true'}

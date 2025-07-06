@@ -106,9 +106,9 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub '${AWSAccountName}-${AWS::StackName}-file-processing'
-      Handler: app.lambda_handler
+      Handler: file_processing_lambda.lambda_handler
       Runtime: python3.13
-      CodeUri: ./file-processing-lambda/
+      CodeUri: ./src/
       Role: !Ref LambdaIAMRoleARN
       MemorySize: 1024
       Timeout: 720
@@ -149,9 +149,9 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub '${AWSAccountName}-${AWS::StackName}-file-processing-status'
-      Handler: app.lambda_handler
+      Handler: file_processing_status_lambda.lambda_handler
       Runtime: python3.13
-      CodeUri: ./file-processing-status-lambda/
+      CodeUri: ./src/
       Role: !Ref LambdaIAMRoleARN
       MemorySize: 1024
       Timeout: 480
@@ -188,9 +188,9 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub '${AWSAccountName}-${AWS::StackName}-pending-delete-cleanup'
-      Handler: app.lambda_handler
+      Handler: pending_delete_cleanup_lambda.lambda_handler
       Runtime: python3.13
-      CodeUri: ./pending-delete-cleanup-lambda/
+      CodeUri: ./src/
       Role: !Ref LambdaIAMRoleARN
       MemorySize: 256
       Timeout: 300
