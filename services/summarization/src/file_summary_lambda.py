@@ -131,9 +131,6 @@ def render_table(
         of the last cell, keeping the same y-coordinate.
     """
     pdf.set_xy(x, y)
-    cols = len(table[0])
-    col_w = total_width / cols
-    line_h = pdf.font_size*1.5
     # Header row
     prefix = get_environment_prefix()
     font_size = get_values_from_ssm(f"{prefix}/SUMMARY_PDF_FONT_SIZE")
