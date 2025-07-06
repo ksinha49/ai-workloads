@@ -9,11 +9,19 @@ assembled into a summary document.
   the prompt engine.
 - **summarize-worker-lambda** – `src/summarize_worker_lambda.py` calls the
   summarization Lambda and reports results back to the state machine.
-- **file-summary-lambda** – `src/file_summary_lambda.py` creates the final
-  document. Helper functions are exposed for PDF generation.
+- **summary-document-lambda** – `src/file_summary_lambda.py` assembles the
+  final summary document. Helper functions are exposed for PDF generation.
 
-The `template.yaml` defines the SQS queue, Lambda functions and the
-`FileProcessingStepFunction` that ties them together.
+The `template.yaml` defines the SQS queue, Lambda functions and two Step
+Functions.
+
+* **SummarizationWorkflow** – starts at `LoadPrompts` and runs the summarization
+  tasks.
+* **FileProcessingStepFunction** – invokes the file-ingestion workflow and then
+  calls `SummarizationWorkflow` to generate the summary.
+
+Both state machine ARNs are exported as `FileProcessingStepFunctionArn` and
+`SummarizationWorkflowArn` for use by other stacks.
 
 ## Local testing
 
