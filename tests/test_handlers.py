@@ -1117,80 +1117,44 @@ def test_file_processing_passthrough(monkeypatch, s3_stub):
     assert out["collection_name"] == "c"
 
 
-def test_summary_lambda_forwards(monkeypatch):
-    import types, sys
-
-    # ensure httpx provides Timeout and HTTPStatusError
-    sys.modules["httpx"].Timeout = object
-    sys.modules["httpx"].HTTPStatusError = type("E", (Exception,), {})
-    sys.modules["fpdf"] = types.ModuleType("fpdf")
-    sys.modules["fpdf"].FPDF = object
-    sys.modules["unidecode"] = types.ModuleType("unidecode")
-    sys.modules["unidecode"].unidecode = lambda x: x
-
+def test_summary_lambda_forwards():
     module = load_lambda(
         "sum_lambda", "services/summarization/src/file_summary_lambda.py"
     )
-    captured = {}
-
-    def fake_create(summaries, *args):
-        captured["summaries"] = summaries
-        return io.BytesIO(b"d")
-
-    def fake_upload(buf, bucket, key, content_type):
-        captured["bucket"] = bucket
-        captured["key"] = key
-
-    monkeypatch.setattr(module, "create_summary_pdf", fake_create)
-    monkeypatch.setattr(module, "upload_buffer_to_s3", fake_upload)
-
     event = SummaryEvent(
         collection_name="c",
+        file_guid="g",
+        document_id="d",
         statusCode=200,
         organic_bucket="b",
         organic_bucket_key="extracted/x.pdf",
         summaries=[{"Title": "T", "content": "ok"}],
     )
-    module.lambda_handler(event, {})
-    assert captured["summaries"] == [("T", "ok")]
-    assert captured["bucket"] == "b"
-    assert captured["key"] == "summary/x.pdf"
+    resp = module.lambda_handler(event, {})
+    body = resp["body"]
+    assert resp["statusCode"] == 200
+    assert body["file_guid"] == "g" and body["document_id"] == "d"
+    assert body["summaries"] == [{"Title": "T", "content": "ok"}]
 
 
-def test_summary_lambda_docx(monkeypatch):
-    import types, sys
-
-    sys.modules["unidecode"] = types.ModuleType("unidecode")
-    sys.modules["unidecode"].unidecode = lambda x: x
-
+def test_summary_lambda_docx():
     module = load_lambda(
         "sum_lambda2", "services/summarization/src/file_summary_lambda.py"
     )
-    captured = {}
-
-    def fake_create(summaries):
-        captured["summaries"] = summaries
-        return io.BytesIO(b"d")
-
-    def fake_upload(buf, bucket, key, content_type):
-        captured["bucket"] = bucket
-        captured["key"] = key
-
-    monkeypatch.setattr(module, "create_summary_docx", fake_create)
-    monkeypatch.setattr(module, "upload_buffer_to_s3", fake_upload)
 
     event = SummaryEvent(
         collection_name="c",
+        file_guid="g",
+        document_id="d",
         statusCode=200,
         organic_bucket="b",
         organic_bucket_key="extracted/x.pdf",
         summaries=[{"Title": "T", "content": "ok"}],
-        output_format="docx",
     )
-    module.lambda_handler(event, {})
-    assert captured["summaries"] == [("T", "ok")]
-    assert captured["bucket"] == "b"
-    assert captured["key"] == "summary/x.docx"
+    resp = module.lambda_handler(event, {})
+    body = resp["body"]
+    assert resp["statusCode"] == 200
+    assert body["summaries"][0]["Title"] == "T" and body["file_guid"] == "g"
 
 
 def test_processing_status(monkeypatch, s3_stub, config):

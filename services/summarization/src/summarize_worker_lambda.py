@@ -47,6 +47,8 @@ def _process_record(record: Dict[str, Any]) -> None:
         "retrieve_params": body.get("retrieve_params"),
         "router_params": body.get("router_params"),
         "llm_params": body.get("llm_params"),
+        "file_guid": body.get("file_guid"),
+        "document_id": body.get("document_id"),
     }
     if PROMPT_ENGINE_ENDPOINT and body.get("prompt_id"):
         engine_payload = {"prompt_id": body.get("prompt_id")}
@@ -83,7 +85,15 @@ def _process_record(record: Dict[str, Any]) -> None:
         ).get("choices", [{}])[0].get("message", {}).get("content", "")
         sf_client.send_task_success(
             taskToken=token,
-            output=json.dumps({"summary": summary, "Title": body.get("Title")}),
+            output=json.dumps(
+                {
+                    "summary": summary,
+                    "Title": body.get("Title"),
+                    "file_guid": body.get("file_guid"),
+                    "document_id": body.get("document_id"),
+                    "collection_name": body.get("collection_name"),
+                }
+            ),
         )
     except (ClientError, BotoCoreError, json.JSONDecodeError) as exc:  # pragma: no cover - runtime issues
         logger.exception("Error processing summarization request")

@@ -10,15 +10,23 @@ class SummaryEvent:
     organic_bucket: str
     organic_bucket_key: str
     collection_name: Optional[str] = None
+    file_guid: Optional[str] = None
+    document_id: Optional[str] = None
     summaries: Optional[List[Dict[str, Any]]] = None
     statusMessage: Optional[str] = None
-    output_format: str = "pdf"
     extra: Dict[str, Any] = field(default_factory=dict)
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "SummaryEvent":
         body = data.get("body", data)
-        required = {"statusCode", "organic_bucket", "organic_bucket_key", "collection_name"}
+        required = {
+            "statusCode",
+            "organic_bucket",
+            "organic_bucket_key",
+            "collection_name",
+            "file_guid",
+            "document_id",
+        }
         missing = [k for k in required if k not in body]
         if missing:
             raise ValueError(f"Missing required event keys: {', '.join(missing)}")
@@ -27,9 +35,10 @@ class SummaryEvent:
             "statusCode",
             "organic_bucket",
             "organic_bucket_key",
+            "file_guid",
+            "document_id",
             "summaries",
             "statusMessage",
-            "output_format",
         }
         extra = {k: v for k, v in body.items() if k not in keys}
         params = {k: body.get(k) for k in keys}

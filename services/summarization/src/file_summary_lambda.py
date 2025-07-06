@@ -318,30 +318,17 @@ def upload_buffer_to_s3(buffer: BytesIO, bucket: str, bucket_key: str, content_t
 
 
 def process_for_summary(event: SummaryEvent, context: Any) -> Dict[str, Any]:
-    """
-    Main Lambda logic: summarize, merge, upload.
-
-    Pre-conditions:
-      event must include keys:
-        - "collection_name": str
-        - "statusCode": int
-        - "organic_bucket": str
-        - "organic_bucket_key": str
-
-    Post-conditions on success:
-      Returns the original event dict, plus:
-        - "summary_bucket_name"
-        - "summary_bucket_key"
-        - "merged_bucket_name"
-        - "merged_bucket_key"
-        - "statusCode": 200
-        - "statusMessage":...
-    On failure:
-      Returns {"statusCode":500, "statusMessage":<error>}.
-    """
+    """Aggregate summaries into a JSON document."""
     event_body = event.to_dict()
 
-    required = {"collection_name", "statusCode", "organic_bucket", "organic_bucket_key"}
+    required = {
+        "collection_name",
+        "statusCode",
+        "organic_bucket",
+        "organic_bucket_key",
+        "file_guid",
+        "document_id",
+    }
     if not required.issubset(event_body):
         msg = f"Missing required event keys: {required}"
         logger.error(msg)
@@ -357,55 +344,12 @@ def process_for_summary(event: SummaryEvent, context: Any) -> Dict[str, Any]:
         if not isinstance(event_body.get("summaries"), list):
             raise RuntimeError("summaries list missing")
 
-        summaries: List[tuple[str, str]] = []
-        for item in event_body.get("summaries", []):
-            title = item.get("Title", "")
-            content = item.get("content", "")
-            summaries.append((title, content))
-
-        heading = event_body.get(
-            "summary_heading",
-            os.getenv("SUMMARY_HEADING", "Summary"),
-        )
-        closing_text = event_body.get(
-            "summary_closing_text",
-            os.getenv("SUMMARY_CLOSING_TEXT", "====End of Summary===="),
-        )
-
-        fmt = str(event_body.get("output_format", "pdf")).lower()
-        if fmt == "pdf":
-            summary_buf = create_summary_pdf(summaries, heading, closing_text)
-            ext = "pdf"
-            ctype = "application/pdf"
-        elif fmt == "docx":
-            summary_buf = create_summary_docx(summaries)
-            ext = "docx"
-            ctype = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-        elif fmt == "json":
-            summary_buf = create_summary_json(summaries)
-            ext = "json"
-            ctype = "application/json"
-        elif fmt == "xml":
-            summary_buf = create_summary_xml(summaries)
-            ext = "xml"
-            ctype = "application/xml"
-        else:
-            raise ValueError("Unsupported output format")
-
-        organic_file_key = event_body['organic_bucket_key']
-        organic_bucket_name = event_body['organic_bucket']
-        summary_file_key = organic_file_key.replace('extracted', 'summary')
-        summary_file_key = os.path.splitext(summary_file_key)[0] + f".{ext}"
-        logger.info("organic_file_key:%s", organic_file_key)
-        #new_folder_name = organic_file_folder[1]
-        upload_buffer_to_s3(summary_buf, organic_bucket_name, summary_file_key, ctype)
-
         return {
-            **event_body,
-            "summary_bucket_name": organic_bucket_name,
-            "summary_bucket_key": summary_file_key,
             "statusCode": 200,
-            "statusMessage": "Summarization  PDF uploaded",
+            "file_guid": event_body.get("file_guid"),
+            "document_id": event_body.get("document_id"),
+            "collection_name": event_body.get("collection_name"),
+            "summaries": event_body.get("summaries"),
         }
 
     except FileNotFoundError as exc:
@@ -426,14 +370,7 @@ def process_for_summary(event: SummaryEvent, context: Any) -> Dict[str, Any]:
 
 
 def lambda_handler(event: SummaryEvent | Dict[str, Any], context: Any) -> Dict[str, Any]:
-    """Triggered by the state machine to produce a summary file.
-
-    1. Formats the summary text into the requested output format and merges it with the source
-       document from S3 when applicable.
-    2. Uploads the merged file and returns its location.
-
-    Returns a response dictionary with status and file path.
-    """
+    """Triggered by the state machine to aggregate summary text."""
     try:
         if isinstance(event, dict):
             try:
