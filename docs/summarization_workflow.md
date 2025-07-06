@@ -1,6 +1,6 @@
 # Summarization Step Function Workflow
 
-This document describes the multi-step AWS Step Functions state machine that orchestrates the summarization pipeline. The workflow ingests a document, runs a series of prompts in parallel, and generates a summary file that can be PDF, DOCX, JSON or XML, optionally merging PDF or DOCX output with the original document.
+This document describes the multi-step AWS Step Functions state machine that orchestrates the summarization pipeline. The workflow ingests a document, runs a series of prompts in parallel, and generates a summary file that can be PDF, DOCX, JSON or XML, optionally merging PDF or DOCX output with the original document.  Prompt execution is handled by the **llm-gateway** service which renders templates and forwards the requests to the chosen backend.
 
 ```mermaid
 stateDiagram-v2
@@ -93,9 +93,7 @@ Model parameters are provided under `body.llm_params`. To control the LLM's beha
 ### Using `workflow_id`
 
 Instead of a `prompts` array you can provide a `workflow_id` referencing a saved
-collection of prompts. The state machine will fetch the list from the Prompt
-
-Engine automatically and include the workflow's system prompt:
+collection of prompts. The state machine will fetch the list from the LLM Gateway's prompt engine automatically and include the workflow's system prompt:
 
 ```json
 {

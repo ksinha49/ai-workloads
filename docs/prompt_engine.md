@@ -2,6 +2,8 @@
 
 The prompt engine built into the **llm-gateway** Lambda renders text templates stored in a DynamoDB table and forwards the result to the selected backend. Templates are addressed by a `prompt_id` and `version` so multiple revisions can be stored.
 
+The **llm-gateway** service combines what were previously three separate Lambdas—prompt engine, router and invocation—into a single stack.  Requests flow through these components in order so templates are expanded, routed and then executed against Bedrock or Ollama.
+
 ## DynamoDB Items
 
 Entries in the table include at minimum the following attributes:

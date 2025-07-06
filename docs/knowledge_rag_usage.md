@@ -16,7 +16,7 @@ This guide covers recommended practices for ingesting documents into the knowled
 2. Specify the same `collection_name` used during ingestion so the search runs against the correct Milvus collection. Provide a `file_guid` to limit results to chunks from a single document.
 3. The query Lambda calls the summarization with context function from the `rag-retrieval` stack. Configure `VECTOR_SEARCH_FUNCTION` to `HybridSearchFunctionArn` for keyword filtering in addition to vector similarity.
 4. Enable the re-rank Lambda when higher quality ordering of results is required. Set `RERANK_FUNCTION` in the retrieval stack to the ARN of `rerank-lambda`.
-5. Summaries returned from `/kb/query` come from the LLM router. Adjust router settings as documented in [docs/router_configuration.md](router_configuration.md) to experiment with different models.
+5. Summaries returned from `/kb/query` come from the LLM Gateway. Adjust router settings as documented in [docs/router_configuration.md](router_configuration.md) to experiment with different models.
 
 ## Optimizing for Quality
 
