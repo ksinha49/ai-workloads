@@ -2,6 +2,11 @@ AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: Workflow to summarize APS ZIP archives.
 
+Globals:
+  Function:
+    Timeout: 3
+    Runtime: python3.13
+
 Parameters:
   AWSAccountName:
     Type: String
@@ -23,7 +28,41 @@ Parameters:
     Type: String
     Description: IAM role ARN for the APS summarization workflow
 
+  LambdaIAMRoleARN:
+    Type: String
+    Description: IAM Role ARN for Lambda functions used in this workflow
+
 Resources:
+  RunPromptsLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub '${AWSAccountName}-${AWS::StackName}-run-prompts'
+      Handler: run_prompts_lambda.lambda_handler
+      Runtime: python3.13
+      CodeUri: ./src/
+      Role: !Ref LambdaIAMRoleARN
+      Environment:
+        Variables:
+          SUMMARIZATION_STATE_MACHINE_ARN: !Ref FileProcessingStepFunctionArn
+
+  ConsolidateSummaryLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub '${AWSAccountName}-${AWS::StackName}-consolidate-summary'
+      Handler: consolidate_summary_lambda.lambda_handler
+      Runtime: python3.13
+      CodeUri: ./src/
+      Role: !Ref LambdaIAMRoleARN
+
+  FileAssemblyLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub '${AWSAccountName}-${AWS::StackName}-file-assembly'
+      Handler: file_assembly_lambda.lambda_handler
+      Runtime: python3.13
+      CodeUri: ./src/
+      Role: !Ref LambdaIAMRoleARN
+
   ApsSummarizationStateMachine:
     Type: AWS::Serverless::StateMachine
     Properties:
@@ -52,23 +91,24 @@ Resources:
             ResultPath: $.files
             MaxConcurrency: 5
             Iterator:
-              StartAt: ProcessSinglePdf
+              StartAt: RunPrompts
               States:
-                ProcessSinglePdf:
+                RunPrompts:
                   Type: Task
-                  Resource: arn:aws:states:::states:startExecution.sync
+                  Resource: !GetAtt RunPromptsLambdaFunction.Arn
+                  ResultPath: $.execution
+                  Next: ConsolidateSummary
+                ConsolidateSummary:
+                  Type: Task
+                  Resource: !GetAtt ConsolidateSummaryLambdaFunction.Arn
                   Parameters:
-                    StateMachineArn: !Ref FileProcessingStepFunctionArn
-                    Input.$: $
+                    executions.$: $.execution.executionArn
+                  ResultPath: $.summary
+                  Next: FileAssemble
+                FileAssemble:
+                  Type: Task
+                  Resource: !GetAtt FileAssemblyLambdaFunction.Arn
                   ResultPath: $.processedFiles
-                  Catch:
-                    - ErrorEquals:
-                        - States.ALL
-                      ResultPath: $.processedFiles
-                      Next: HandleFileError
-                  End: true
-                HandleFileError:
-                  Type: Pass
                   End: true
             Next: AssembleZip
           AssembleZip:
