@@ -12,20 +12,16 @@ class SummaryEvent:
     file_guid: str
     document_id: str
     statusCode: int
-    organic_bucket: Optional[str] = None
-    organic_bucket_key: Optional[str] = None
-    summaries: Optional[List[Dict[str, Any]]] = None
+    organic_bucket: str
+    organic_bucket_key: str
+    summaries: List[Dict[str, Any]]
     output_format: Optional[str] = None
     extra: Dict[str, Any] = field(default_factory=dict)
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "SummaryEvent":
         body = data.get("body", data)
-        required = {"collection_name", "file_guid", "document_id"}
-        if not required.issubset(body):
-            missing = ", ".join(sorted(required - body.keys()))
-            raise ValueError(f"{missing} missing from event")
-        keys = {
+        required = {
             "collection_name",
             "file_guid",
             "document_id",
@@ -33,8 +29,11 @@ class SummaryEvent:
             "organic_bucket",
             "organic_bucket_key",
             "summaries",
-            "output_format",
         }
+        if not required.issubset(body):
+            missing = ", ".join(sorted(required - body.keys()))
+            raise ValueError(f"{missing} missing from event")
+        keys = required | {"output_format"}
         extra = {k: v for k, v in body.items() if k not in keys}
         params = {k: body.get(k) for k in keys}
         params["extra"] = extra
