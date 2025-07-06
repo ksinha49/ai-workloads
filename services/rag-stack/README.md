@@ -8,6 +8,9 @@ This service consolidates the ingestion and retrieval components used for Retrie
 - **embed_lambda.py** – generates vector embeddings for each chunk.
 - **ingestion_worker_lambda.py** – dequeues messages and starts the ingestion workflow.
 - **retrieval_lambda.py** – searches the vector database and forwards the request to the LLM router.
+- **extract_content_lambda.py** – fetches structured content from a content service using search context.
+- **extract_entities_lambda.py** – extracts entities by posting search context to an external service.
+- **rerank_lambda.py** – reorders vector search matches using a rerank provider.
 
 ## Parameters and environment variables
 
