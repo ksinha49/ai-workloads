@@ -164,7 +164,12 @@ def remove_asterisks(text):
   return re.sub(r'\*\*|\*', '', text)
 
 
-def _add_title_page(pdf: FPDF, font_size: int, font_size_bold: int) -> None:
+def _add_title_page(
+    pdf: FPDF,
+    font_size: int,
+    font_size_bold: int,
+    heading: str,
+) -> None:
     """Create the initial title page."""
     pdf.add_page()
     pdf.add_font("DejaVu", "B", BOLD_FONT_PATH, uni=True)
@@ -172,7 +177,7 @@ def _add_title_page(pdf: FPDF, font_size: int, font_size_bold: int) -> None:
     current_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     pdf.multi_cell(w=150, h=5, text=current_date, align="R")
     pdf.ln(1)
-    pdf.multi_cell(w=150, h=5, text="APS Summary", align="C")
+    pdf.multi_cell(w=150, h=5, text=heading, align="C")
     pdf.add_font("DejaVu", "", FONT_PATH, uni=True)
     pdf.set_font("DejaVu", size=int(font_size))
     pdf.ln(2)
@@ -214,7 +219,11 @@ def _render_table(pdf: FPDF, table: List[List[str]]) -> None:
     render_table(pdf, table, x=20, y=pdf.get_y(), total_width=170)
     pdf.ln(2)
 
-def create_summary_pdf(summaries: List[str]) -> BytesIO:
+def create_summary_pdf(
+    summaries: List[str],
+    heading: str = "APS Summary",
+    closing_text: str = "====End of APS Summary====",
+) -> BytesIO:
     """Build a summary PDF from a list of summary blocks."""
 
     prefix = get_environment_prefix()
@@ -227,7 +236,7 @@ def create_summary_pdf(summaries: List[str]) -> BytesIO:
 
     for idx, (title, raw) in enumerate(summaries):
         if idx == 0:
-            _add_title_page(pdf, int(font_size), int(font_size_bold))
+            _add_title_page(pdf, int(font_size), int(font_size_bold), heading)
         else:
             if title != "NA":
                 pdf.ln(5)
@@ -248,7 +257,7 @@ def create_summary_pdf(summaries: List[str]) -> BytesIO:
     pdf.add_font("DejaVu", "B", BOLD_FONT_PATH, uni=True)
     pdf.set_font("DejaVu", style="B", size=int(font_size_bold))
     pdf.ln(1)
-    pdf.multi_cell(w=150, h=5, text="====End of APS Summary====", align="C")
+    pdf.multi_cell(w=150, h=5, text=closing_text, align="C")
 
     pdf.output(buf)
     buf.seek(0)
@@ -354,9 +363,18 @@ def process_for_summary(event: SummaryEvent, context: Any) -> Dict[str, Any]:
             content = item.get("content", "")
             summaries.append((title, content))
 
+        heading = event_body.get(
+            "summary_heading",
+            os.getenv("SUMMARY_HEADING", "APS Summary"),
+        )
+        closing_text = event_body.get(
+            "summary_closing_text",
+            os.getenv("SUMMARY_CLOSING_TEXT", "====End of APS Summary===="),
+        )
+
         fmt = str(event_body.get("output_format", "pdf")).lower()
         if fmt == "pdf":
-            summary_buf = create_summary_pdf(summaries)
+            summary_buf = create_summary_pdf(summaries, heading, closing_text)
             ext = "pdf"
             ctype = "application/pdf"
         elif fmt == "docx":

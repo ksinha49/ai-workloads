@@ -1133,7 +1133,7 @@ def test_summary_lambda_forwards(monkeypatch):
     )
     captured = {}
 
-    def fake_create(summaries):
+    def fake_create(summaries, *args):
         captured["summaries"] = summaries
         return io.BytesIO(b"d")
 
