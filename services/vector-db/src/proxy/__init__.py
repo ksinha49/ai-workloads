@@ -1,0 +1,1 @@
+"""Vector DB proxy package."""
