@@ -1,0 +1,11 @@
+version: '3.8'
+services:
+  app:
+    build:
+      context: ../..
+      dockerfile: services/summarization/Dockerfile
+    environment:
+      RAG_SUMMARY_FUNCTION_ARN: arn
+      PROMPT_ENGINE_ENDPOINT: http://engine
+    ports:
+      - "9005:8080"

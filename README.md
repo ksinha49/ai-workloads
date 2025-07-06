@@ -13,7 +13,7 @@ The repository includes the following directories under `services/`:
 - `zip-processing` – extracts PDFs from uploaded archives and assembles new ZIPs
 - `rag-stack` – combined ingestion and retrieval Lambdas used for RAG workflows
 - `vector-db` – manages Milvus collections and search Lambdas
-- `summarization` – Step Function workflow orchestrating file processing and summary generation
+ - `summarization` – runs the summarization workflow and generates PDF or DOCX reports
 - `llm-gateway` – renders templates and routes requests to the selected LLM backend
 - `knowledge-base` – ingest text snippets and query them through the retrieval stack
 - `sensitive-info-detection` – PII/PHI detection for text including legal entities
