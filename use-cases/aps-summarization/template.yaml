@@ -1,0 +1,86 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Workflow to summarize APS ZIP archives.
+
+Parameters:
+  AWSAccountName:
+    Type: String
+    Description: AWS Account Name
+
+  ZipExtractLambdaArn:
+    Type: String
+    Description: ARN of the Lambda used to extract ZIP archives
+
+  ZipfileCreationLambdaArn:
+    Type: String
+    Description: ARN of the Lambda that packages the summarized PDFs
+
+  FileProcessingStepFunctionArn:
+    Type: String
+    Description: ARN of the per-file summarization state machine
+
+  StepFunctionRoleArn:
+    Type: String
+    Description: IAM role ARN for the APS summarization workflow
+
+Resources:
+  ApsSummarizationStateMachine:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      Name: !Sub '${AWSAccountName}-${AWS::StackName}-aps-summary'
+      Role: !Ref StepFunctionRoleArn
+      Definition:
+        Comment: Extract uploaded ZIPs, summarize PDFs and re-package results
+        StartAt: ExtractZip
+        States:
+          ExtractZip:
+            Type: Task
+            Resource: !Ref ZipExtractLambdaArn
+            ResultPath: $
+            Next: CheckZipExtractStatus
+          CheckZipExtractStatus:
+            Type: Choice
+            Choices:
+              - Not:
+                  Variable: $.statusCode
+                  NumericEquals: 200
+                Next: AssembleZip
+            Default: ProcessAllPdfs
+          ProcessAllPdfs:
+            Type: Map
+            ItemsPath: $.pdfFiles
+            ResultPath: $.files
+            MaxConcurrency: 5
+            Iterator:
+              StartAt: ProcessSinglePdf
+              States:
+                ProcessSinglePdf:
+                  Type: Task
+                  Resource: arn:aws:states:::states:startExecution.sync
+                  Parameters:
+                    StateMachineArn: !Ref FileProcessingStepFunctionArn
+                    Input.$: $
+                  ResultPath: $.processedFiles
+                  Catch:
+                    - ErrorEquals:
+                        - States.ALL
+                      ResultPath: $.processedFiles
+                      Next: HandleFileError
+                  End: true
+                HandleFileError:
+                  Type: Pass
+                  End: true
+            Next: AssembleZip
+          AssembleZip:
+            Type: Task
+            Resource: !Ref ZipfileCreationLambdaArn
+            ResultPath: $
+            End: true
+      Logging:
+        Level: 'OFF'
+        IncludeExecutionData: false
+
+Outputs:
+  ApsSummarizationStateMachineArn:
+    Description: ARN of the APS summarization workflow
+    Value: !Ref ApsSummarizationStateMachine

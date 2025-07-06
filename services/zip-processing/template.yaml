@@ -209,3 +209,14 @@ Resources:
       Logging:
         Level: 'OFF'
         IncludeExecutionData: false
+
+Outputs:
+  ZipFileProcessingStepFunctionArn:
+    Description: ARN of the zip file processing state machine
+    Value: !Ref ZipFileProcessingStepFunction
+  ZipExtractLambdaArn:
+    Description: ARN of the zip extract Lambda
+    Value: !GetAtt ZipExtractLambdaFunction.Arn
+  ZipfileCreationLambdaArn:
+    Description: ARN of the zipfile creation Lambda
+    Value: !GetAtt ZipfileCreationLambdaFunction.Arn
