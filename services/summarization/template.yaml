@@ -1,0 +1,186 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Step Function and Lambdas for file summarization.
+
+Globals:
+  Function:
+    Timeout: 3
+    Tracing: Active
+    Runtime: python3.13
+    Architectures:
+      - x86_64
+    LoggingConfig:
+      LogFormat: JSON
+
+Parameters:
+  AWSAccountName:
+    Type: String
+  LambdaSubnet1ID:
+    Type: String
+  LambdaSubnet2ID:
+    Type: String
+  LambdaSecurityGroupID1:
+    Type: String
+  LambdaSecurityGroupID2:
+    Type: String
+  LambdaIAMRoleARN:
+    Type: String
+  FileAssembleFunctionArn:
+    Type: String
+  FileIngestionStateMachineArn:
+    Type: String
+  PromptEngineEndpoint:
+    Type: String
+  RAGSummaryFunctionArn:
+    Type: String
+
+Resources:
+  SummaryQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      VisibilityTimeout: 300
+
+  PromptEngineLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: !Sub '${AWSAccountName}-${AWS::StackName}-prompt-engine-layer'
+      Description: Layer for prompt engine helpers
+      ContentUri: ../../common/layers/prompt-engine-layer/
+      RetentionPolicy: Delete
+      CompatibleRuntimes:
+        - python3.13
+
+  FileSummaryLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: !Sub '${AWSAccountName}-${AWS::StackName}-file-summary-layer'
+      Description: Layer for file summary Lambda
+      ContentUri: ../../common/layers/file-summary-lambda-layer/
+      RetentionPolicy: Delete
+      CompatibleRuntimes:
+        - python3.13
+
+  LoadPromptsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub '${AWSAccountName}-${AWS::StackName}-load-prompts'
+      Handler: load_prompts_lambda.lambda_handler
+      CodeUri: ./src/
+      Runtime: python3.13
+      Role: !Ref LambdaIAMRoleARN
+      MemorySize: 512
+      Layers:
+        - !Ref PromptEngineLayer
+      VpcConfig:
+        SecurityGroupIds:
+          - !Ref LambdaSecurityGroupID1
+          - !Ref LambdaSecurityGroupID2
+        SubnetIds:
+          - !Ref LambdaSubnet1ID
+          - !Ref LambdaSubnet2ID
+      Environment:
+        Variables:
+          PROMPT_ENGINE_ENDPOINT: !Ref PromptEngineEndpoint
+          SYSTEM_WORKFLOW_ID: system
+
+  SummarizeWorkerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub '${AWSAccountName}-${AWS::StackName}-summarize-worker'
+      Handler: summarize_worker_lambda.lambda_handler
+      CodeUri: ./src/
+      Runtime: python3.13
+      Role: !Ref LambdaIAMRoleARN
+      MemorySize: 512
+      Timeout: 900
+      Layers:
+        - !Ref PromptEngineLayer
+      VpcConfig:
+        SecurityGroupIds:
+          - !Ref LambdaSecurityGroupID1
+          - !Ref LambdaSecurityGroupID2
+        SubnetIds:
+          - !Ref LambdaSubnet1ID
+          - !Ref LambdaSubnet2ID
+      Environment:
+        Variables:
+          PROMPT_ENGINE_ENDPOINT: !Ref PromptEngineEndpoint
+          RAG_SUMMARY_FUNCTION_ARN: !Ref RAGSummaryFunctionArn
+
+  FileSummaryFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub '${AWSAccountName}-${AWS::StackName}-file-summary'
+      Handler: file_summary_lambda.lambda_handler
+      CodeUri: ./src/
+      Runtime: python3.13
+      Role: !Ref LambdaIAMRoleARN
+      MemorySize: 512
+      Layers:
+        - !Ref FileSummaryLayer
+      VpcConfig:
+        SecurityGroupIds:
+          - !Ref LambdaSecurityGroupID1
+          - !Ref LambdaSecurityGroupID2
+        SubnetIds:
+          - !Ref LambdaSubnet1ID
+          - !Ref LambdaSubnet2ID
+      Environment:
+        Variables:
+          FILE_ASSEMBLE_FUNCTION: !Ref FileAssembleFunctionArn
+
+  FileProcessingStepFunction:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      Definition:
+        Comment: Simple summarization workflow
+        StartAt: IDP
+        States:
+          IDP:
+            Type: Task
+            Resource: arn:aws:states:::states:startExecution.sync
+            Parameters:
+              StateMachineArn: !Ref FileIngestionStateMachineArn
+              Input.$: $
+            Next: LoadPrompts
+          LoadPrompts:
+            Type: Task
+            Resource: !GetAtt LoadPromptsFunction.Arn
+            ResultPath: $.prompts
+            Next: Summaries
+          Summaries:
+            Type: Map
+            ItemsPath: $.prompts.prompts
+            MaxConcurrency: 2
+            Parameters:
+              token.$: '$$.Map.Item.Value.token'
+              query.$: '$$.Map.Item.Value.query'
+              collection_name.$: $.body.collection_name
+              file_guid.$: $.body.file_guid
+              document_id.$: $.body.document_id
+              prompt_id.$: '$$.Map.Item.Value.prompt_id'
+              variables.$: '$$.Map.Item.Value.variables'
+            Iterator:
+              StartAt: InvokeWorker
+              States:
+                InvokeWorker:
+                  Type: Task
+                  Resource: !GetAtt SummarizeWorkerFunction.Arn
+                  End: true
+            ResultPath: $.summaries
+            Next: FileSummary
+          FileSummary:
+            Type: Task
+            Resource: !GetAtt FileSummaryFunction.Arn
+            End: true
+        QueryLanguage: JSONata
+      Role: !Ref LambdaIAMRoleARN
+      Type: STANDARD
+
+Outputs:
+  FileProcessingStepFunctionArn:
+    Description: ARN of the summarization state machine
+    Value: !Ref FileProcessingStepFunction
+  SummaryQueueUrl:
+    Description: URL of the summary SQS queue
+    Value: !Ref SummaryQueue
