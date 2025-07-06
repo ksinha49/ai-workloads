@@ -94,14 +94,16 @@ SSM parameter name via the `labels_path` property on the workflow input.
 ## Parameters
 
 - `AWSAccountName` – prefix for stack resources.
-- `SummarizationStateMachineArn` – ARN of the summarization workflow from the
-  summarization service.
+- `FileAssembleFunctionArn` – ARN of the file assembly Lambda.
+- `FileIngestionStateMachineArn` – ARN of the file ingestion workflow.
+- `PromptEngineEndpoint` – URL of the prompt engine service.
+- `RAGSummaryFunctionArn` – ARN of the retrieval summarization Lambda.
+- `FileProcessingEmailId` – email address for ZIP processing failure reports.
 - `LambdaIAMRoleARN` – IAM role used by the Lambda function and state machine.
 - `LambdaSubnet1ID` / `LambdaSubnet2ID` – subnets for the Lambda function.
 - `LambdaSecurityGroupID1` / `LambdaSecurityGroupID2` – security groups for network access.
 - `FontDir` – directory with font files (default `./src`).
 - `LabelsPath` – path or SSM name for `summary_labels.json` (default `./config/summary_labels.json`).
-- `ZipFileProcessingStepFunctionArn` – ARN of the ZIP processing state machine.
 
 The APS state machine forwards the `FontDir` and `LabelsPath` values as
 `font_dir` and `labels_path` properties when it starts the summarization
@@ -118,13 +120,16 @@ sam deploy \
   --stack-name aps-summarization \
   --parameter-overrides \
     AWSAccountName=<name> \
-    SummarizationStateMachineArn=<arn> \
     LambdaIAMRoleARN=<role-arn> \
     LambdaSubnet1ID=<subnet1> \
     LambdaSubnet2ID=<subnet2> \
     LambdaSecurityGroupID1=<sg1> \
     LambdaSecurityGroupID2=<sg2> \
+    FileAssembleFunctionArn=<arn> \
+    FileIngestionStateMachineArn=<arn> \
+    PromptEngineEndpoint=<endpoint> \
+    RAGSummaryFunctionArn=<arn> \
+    FileProcessingEmailId=<email> \
     FontDir=<font_dir> \
-    LabelsPath=<labels_path> \
-    ZipFileProcessingStepFunctionArn=<arn>
+    LabelsPath=<labels_path>
 ```
