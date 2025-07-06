@@ -75,20 +75,21 @@ Resources:
         MilvusCollection: !Ref MilvusCollection
         ElasticsearchUrl: !Ref ElasticsearchUrl
         ElasticsearchIndexPrefix: !Ref ElasticsearchIndexPrefix
+        DefaultVectorDbBackend: milvus
 
   RagStackService:
     Type: AWS::Serverless::Application
     Properties:
       Location: services/rag-stack/template.yaml
       Parameters:
-        MilvusInsertFunctionArn: !GetAtt VectorDBService.Outputs.MilvusInsertFunctionArn
-        MilvusDeleteFunctionArn: !GetAtt VectorDBService.Outputs.MilvusDeleteFunctionArn
-        MilvusUpdateFunctionArn: !GetAtt VectorDBService.Outputs.MilvusUpdateFunctionArn
-        MilvusCreateCollectionFunctionArn: !GetAtt VectorDBService.Outputs.MilvusCreateCollectionFunctionArn
-        MilvusDropCollectionFunctionArn: !GetAtt VectorDBService.Outputs.MilvusDropCollectionFunctionArn
+        MilvusInsertFunctionArn: !GetAtt VectorDBService.Outputs.VectorDbProxyFunctionArn
+        MilvusDeleteFunctionArn: !GetAtt VectorDBService.Outputs.VectorDbProxyFunctionArn
+        MilvusUpdateFunctionArn: !GetAtt VectorDBService.Outputs.VectorDbProxyFunctionArn
+        MilvusCreateCollectionFunctionArn: !GetAtt VectorDBService.Outputs.VectorDbProxyFunctionArn
+        MilvusDropCollectionFunctionArn: !GetAtt VectorDBService.Outputs.VectorDbProxyFunctionArn
         BucketName: !GetAtt IDPService.Outputs.BucketName
         TextDocPrefix: !GetAtt IDPService.Outputs.TextDocPrefix
-        VectorSearchFunctionArn: !GetAtt VectorDBService.Outputs.VectorSearchFunctionArn
+        VectorSearchFunctionArn: !GetAtt VectorDBService.Outputs.VectorDbProxyFunctionArn
 
   FileIngestionService:
     Type: AWS::Serverless::Application
