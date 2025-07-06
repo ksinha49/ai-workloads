@@ -44,9 +44,9 @@ stateDiagram-v2
 2. **LoadPrompts** calls `load-prompts-lambda` to fetch templates from the prompt engine. The Lambda posts the `workflow_id` received in the input to the gateway endpoint and returns the prompts along with a system prompt.
 3. **Summaries** iterates over the prompts and sends each one to `summarize-worker-lambda`.
 4. The worker Lambda invokes the retrieval Lambda from **rag-stack**. This queries the Milvus vector database via **vector-db** and forwards the assembled context to the LLM gateway for summarization.
-5. **FileSummary** assembles the results (typically PDF or DOCX) using `file-summary-lambda`. The summary document is uploaded to S3 and the Step Function output conforms to the schema in [event_schemas.md](event_schemas.md#summarization-event).
+5. **FileSummary** assembles the results (typically PDF or DOCX) using `file-summary-lambda`. The summary document is uploaded to S3 and the Step Function output conforms to the schema in [event_schemas.md](../../docs/event_schemas.md#summarization-event).
 
-The initial input for the state machine must match the [Summarization Workflow Input](event_schemas.md#summarization-workflow-input). The output from each worker conforms to [RAG Summarization Payload](event_schemas.md#rag-summarization-payload).
+The initial input for the state machine must match the [Summarization Workflow Input](../../docs/event_schemas.md#summarization-workflow-input). The output from each worker conforms to [RAG Summarization Payload](../../docs/event_schemas.md#rag-summarization-payload).
 
 ## Loading APS prompts
 
