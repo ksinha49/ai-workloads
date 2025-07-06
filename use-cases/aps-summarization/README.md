@@ -2,9 +2,11 @@
 
 This directory contains a wrapper around the generic summarization
 service for processing Attending Physician Statements (APS).  The
-`template.yaml` deploys a Step Function that starts the reusable
-summarization state machine with the APS prompt collection and then
-executes an optional post processing Lambda.
+`template.yaml` deploys a Step Function that now launches the ZIP
+processing workflow which in turn extracts the archive, runs the
+summarization state machine for each PDF and finally assembles a new
+ZIP file.  After the archive is created the APS workflow invokes an
+optional post processing Lambda.
 
 ## Environment variables
 
@@ -27,6 +29,7 @@ SSM parameter name via the `labels_path` property on the workflow input.
 - `LambdaSecurityGroupID1` / `LambdaSecurityGroupID2` – security groups for network access.
 - `FontDir` – directory with font files (default `./src`).
 - `LabelsPath` – path or SSM name for `summary_labels.json` (default `./config/summary_labels.json`).
+- `ZipFileProcessingStepFunctionArn` – ARN of the ZIP processing state machine.
 
 The APS state machine forwards the `FontDir` and `LabelsPath` values as
 `font_dir` and `labels_path` properties when it starts the summarization
@@ -50,5 +53,6 @@ sam deploy \
     LambdaSecurityGroupID1=<sg1> \
     LambdaSecurityGroupID2=<sg2> \
     FontDir=<font_dir> \
-    LabelsPath=<labels_path>
+    LabelsPath=<labels_path> \
+    ZipFileProcessingStepFunctionArn=<arn>
 ```

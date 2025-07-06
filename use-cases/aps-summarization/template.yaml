@@ -17,6 +17,8 @@ Parameters:
     Type: String
   SummarizationStateMachineArn:
     Type: String
+  ZipFileProcessingStepFunctionArn:
+    Type: String
   LambdaIAMRoleARN:
     Type: String
   LambdaSubnet1ID:
@@ -55,18 +57,31 @@ Resources:
         Variables:
           FONT_DIR: !Ref FontDir
 
+  ZipSFStartPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Sub '${AWSAccountName}-${AWS::StackName}-zip-sf-start'
+      Roles:
+        - !Select [1, !Split ['/', !Ref LambdaIAMRoleARN]]
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action: states:StartExecution
+            Resource: !Ref ZipFileProcessingStepFunctionArn
+
   APSStateMachine:
     Type: AWS::Serverless::StateMachine
     Properties:
       Definition:
         Comment: APS summarization wrapper
-        StartAt: Summarize
+        StartAt: ProcessZip
         States:
-          Summarize:
+          ProcessZip:
             Type: Task
             Resource: arn:aws:states:::states:startExecution.sync
             Parameters:
-              StateMachineArn: !Ref SummarizationStateMachineArn
+              StateMachineArn: !Ref ZipFileProcessingStepFunctionArn
               Input:
                 workflow_id: aps
                 font_dir: !Ref FontDir
