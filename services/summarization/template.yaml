@@ -82,9 +82,9 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub '${AWSAccountName}-${AWS::StackName}-file-summary'
-      Handler: app.lambda_handler
+      Handler: file_summary_lambda.lambda_handler
       Runtime: python3.13
-      CodeUri: ./file-summary-lambda/
+      CodeUri: ./src/
       Role: !Ref LambdaIAMRoleARN
       MemorySize: 1024
       Timeout: 720
@@ -107,9 +107,9 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub '${AWSAccountName}-${AWS::StackName}-summarize-worker'
-      Handler: app.lambda_handler
+      Handler: summarize_worker_lambda.lambda_handler
       Runtime: python3.13
-      CodeUri: ./summarize-worker-lambda/
+      CodeUri: ./src/
       Role: !Ref LambdaIAMRoleARN
       MemorySize: 512
       Timeout: 300
@@ -135,9 +135,9 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub '${AWSAccountName}-${AWS::StackName}-load-prompts'
-      Handler: app.lambda_handler
+      Handler: load_prompts_lambda.lambda_handler
       Runtime: python3.13
-      CodeUri: ./load-prompts-lambda/
+      CodeUri: ./src/
       Role: !Ref LambdaIAMRoleARN
       Timeout: 60
       VpcConfig:
