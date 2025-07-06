@@ -38,7 +38,7 @@ def test_add_title_page(config):
     from fpdf import FPDF
     pdf = FPDF(unit="mm", format="A4")
     pdf.set_margins(20, 20)
-    module._add_title_page(pdf, 10, 12)
+    module._add_title_page(pdf, 10, 12, "APS Summary")
     data = pdf.output(dest='S')
     text = PdfReader(io.BytesIO(data)).pages[0].extract_text()
     assert "APS Summary" in text
