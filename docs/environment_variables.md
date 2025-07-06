@@ -56,7 +56,7 @@ Each service loads its configuration from Parameter Store or the Lambda environm
 - `SUMMARY_ENDPOINT` – optional summarization service URL.
 - `CONTENT_ENDPOINT` – endpoint for content extraction.
 - `ENTITIES_ENDPOINT` – endpoint for entity extraction.
-- `ROUTELLM_ENDPOINT` – LLM router URL.
+- `ROUTELLM_ENDPOINT` – optional URL for forwarding requests from the gateway's router Lambda to an external RouteLLM service.
 - `EMBED_MODEL` / `SBERT_MODEL` – embedding configuration.
 - `OPENAI_EMBED_MODEL` – OpenAI model name.
 - `COHERE_SECRET_NAME` – name or ARN of the Cohere API key secret.
@@ -65,7 +65,9 @@ Each service loads its configuration from Parameter Store or the Lambda environm
 - `NVIDIA_SECRET_NAME` – name or ARN of the NVIDIA API key secret.
 - `VECTOR_SEARCH_CANDIDATES` – number of search results retrieved before re-ranking.
 
-### LLM Router and Invocation
+### LLM Gateway
+
+These settings configure the router and invocation Lambdas bundled with the gateway service.
 
 - `BEDROCK_OPENAI_ENDPOINTS` – comma‑separated Bedrock endpoints.
 - `BEDROCK_SECRET_NAME` – name or ARN of the Bedrock API key secret.

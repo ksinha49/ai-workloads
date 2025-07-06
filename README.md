@@ -104,7 +104,7 @@ so services can import modules and load models directly from EFS.
 Additional documentation is available in the `docs/` directory:
 
 - [docs/idp_output_format.md](docs/idp_output_format.md)
-- [docs/router_configuration.md](docs/router_configuration.md)
+- [docs/router_configuration.md](docs/router_configuration.md) – LLM Gateway router parameters and heuristics
 - [docs/summarization_workflow.md](docs/summarization_workflow.md)
 - [docs/prompt_engine.md](docs/prompt_engine.md)
 - [docs/knowledge_rag_usage.md](docs/knowledge_rag_usage.md)

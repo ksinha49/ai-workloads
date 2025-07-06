@@ -1,6 +1,6 @@
-# LLM Router Configuration
+# LLM Gateway Router Configuration
 
-This document details the environment variables used by the router Lambda and how they are typically provided.
+This document details the environment variables used by the router Lambda that forms part of the **llm-gateway** service and how they are typically provided.
 
 ## Environment Variables
 

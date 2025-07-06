@@ -49,7 +49,7 @@ The IDP Lambdas are triggered by standard S3 events. Each event contains a list 
 }
 ```
 
-## LLM Router/Invocation Payload
+## LLM Gateway Payload
 
 ```json
 {

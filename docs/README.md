@@ -3,7 +3,7 @@
 This directory contains guides and reference material for the services in this repository.
 
 - [idp_output_format.md](idp_output_format.md) – JSON fields produced by the IDP pipeline.
-- [router_configuration.md](router_configuration.md) – LLM router parameters and heuristics.
+- [router_configuration.md](router_configuration.md) – LLM Gateway router parameters and heuristics.
 - [summarization_workflow.md](summarization_workflow.md) – details of the summarization Step Function.
 - [file_ingestion_workflow.md](file_ingestion_workflow.md) – how uploaded files are prepared before ingestion.
 - [rag_ingestion_workflow.md](rag_ingestion_workflow.md) – details of the ingestion Step Function.
