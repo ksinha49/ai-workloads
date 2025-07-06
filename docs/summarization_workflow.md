@@ -19,13 +19,16 @@ stateDiagram-v2
 ```
 
 1. **ExtractZip** reads the uploaded archive from S3 and returns the S3 keys of the contained PDFs.
-2. **ProcessAllPdfs** maps each extracted file through the per‑file `FileProcessingStepFunction` from the **summarization** service.
+2. **ProcessAllPdfs** maps each extracted file through a per‑file workflow in the
+   APS use case. This workflow invokes the file-ingestion service and then sends
+   a message to the **summarization** service via SQS.
 3. **AssembleZip** collects each generated summary PDF and writes the final ZIP to S3.
 4. **SendToSNS** notifies stakeholders when any file fails.
 
 ## Per‑file Step Function
 
-`FileProcessingStepFunction` orchestrates IDP extraction, prompt loading and summarization for a single PDF.
+The per‑file workflow orchestrates IDP extraction, then posts a message to the
+summarization queue so `SummarizationWorkflow` can generate a summary.
 
 ```mermaid
 stateDiagram-v2

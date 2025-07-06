@@ -12,8 +12,14 @@ assembled into a summary document.
 - **file-summary-lambda** – `src/file_summary_lambda.py` creates the final
   document. Helper functions are exposed for PDF generation.
 
-The `template.yaml` defines the SQS queue, Lambda functions and the
-`FileProcessingStepFunction` that ties them together.
+The `template.yaml` defines the SQS queue, Lambda functions and a single Step
+Function.
+
+* **SummarizationWorkflow** – starts at `LoadPrompts` and runs the summarization
+  tasks. Messages posted to `SummaryQueue` trigger this workflow.
+
+The state machine ARN is exported as `SummarizationWorkflowArn` for use by other
+stacks.
 
 ## Local testing
 
