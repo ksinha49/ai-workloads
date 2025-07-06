@@ -15,10 +15,6 @@ Globals:
 Parameters:
   AWSAccountName:
     Type: String
-  SummarizationStateMachineArn:
-    Type: String
-  ZipFileProcessingStepFunctionArn:
-    Type: String
   LambdaIAMRoleARN:
     Type: String
   LambdaSubnet1ID:
@@ -29,6 +25,16 @@ Parameters:
     Type: String
   LambdaSecurityGroupID2:
     Type: String
+  FileAssembleFunctionArn:
+    Type: String
+  FileIngestionStateMachineArn:
+    Type: String
+  PromptEngineEndpoint:
+    Type: String
+  RAGSummaryFunctionArn:
+    Type: String
+  FileProcessingEmailId:
+    Type: String
   FontDir:
     Type: String
     Default: ./src
@@ -37,6 +43,37 @@ Parameters:
     Default: ./config/summary_labels.json
 
 Resources:
+  SummarizationService:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: ../../services/summarization/template.yaml
+      Parameters:
+        AWSAccountName: !Ref AWSAccountName
+        LambdaSubnet1ID: !Ref LambdaSubnet1ID
+        LambdaSubnet2ID: !Ref LambdaSubnet2ID
+        LambdaSecurityGroupID1: !Ref LambdaSecurityGroupID1
+        LambdaSecurityGroupID2: !Ref LambdaSecurityGroupID2
+        LambdaIAMRoleARN: !Ref LambdaIAMRoleARN
+        FileAssembleFunctionArn: !Ref FileAssembleFunctionArn
+        FileIngestionStateMachineArn: !Ref FileIngestionStateMachineArn
+        PromptEngineEndpoint: !Ref PromptEngineEndpoint
+        RAGSummaryFunctionArn: !Ref RAGSummaryFunctionArn
+
+  ZipProcessingService:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: ../../services/zip-processing/template.yaml
+      Parameters:
+        AWSAccountName: !Ref AWSAccountName
+        LambdaSubnet1ID: !Ref LambdaSubnet1ID
+        LambdaSubnet2ID: !Ref LambdaSubnet2ID
+        LambdaSecurityGroupID1: !Ref LambdaSecurityGroupID1
+        LambdaSecurityGroupID2: !Ref LambdaSecurityGroupID2
+        LambdaIAMRoleARN: !Ref LambdaIAMRoleARN
+        FileProcessingStepFunctionArn: !GetAtt SummarizationService.Outputs.SummarizationWorkflowArn
+        FileProcessingStepFunctionIAMRole: !Ref LambdaIAMRoleARN
+        FileProcessingEmailId: !Ref FileProcessingEmailId
+
   APSWorkflowFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -68,7 +105,7 @@ Resources:
         Statement:
           - Effect: Allow
             Action: states:StartExecution
-            Resource: !Ref ZipFileProcessingStepFunctionArn
+            Resource: !GetAtt ZipProcessingService.Outputs.ZipFileProcessingStepFunctionArn
 
   APSStateMachine:
     Type: AWS::Serverless::StateMachine
@@ -81,7 +118,7 @@ Resources:
             Type: Task
             Resource: arn:aws:states:::states:startExecution.sync
             Parameters:
-              StateMachineArn: !Ref ZipFileProcessingStepFunctionArn
+              StateMachineArn: !GetAtt ZipProcessingService.Outputs.ZipFileProcessingStepFunctionArn
               Input:
                 workflow_id: aps
                 font_dir: !Ref FontDir
@@ -100,3 +137,9 @@ Outputs:
   APSStateMachineArn:
     Description: ARN of the APS summarization workflow
     Value: !Ref APSStateMachine
+  ZipFileProcessingStepFunctionArn:
+    Description: ARN of the zip file processing state machine
+    Value: !GetAtt ZipProcessingService.Outputs.ZipFileProcessingStepFunctionArn
+  SummarizationWorkflowArn:
+    Description: ARN of the summarization workflow
+    Value: !GetAtt SummarizationService.Outputs.SummarizationWorkflowArn
