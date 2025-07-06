@@ -1,7 +1,12 @@
 # ---------------------------------------------------------------------------
 # app.py
 # ---------------------------------------------------------------------------
-"""Generate a summary using context from vector search results."""
+"""Retrieve context from vector search results and forward the request.
+
+Originally this handler only produced a summary. The implementation now
+supports arbitrary payloads by forwarding the assembled context to an
+external service via the RouteLLM router.
+"""
 
 from __future__ import annotations
 
@@ -38,7 +43,7 @@ ROUTELLM_ENDPOINT = get_config("ROUTELLM_ENDPOINT") or os.environ.get("ROUTELLM_
 lambda_client = boto3.client("lambda")
 
 
-class SummarizeEvent(BaseModel):
+class RetrievalEvent(BaseModel):
     collection_name: str
     query: str | None = None
     embedding: list[float] | None = None
@@ -140,15 +145,14 @@ def _embed_query(text: str, model: str | None = None) -> list[float]:
         return _simple_embed(text)
 
 
-def _process_event(event: SummarizeEvent) -> Dict[str, Any]:
-    """Handle a single summarization request.
+def _process_event(event: RetrievalEvent) -> Dict[str, Any]:
+    """Handle a single retrieval request.
 
     1. Performs a vector search (and optional re-ranking) to gather context for
        the query.
-    2. Sends the query and context to an external summarization service via the
-       router integration.
+    2. Forwards the request and context to an external service via the router.
 
-    Returns a dictionary containing the generated summary.
+    Returns the service response in a ``result`` field.
     """
 
     if event.collection_name is None:
@@ -180,7 +184,7 @@ def _process_event(event: SummarizeEvent) -> Dict[str, Any]:
         result = json.loads(resp["Payload"].read())
     except Exception:
         logger.exception("Vector search invocation failed")
-        return {"summary": ""}
+        return {"result": {}}
     logger.info("Vector search returned %d matches", len(result.get("matches", [])))
     matches = result.get("matches", [])
     if RERANK_FUNCTION and query:
@@ -206,12 +210,12 @@ def _process_event(event: SummarizeEvent) -> Dict[str, Any]:
     router_payload["context"] = context_text
     logger.info("Forwarding payload to router at %s", ROUTELLM_ENDPOINT)
     try:
-        summary = forward_to_routellm(router_payload)
+        response = forward_to_routellm(router_payload)
     except Exception:
         logger.exception("RouterLLM request failed")
-        return {"summary": ""}
-    logger.info("Router returned summary length %d", len(summary) if summary else 0)
-    return {"summary": summary}
+        return {"result": {}}
+    logger.info("Router returned payload keys: %s", list(response.keys()))
+    return {"result": response}
 
 
 def lambda_handler(event: Dict[str, Any], context: Any) -> Any:
@@ -220,17 +224,17 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Any:
         results = []
         for r in event["Records"]:
             try:
-                ev = SummarizeEvent.parse_obj(json.loads(r.get("body", "{}")))
+                ev = RetrievalEvent.parse_obj(json.loads(r.get("body", "{}")))
             except ValidationError as exc:
                 logger.error("Invalid event: %s", exc)
-                results.append({"summary": ""})
+                results.append({"result": {}})
             else:
                 results.append(_process_event(ev))
         return results
     try:
-        ev = SummarizeEvent.parse_obj(event)
+        ev = RetrievalEvent.parse_obj(event)
     except ValidationError as exc:
         logger.error("Invalid event: %s", exc)
-        return {"summary": ""}
+        return {"result": {}}
     return _process_event(ev)
 

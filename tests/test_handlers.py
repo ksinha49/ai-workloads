@@ -804,7 +804,7 @@ def test_summarize_with_context_router(monkeypatch, config):
         "context": "ctx",
         "collection_name": "c",
     }
-    assert out["summary"] == {"text": "ok"}
+    assert out["result"] == {"text": "ok"}
 
 
 def test_rerank_lambda(monkeypatch, config):
@@ -890,7 +890,7 @@ def test_summarize_with_rerank(monkeypatch, config):
 
     out = module.lambda_handler({"query": "hi", "collection_name": "c"}, {})
     assert fake_invoke.rerank["query"] == "hi"
-    assert out["summary"] == {"text": "t2"}
+    assert out["result"] == {"text": "t2"}
 
 
 def test_text_chunk_event_overrides(monkeypatch, config):
