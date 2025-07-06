@@ -20,7 +20,7 @@ def test_file_processing_lambda(monkeypatch, s3_stub, config):
 
     s3_stub.objects[('bucket', 'path/test.docx')] = b'data'
 
-    module = load_lambda('file_proc', 'services/file-ingestion/file-processing-lambda/app.py')
+    module = load_lambda('file_proc', 'services/file-ingestion/src/file_processing_lambda.py')
 
     event = FileProcessingEvent(file='s3://bucket/path/test.docx', collection_name='c')
     resp = module.lambda_handler(event, {})
@@ -48,7 +48,7 @@ def test_file_processing_lambda_copy_verification_failed(monkeypatch, s3_stub, c
 
     monkeypatch.setattr(s3_stub, 'copy_object', bad_copy)
 
-    module = load_lambda('file_proc_fail', 'services/file-ingestion/file-processing-lambda/app.py')
+    module = load_lambda('file_proc_fail', 'services/file-ingestion/src/file_processing_lambda.py')
 
     event = FileProcessingEvent(file='s3://bucket/path/test.docx', collection_name='c')
     resp = module.lambda_handler(event, {})
@@ -60,7 +60,7 @@ def test_file_processing_lambda_copy_verification_failed(monkeypatch, s3_stub, c
 
 def test_file_processing_lambda_invalid_path(monkeypatch, config):
     config['/parameters/aio/ameritasAI/SERVER_ENV'] = 'dev'
-    module = load_lambda('file_proc_inv', 'services/file-ingestion/file-processing-lambda/app.py')
+    module = load_lambda('file_proc_inv', 'services/file-ingestion/src/file_processing_lambda.py')
     event = FileProcessingEvent(file='foo', collection_name='c')
     resp = module.lambda_handler(event, {})
     assert resp['statusCode'] == 400
@@ -68,7 +68,7 @@ def test_file_processing_lambda_invalid_path(monkeypatch, config):
 
 def test_file_processing_lambda_bad_collection(monkeypatch, config):
     config['/parameters/aio/ameritasAI/SERVER_ENV'] = 'dev'
-    module = load_lambda('file_proc_col', 'services/file-ingestion/file-processing-lambda/app.py')
+    module = load_lambda('file_proc_col', 'services/file-ingestion/src/file_processing_lambda.py')
     event = FileProcessingEvent(file='s3://bucket/test.pdf', collection_name='@@@')
     resp = module.lambda_handler(event, {})
     assert resp['statusCode'] == 400
@@ -76,7 +76,7 @@ def test_file_processing_lambda_bad_collection(monkeypatch, config):
 
 def test_file_processing_lambda_bad_uri_traversal(monkeypatch, config):
     config['/parameters/aio/ameritasAI/SERVER_ENV'] = 'dev'
-    module = load_lambda('file_proc_trav', 'services/file-ingestion/file-processing-lambda/app.py')
+    module = load_lambda('file_proc_trav', 'services/file-ingestion/src/file_processing_lambda.py')
     event = FileProcessingEvent(file='s3://bucket/../../secret.txt', collection_name='c')
     resp = module.lambda_handler(event, {})
     assert resp['statusCode'] == 400
@@ -84,7 +84,7 @@ def test_file_processing_lambda_bad_uri_traversal(monkeypatch, config):
 
 def test_file_processing_lambda_bad_uri_double_slash(monkeypatch, config):
     config['/parameters/aio/ameritasAI/SERVER_ENV'] = 'dev'
-    module = load_lambda('file_proc_dslash', 'services/file-ingestion/file-processing-lambda/app.py')
+    module = load_lambda('file_proc_dslash', 'services/file-ingestion/src/file_processing_lambda.py')
     event = FileProcessingEvent(file='s3://bucket/path//test.pdf', collection_name='c')
     resp = module.lambda_handler(event, {})
     assert resp['statusCode'] == 400
@@ -92,7 +92,7 @@ def test_file_processing_lambda_bad_uri_double_slash(monkeypatch, config):
 
 def test_file_processing_lambda_bad_bucket(monkeypatch, config):
     config['/parameters/aio/ameritasAI/SERVER_ENV'] = 'dev'
-    module = load_lambda('file_proc_bucket', 'services/file-ingestion/file-processing-lambda/app.py')
+    module = load_lambda('file_proc_bucket', 'services/file-ingestion/src/file_processing_lambda.py')
     event = FileProcessingEvent(file='s3://Bad_Bucket/test.pdf', collection_name='c')
     resp = module.lambda_handler(event, {})
     assert resp['statusCode'] == 400
