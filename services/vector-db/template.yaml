@@ -24,7 +24,7 @@ Parameters:
 
 Globals:
   Function:
-    Handler: proxy/vector_db_proxy_lambda.lambda_handler
+    Handler: proxy.vector_db_proxy_lambda.lambda_handler
     Runtime: python3.13
     Timeout: 60
     MemorySize: 512
@@ -48,7 +48,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: ./src/
-      Handler: proxy/vector_db_proxy_lambda.lambda_handler
+      Handler: proxy.vector_db_proxy_lambda.lambda_handler
       Environment:
         Variables:
           DEFAULT_VECTOR_DB_BACKEND: !Ref DefaultVectorDbBackend
@@ -84,7 +84,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: ./src/
-      Handler: jobs/cleanup_ephemeral_lambda.lambda_handler
+      Handler: jobs.cleanup_ephemeral_lambda.lambda_handler
       Environment:
         Variables:
           EPHEMERAL_TABLE: !Ref EphemeralTable
