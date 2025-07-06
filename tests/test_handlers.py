@@ -809,7 +809,7 @@ def test_summarize_with_context_router(monkeypatch, config):
 
 def test_rerank_lambda(monkeypatch, config):
     config["/parameters/aio/ameritasAI/SERVER_ENV"] = "dev"
-    module = load_lambda("rerank", "services/rag-retrieval/rerank-lambda/app.py")
+    module = load_lambda("rerank", "services/rag-stack/src/rerank_lambda.py")
     monkeypatch.setattr(module, "_score_pairs", lambda q, d: [0.1, 0.9])
     matches = [
         {"id": 1, "metadata": {"text": "a"}},
@@ -823,7 +823,7 @@ def test_rerank_lambda(monkeypatch, config):
 def test_rerank_lambda_cohere(monkeypatch, config):
     config["/parameters/aio/ameritasAI/SERVER_ENV"] = "dev"
     monkeypatch.setenv("RERANK_PROVIDER", "cohere")
-    module = load_lambda("rerank_co", "services/rag-retrieval/rerank-lambda/app.py")
+    module = load_lambda("rerank_co", "services/rag-stack/src/rerank_lambda.py")
     monkeypatch.setattr(module, "_cohere_rerank", lambda q, d: [0.8, 0.1])
     module._PROVIDER_MAP["cohere"] = module._cohere_rerank
     matches = [
@@ -836,7 +836,7 @@ def test_rerank_lambda_cohere(monkeypatch, config):
 
 def test_rerank_lambda_invalid(monkeypatch, config):
     config["/parameters/aio/ameritasAI/SERVER_ENV"] = "dev"
-    module = load_lambda("rerank_invalid", "services/rag-retrieval/rerank-lambda/app.py")
+    module = load_lambda("rerank_invalid", "services/rag-stack/src/rerank_lambda.py")
     out = module.lambda_handler({"matches": "bad"}, {})
     assert out["matches"] == []
 
