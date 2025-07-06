@@ -103,3 +103,26 @@ collection of prompts. The state machine will fetch the list from the LLM Gatewa
   }
 }
 ```
+
+## Custom Prompt Sets
+
+Prompt templates may be grouped by `workflow_id` and stored in the LLM Gateway's DynamoDB table. Sample collections such as `use-cases/aps-summarization/config/aps_prompts.json` contain a JSON array of items with `prompt_id` and `workflow_id` values. Load them into the table with the standard DynamoDB `PutItem` API or an import script:
+
+```bash
+aws dynamodb put-item \
+  --table-name <PromptLibraryTable> \
+  --item file://use-cases/aps-summarization/config/aps_prompts.json
+```
+
+Start the Step Function using the same `workflow_id` to automatically retrieve all matching prompts. Optional keys such as `summary_heading` and `summary_closing_text` customise the heading and footer in the final summary document:
+
+```json
+{
+  "body": {
+    "workflow_id": "aps",
+    "collection_name": "my-collection",
+    "summary_heading": "APS Summary",
+    "summary_closing_text": "====End of APS Summary===="
+  }
+}
+```
