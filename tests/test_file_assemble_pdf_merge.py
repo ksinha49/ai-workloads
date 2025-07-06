@@ -51,7 +51,7 @@ def test_merge_pdfs(monkeypatch):
     fake_module = types.SimpleNamespace(PdfReader=FakeReader, PdfWriter=FakeWriter)
     monkeypatch.setitem(sys.modules, "PyPDF2", fake_module)
 
-    module = load_lambda("merge", "services/file-assembly/file-assemble-lambda/app.py")
+    module = load_lambda("merge", "services/file-assembly/src/file_assembly_lambda.py")
     monkeypatch.setattr(module, "PdfReader", FakeReader)
     monkeypatch.setattr(module, "PdfWriter", FakeWriter)
 
@@ -64,7 +64,7 @@ def test_merge_pdfs(monkeypatch):
 
 
 def test_lambda_handler_success(monkeypatch):
-    module = load_lambda("handler", "services/file-assembly/file-assemble-lambda/app.py")
+    module = load_lambda("handler", "services/file-assembly/src/file_assembly_lambda.py")
 
     def fake_assemble(event, context, s3_client):
         return {"ok": True}
@@ -78,7 +78,7 @@ def test_lambda_handler_success(monkeypatch):
 
 
 def test_lambda_handler_error(monkeypatch):
-    module = load_lambda("handler_err", "services/file-assembly/file-assemble-lambda/app.py")
+    module = load_lambda("handler_err", "services/file-assembly/src/file_assembly_lambda.py")
 
     def boom(event, context, s3_client):
         raise ValueError("boom")
