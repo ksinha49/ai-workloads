@@ -52,7 +52,6 @@ Parameters:
 Globals:
   Function:
     Runtime: python3.13
-    Handler: handler.lambda_handler
     Timeout: 300
     MemorySize: 512
     Role: !GetAtt LambdaExecutionRole.Arn
@@ -119,7 +118,8 @@ Resources:
   ClassifierFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: ./1-classifier/
+      CodeUri: ./src/
+      Handler: classifier_lambda.lambda_handler
       Events:
         RawUpload:
           Type: S3
@@ -135,7 +135,8 @@ Resources:
   OfficeExtractorFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: ./2-office-extractor/
+      CodeUri: ./src/
+      Handler: office_extractor_lambda.lambda_handler
       Events:
         FromClassifier:
           Type: S3
@@ -151,7 +152,8 @@ Resources:
   PdfSplitFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: ./3-pdf-split/
+      CodeUri: ./src/
+      Handler: pdf_split_lambda.lambda_handler
       Events:
         FromOffice:
           Type: S3
@@ -167,7 +169,8 @@ Resources:
   PdfPageClassifierFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: ./4-pdf-page-classifier/
+      CodeUri: ./src/
+      Handler: pdf_page_classifier_lambda.lambda_handler
       Events:
         FromSplit:
           Type: S3
@@ -183,7 +186,8 @@ Resources:
   PdfTextExtractorFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: ./5-pdf-text-extractor/
+      CodeUri: ./src/
+      Handler: pdf_text_extractor_lambda.lambda_handler
       Events:
         FromPageClassifier:
           Type: S3
@@ -199,7 +203,8 @@ Resources:
   PdfOcrExtractorFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: ./6-pdf-ocr-extractor/
+      CodeUri: ./src/
+      Handler: pdf_ocr_extractor_lambda.lambda_handler
       Layers:
         - !Ref OCRLayer
       Environment:
@@ -222,7 +227,8 @@ Resources:
   CombineFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: ./7-combine/
+      CodeUri: ./src/
+      Handler: combine_lambda.lambda_handler
       Events:
         FromOcr:
           Type: S3
@@ -238,7 +244,8 @@ Resources:
   OutputFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: ./8-output/
+      CodeUri: ./src/
+      Handler: output_lambda.lambda_handler
       Events:
         FromCombine:
           Type: S3

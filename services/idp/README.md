@@ -10,24 +10,30 @@ All handlers accept the :class:`models.S3Event` dataclass and return a
 
 ## Workflow
 
-1. **1-classifier** – triggered when objects arrive under `RAW_PREFIX`.
-   It inspects PDFs to see if they already contain text and then copies
-   the file to either `OFFICE_PREFIX` for direct processing or a raw PDF
-   prefix for splitting.
-2. **2-office-extractor** – converts DOCX, PPTX and XLSX files from
-   `CLASSIFIED_PREFIX` into Markdown pages stored in `TEXT_DOC_PREFIX`.
-3. **3-pdf-split** – splits PDFs into per page files and writes a
-   `manifest.json` under `PAGE_PREFIX`.
-4. **4-pdf-page-classifier** – checks each page and routes it to
-   `PAGE_PREFIX` when text is present or to an OCR prefix for scanning.
-5. **5-pdf-text-extractor** – extracts embedded text from pages under
-   `PAGE_PREFIX` and stores Markdown output in `TEXT_PREFIX`.
-6. **6-pdf-ocr-extractor** – performs OCR on scanned pages using the
-   engine specified by `OCR_ENGINE` and writes results to `OCR_PREFIX`.
-7. **7-combine** – waits until all page outputs exist and combines them
-   into a single JSON document under `COMBINE_PREFIX` / `TEXT_DOC_PREFIX`.
-8. **8-output** – posts the final JSON from `TEXT_DOC_PREFIX` to an
-   external API and stores any response under `OUTPUT_PREFIX`.
+1. **classifier** – `src/classifier_lambda.py` is triggered when objects
+   arrive under `RAW_PREFIX`. It inspects PDFs to see if they already
+   contain text and then copies the file to either `OFFICE_PREFIX` for
+   direct processing or a raw PDF prefix for splitting.
+2. **office-extractor** – `src/office_extractor_lambda.py` converts DOCX,
+   PPTX and XLSX files from `CLASSIFIED_PREFIX` into Markdown pages
+   stored in `TEXT_DOC_PREFIX`.
+3. **pdf-split** – `src/pdf_split_lambda.py` splits PDFs into per page
+   files and writes a `manifest.json` under `PAGE_PREFIX`.
+4. **pdf-page-classifier** – `src/pdf_page_classifier_lambda.py` checks
+   each page and routes it to `PAGE_PREFIX` when text is present or to an
+   OCR prefix for scanning.
+5. **pdf-text-extractor** – `src/pdf_text_extractor_lambda.py` extracts
+   embedded text from pages under `PAGE_PREFIX` and stores Markdown
+   output in `TEXT_PREFIX`.
+6. **pdf-ocr-extractor** – `src/pdf_ocr_extractor_lambda.py` performs OCR
+   on scanned pages using the engine specified by `OCR_ENGINE` and writes
+   results to `OCR_PREFIX`.
+7. **combine** – `src/combine_lambda.py` waits until all page outputs
+   exist and combines them into a single JSON document under
+   `COMBINE_PREFIX` / `TEXT_DOC_PREFIX`.
+8. **output** – `src/output_lambda.py` posts the final JSON from
+   `TEXT_DOC_PREFIX` to an external API and stores any response under
+   `OUTPUT_PREFIX`.
 
 ## Environment variables
 

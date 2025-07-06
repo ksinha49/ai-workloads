@@ -32,7 +32,7 @@ def test_office_extractor(monkeypatch, s3_stub, validate_schema, config):
     config[f"{prefix}/BUCKET_NAME"] = "bucket"
     config[f"{prefix}/OFFICE_PREFIX"] = "office-docs/"
     config[f"{prefix}/TEXT_DOC_PREFIX"] = "text-docs/"
-    module = load_lambda("office", "services/idp/2-office-extractor/app.py")
+    module = load_lambda("office", "services/idp/src/office_extractor_lambda.py")
 
     s3_stub.objects[("bucket", "office-docs/test.docx")] = b"data"
 
@@ -71,7 +71,7 @@ def test_pdf_text_extractor(monkeypatch, s3_stub, validate_schema, config):
     config[f"{prefix}/BUCKET_NAME"] = "bucket"
     config[f"{prefix}/PDF_TEXT_PAGE_PREFIX"] = "text-pages/"
     config[f"{prefix}/TEXT_PAGE_PREFIX"] = "text-pages/"
-    module = load_lambda("pdf_text", "services/idp/5-pdf-text-extractor/app.py")
+    module = load_lambda("pdf_text", "services/idp/src/pdf_text_extractor_lambda.py")
 
     s3_stub.objects[("bucket", "text-pages/doc1/page_001.pdf")] = b"data"
 
@@ -100,7 +100,7 @@ def test_pdf_ocr_extractor(monkeypatch, s3_stub, validate_schema, config):
     config[f"{prefix}/BUCKET_NAME"] = "bucket"
     config[f"{prefix}/PDF_SCAN_PAGE_PREFIX"] = "scan-pages/"
     config[f"{prefix}/TEXT_PAGE_PREFIX"] = "text-pages/"
-    module = load_lambda("ocr", "services/idp/6-pdf-ocr-extractor/app.py")
+    module = load_lambda("ocr", "services/idp/src/pdf_ocr_extractor_lambda.py")
 
     s3_stub.objects[("bucket", "scan-pages/doc1/page_001.pdf")] = b"data"
 
@@ -132,7 +132,7 @@ def test_pdf_ocr_extractor_trocr(monkeypatch, s3_stub, validate_schema, config):
     config[f"{prefix}/TEXT_PAGE_PREFIX"] = "text-pages/"
     config[f"{prefix}/OCR_ENGINE"] = "trocr"
     config[f"{prefix}/TROCR_ENDPOINT"] = "http://example"
-    module = load_lambda("ocr_trocr", "services/idp/6-pdf-ocr-extractor/app.py")
+    module = load_lambda("ocr_trocr", "services/idp/src/pdf_ocr_extractor_lambda.py")
 
     s3_stub.objects[("bucket", "scan-pages/doc1/page_001.pdf")] = b"data"
 
@@ -171,7 +171,7 @@ def test_pdf_ocr_extractor_docling(monkeypatch, s3_stub, validate_schema, config
     config[f"{prefix}/TEXT_PAGE_PREFIX"] = "text-pages/"
     config[f"{prefix}/OCR_ENGINE"] = "docling"
     config[f"{prefix}/DOCLING_ENDPOINT"] = "http://example"
-    module = load_lambda("ocr_docling", "services/idp/6-pdf-ocr-extractor/app.py")
+    module = load_lambda("ocr_docling", "services/idp/src/pdf_ocr_extractor_lambda.py")
 
     s3_stub.objects[("bucket", "scan-pages/doc1/page_001.pdf")] = b"data"
 
@@ -209,7 +209,7 @@ def test_combine(monkeypatch, s3_stub, validate_schema, config):
     config[f"{prefix}/PDF_PAGE_PREFIX"] = "pdf-pages/"
     config[f"{prefix}/TEXT_PAGE_PREFIX"] = "text-pages/"
     config[f"{prefix}/TEXT_DOC_PREFIX"] = "text-docs/"
-    module = load_lambda("combine", "services/idp/7-combine/app.py")
+    module = load_lambda("combine", "services/idp/src/combine_lambda.py")
 
     s3_stub.objects[("bucket", "pdf-pages/doc1/manifest.json")] = json.dumps(
         {"documentId": "doc1", "pages": 2}
@@ -245,7 +245,7 @@ def test_output(monkeypatch, s3_stub, validate_schema, config):
     config[f"{prefix}/TEXT_DOC_PREFIX"] = "text-docs/"
     config[f"{prefix}/EDI_SEARCH_API_URL"] = "http://example"
     config[f"{prefix}/EDI_SEARCH_API_KEY"] = "key"
-    module = load_lambda("output", "services/idp/8-output/app.py")
+    module = load_lambda("output", "services/idp/src/output_lambda.py")
 
     payload = {
         "documentId": "doc1",
@@ -287,7 +287,7 @@ def test_ocr_image_engines(monkeypatch, config):
     config["/parameters/aio/ameritasAI/SERVER_ENV"] = "dev"
     config[f"{prefix}/BUCKET_NAME"] = "bucket"
     config[f"{prefix}/OCR_ENGINE"] = "easyocr"
-    module = load_lambda("ocr_easy", "services/idp/6-pdf-ocr-extractor/app.py")
+    module = load_lambda("ocr_easy", "services/idp/src/pdf_ocr_extractor_lambda.py")
     module.easyocr = __import__("easyocr")
     called = {}
 
@@ -311,7 +311,7 @@ def test_ocr_image_engines(monkeypatch, config):
     sys.modules["paddleocr"].PaddleOCR = DummyPaddle
 
     config[f"{prefix}/OCR_ENGINE"] = "paddleocr"
-    module = load_lambda("ocr_paddle", "services/idp/6-pdf-ocr-extractor/app.py")
+    module = load_lambda("ocr_paddle", "services/idp/src/pdf_ocr_extractor_lambda.py")
     module.easyocr = __import__("easyocr")
     called = {}
 
@@ -327,7 +327,7 @@ def test_ocr_image_engines(monkeypatch, config):
 
     config[f"{prefix}/OCR_ENGINE"] = "trocr"
     config[f"{prefix}/TROCR_ENDPOINT"] = "http://example"
-    module = load_lambda("ocr_trocr_engine", "services/idp/6-pdf-ocr-extractor/app.py")
+    module = load_lambda("ocr_trocr_engine", "services/idp/src/pdf_ocr_extractor_lambda.py")
     called = {}
 
     def fake3(r, e, b):
