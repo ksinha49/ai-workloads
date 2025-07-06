@@ -112,6 +112,28 @@ An example prompt is available in
 The queue worker passes ``llm_params`` to the ``llm-gateway`` Lambda which
 forwards ``system_prompt`` to the selected backend.
 
+## Summary heading and closing text
+
+`file-summary-lambda` writes a heading at the start of the PDF and a closing line
+after the summaries. These default to ``"Summary"`` and ``"====End of Summary====``.
+Override them with ``SUMMARY_HEADING`` and ``SUMMARY_CLOSING_TEXT`` environment
+variables or include ``summary_heading`` and ``summary_closing_text`` in the
+workflow input.
+
+Sample APS values are stored in
+[`use-cases/aps-summarization/config/summary_labels.json`](../../use-cases/aps-summarization/config/summary_labels.json).
+Pass them when starting a workflow:
+
+```json
+{
+  "body": {
+    "workflow_id": "aps",
+    "collection_name": "my-collection",
+    "summary_heading": "APS Summary",
+    "summary_closing_text": "====End of APS Summary===="
+  }
+}
+```
 
 ## Local testing
 

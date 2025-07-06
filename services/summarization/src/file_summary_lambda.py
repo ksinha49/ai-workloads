@@ -221,8 +221,8 @@ def _render_table(pdf: FPDF, table: List[List[str]]) -> None:
 
 def create_summary_pdf(
     summaries: List[str],
-    heading: str = "APS Summary",
-    closing_text: str = "====End of APS Summary====",
+    heading: str = "Summary",
+    closing_text: str = "====End of Summary====",
 ) -> BytesIO:
     """Build a summary PDF from a list of summary blocks."""
 
@@ -365,11 +365,11 @@ def process_for_summary(event: SummaryEvent, context: Any) -> Dict[str, Any]:
 
         heading = event_body.get(
             "summary_heading",
-            os.getenv("SUMMARY_HEADING", "APS Summary"),
+            os.getenv("SUMMARY_HEADING", "Summary"),
         )
         closing_text = event_body.get(
             "summary_closing_text",
-            os.getenv("SUMMARY_CLOSING_TEXT", "====End of APS Summary===="),
+            os.getenv("SUMMARY_CLOSING_TEXT", "====End of Summary===="),
         )
 
         fmt = str(event_body.get("output_format", "pdf")).lower()
