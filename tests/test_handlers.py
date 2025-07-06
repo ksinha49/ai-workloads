@@ -406,7 +406,7 @@ def test_embed_model_map_event(monkeypatch, config):
     monkeypatch.setenv("EMBED_MODEL", "sbert")
     monkeypatch.setenv("EMBED_MODEL_MAP", '{"pdf": "openai"}')
     config["/parameters/aio/ameritasAI/SERVER_ENV"] = "dev"
-    module = load_lambda("embed_event", "services/rag-ingestion/embed-lambda/app.py")
+    module = load_lambda("embed_event", "services/rag-stack/src/embed_lambda.py")
     monkeypatch.setattr(module, "_openai_embed", lambda t: [42])
     module._MODEL_MAP["openai"] = module._openai_embed
     out = module.lambda_handler({"chunks": ["t"], "docType": "pdf"}, {})
@@ -418,7 +418,7 @@ def test_embed_model_map_chunk(monkeypatch, config):
     monkeypatch.setenv("EMBED_MODEL", "sbert")
     monkeypatch.setenv("EMBED_MODEL_MAP", '{"pptx": "cohere"}')
     config["/parameters/aio/ameritasAI/SERVER_ENV"] = "dev"
-    module = load_lambda("embed_chunk", "services/rag-ingestion/embed-lambda/app.py")
+    module = load_lambda("embed_chunk", "services/rag-stack/src/embed_lambda.py")
     monkeypatch.setattr(module, "_cohere_embed", lambda t: [24])
     module._MODEL_MAP["cohere"] = module._cohere_embed
     chunk = {"text": "hi", "metadata": {"docType": "pptx"}}
@@ -431,7 +431,7 @@ def test_embed_model_default(monkeypatch, config):
     monkeypatch.setenv("EMBED_MODEL", "cohere")
     monkeypatch.setenv("EMBED_MODEL_MAP", '{"pdf": "openai"}')
     config["/parameters/aio/ameritasAI/SERVER_ENV"] = "dev"
-    module = load_lambda("embed_default", "services/rag-ingestion/embed-lambda/app.py")
+    module = load_lambda("embed_default", "services/rag-stack/src/embed_lambda.py")
     monkeypatch.setattr(module, "_cohere_embed", lambda t: [7])
     module._MODEL_MAP["cohere"] = module._cohere_embed
     out = module.lambda_handler({"chunks": ["x"], "docType": "txt"}, {})
@@ -441,7 +441,7 @@ def test_embed_model_default(monkeypatch, config):
 
 def test_text_chunk_doc_type(monkeypatch, config):
     config["/parameters/aio/ameritasAI/SERVER_ENV"] = "dev"
-    module = load_lambda("chunk", "services/rag-ingestion/text-chunk-lambda/app.py")
+    module = load_lambda("chunk", "services/rag-stack/src/text_chunk_lambda.py")
     event = {"text": "abcdef", "docType": "pdf"}
     result = module.lambda_handler(event, {})
     assert result["docType"] == "pdf"
@@ -774,7 +774,7 @@ def test_summarize_with_context_router(monkeypatch, config):
     fake_invoke.calls = []
 
     module = load_lambda(
-        "summ_ctx", "services/rag-retrieval/summarize-with-context-lambda/app.py"
+        "summ_ctx", "services/rag-stack/src/retrieval_lambda.py"
     )
     monkeypatch.setattr(
         module, "lambda_client", type("C", (), {"invoke": staticmethod(fake_invoke)})()
@@ -879,7 +879,7 @@ def test_summarize_with_rerank(monkeypatch, config):
     fake_invoke.rerank = None
 
     module = load_lambda(
-        "summ_ctx_rerank", "services/rag-retrieval/summarize-with-context-lambda/app.py"
+        "summ_ctx_rerank", "services/rag-stack/src/retrieval_lambda.py"
     )
     monkeypatch.setattr(
         module, "lambda_client", type("C", (), {"invoke": staticmethod(fake_invoke)})()
@@ -896,7 +896,7 @@ def test_summarize_with_rerank(monkeypatch, config):
 def test_text_chunk_event_overrides(monkeypatch, config):
     config["/parameters/aio/ameritasAI/SERVER_ENV"] = "dev"
     module = load_lambda(
-        "chunk_override", "services/rag-ingestion/text-chunk-lambda/app.py"
+        "chunk_override", "services/rag-stack/src/text_chunk_lambda.py"
     )
     event = {"text": "abcdef", "chunk_size": 3, "chunk_overlap": 1}
     out = module.lambda_handler(event, {})
@@ -905,7 +905,7 @@ def test_text_chunk_event_overrides(monkeypatch, config):
 
 def test_text_chunk_strategy_override(monkeypatch, config):
     config["/parameters/aio/ameritasAI/SERVER_ENV"] = "dev"
-    module = load_lambda("chunk_strategy", "services/rag-ingestion/text-chunk-lambda/app.py")
+    module = load_lambda("chunk_strategy", "services/rag-stack/src/text_chunk_lambda.py")
 
     class FakeChunker:
         def __init__(self, max_tokens=0, overlap=0):
@@ -921,7 +921,7 @@ def test_text_chunk_strategy_override(monkeypatch, config):
 
 def test_text_chunk_strategy_default(monkeypatch, config):
     config["/parameters/aio/ameritasAI/SERVER_ENV"] = "dev"
-    module = load_lambda("chunk_strategy_default", "services/rag-ingestion/text-chunk-lambda/app.py")
+    module = load_lambda("chunk_strategy_default", "services/rag-stack/src/text_chunk_lambda.py")
 
     class FakeChunker:
         def __init__(self, *a, **k):
@@ -934,7 +934,7 @@ def test_text_chunk_strategy_default(monkeypatch, config):
 
 def test_embed_event_override(monkeypatch, config):
     config["/parameters/aio/ameritasAI/SERVER_ENV"] = "dev"
-    module = load_lambda("embed_override", "services/rag-ingestion/embed-lambda/app.py")
+    module = load_lambda("embed_override", "services/rag-stack/src/embed_lambda.py")
     monkeypatch.setattr(module, "_openai_embed", lambda t: [9])
     module._MODEL_MAP["openai"] = module._openai_embed
     out = module.lambda_handler({"chunks": ["x"], "embedModel": "openai"}, {})
@@ -946,7 +946,7 @@ def test_text_chunk_entities(monkeypatch, config):
     config["/parameters/aio/ameritasAI/SERVER_ENV"] = "dev"
     monkeypatch.setenv("EXTRACT_ENTITIES", "true")
     module = load_lambda(
-        "chunk_entities", "services/rag-ingestion/text-chunk-lambda/app.py"
+        "chunk_entities", "services/rag-stack/src/text_chunk_lambda.py"
     )
     monkeypatch.setattr(module, "extract_entities", lambda t: ["ORG:Acme"])
     out = module.lambda_handler({"text": "Acme Corp report"}, {})
@@ -1204,7 +1204,7 @@ def test_processing_status(monkeypatch, s3_stub, config):
 
 def test_text_chunk_guid_metadata(config):
     config["/parameters/aio/ameritasAI/SERVER_ENV"] = "dev"
-    module = load_lambda("chunk_guid", "services/rag-ingestion/text-chunk-lambda/app.py")
+    module = load_lambda("chunk_guid", "services/rag-stack/src/text_chunk_lambda.py")
     event = {"text": "hello world", "file_guid": "abc", "file_name": "f.pdf"}
     out = module.lambda_handler(event, {})
     md = out["chunks"][0]["metadata"]
@@ -1213,7 +1213,7 @@ def test_text_chunk_guid_metadata(config):
 
 def test_embed_propagates_guid(config):
     config["/parameters/aio/ameritasAI/SERVER_ENV"] = "dev"
-    module = load_lambda("embed_guid", "services/rag-ingestion/embed-lambda/app.py")
+    module = load_lambda("embed_guid", "services/rag-stack/src/embed_lambda.py")
     module._MODEL_MAP["sbert"] = lambda t: [0.0]
     event = {"chunks": [{"text": "x", "metadata": {}}], "file_guid": "g", "file_name": "n"}
     out = module.lambda_handler(event, {})

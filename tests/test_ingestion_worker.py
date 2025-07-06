@@ -29,7 +29,7 @@ def test_worker_starts_state_machine(monkeypatch):
     import boto3
     monkeypatch.setattr(sys.modules["boto3"], "client", lambda name: FakeSF() if name == "stepfunctions" else FakeSQS())
 
-    module = load_lambda("worker", "services/rag-ingestion-worker/worker-lambda/app.py")
+    module = load_lambda("worker", "services/rag-stack/src/ingestion_worker_lambda.py")
     event = {"Records": [{"body": json.dumps({"text": "t", "collection_name": "c"})}]}
     module.lambda_handler(event, {})
 
@@ -38,7 +38,7 @@ def test_worker_starts_state_machine(monkeypatch):
 
 
 def test_worker_reports_failed_messages(monkeypatch):
-    module = load_lambda("worker", "services/rag-ingestion-worker/worker-lambda/app.py")
+    module = load_lambda("worker", "services/rag-stack/src/ingestion_worker_lambda.py")
 
     def fake_process(record):
         if record.get("messageId") == "bad":

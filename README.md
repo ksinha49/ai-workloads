@@ -11,11 +11,8 @@ The repository includes the following directories under `services/`:
   extraction status
 - `idp` – Intelligent Document Processing pipeline (classification, OCR and text extraction)
 - `zip-processing` – extracts PDFs from uploaded archives and assembles new ZIPs
-- `rag-ingestion` – chunks text and generates embeddings stored in Milvus
-- `rag-ingestion-worker` – dequeues SQS messages and starts the ingestion state
-  machine
+- `rag-stack` – combined ingestion and retrieval Lambdas used for RAG workflows
 - `vector-db` – manages Milvus collections and search Lambdas
-- `rag-retrieval` – retrieval functions and API endpoints for summarization or entity extraction
 - `summarization` – Step Function workflow orchestrating file processing and summary generation
 - `llm-gateway` – renders templates and routes requests to the selected LLM backend
 - `knowledge-base` – ingest text snippets and query them through the retrieval stack

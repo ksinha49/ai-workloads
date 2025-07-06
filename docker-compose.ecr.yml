@@ -30,16 +30,11 @@ services:
       context: .
       dockerfile: services/llm-gateway/Dockerfile
     image: ${ECR_REGISTRY}/llm-gateway:${TAG:-latest}
-  rag-ingestion:
+  rag-stack:
     build:
       context: .
-      dockerfile: services/rag-ingestion/Dockerfile
-    image: ${ECR_REGISTRY}/rag-ingestion:${TAG:-latest}
-  rag-retrieval:
-    build:
-      context: .
-      dockerfile: services/rag-retrieval/Dockerfile
-    image: ${ECR_REGISTRY}/rag-retrieval:${TAG:-latest}
+      dockerfile: services/rag-stack/Dockerfile
+    image: ${ECR_REGISTRY}/rag-stack:${TAG:-latest}
   sensitive-info-detection:
     build:
       context: .
