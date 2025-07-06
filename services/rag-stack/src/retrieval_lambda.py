@@ -3,9 +3,8 @@
 # ---------------------------------------------------------------------------
 """Retrieve context from vector search results and forward the request.
 
-Originally this handler only produced a summary. The implementation now
-supports arbitrary payloads by forwarding the assembled context to an
-external service via the RouteLLM router.
+The implementation supports arbitrary payloads by forwarding 
+the assembled context to an external service via the RouteLLM router.
 """
 
 from __future__ import annotations
