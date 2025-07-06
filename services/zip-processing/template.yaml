@@ -73,9 +73,9 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub '${AWSAccountName}-${AWS::StackName}-zip-extract'
-      Handler: app.lambda_handler
+      Handler: zip_extract_lambda.lambda_handler
       Runtime: python3.13
-      CodeUri: ./zip-extract-lambda/
+      CodeUri: ./src/
       Role: !Ref LambdaIAMRoleARN
       MemorySize: 1024
       Timeout: 720
@@ -98,9 +98,9 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub '${AWSAccountName}-${AWS::StackName}-zipfile-creation'
-      Handler: app.lambda_handler
+      Handler: zip_creation_lambda.lambda_handler
       Runtime: python3.13
-      CodeUri: ./zip-creation-lambda/
+      CodeUri: ./src/
       Role: !Ref LambdaIAMRoleARN
       MemorySize: 1024
       Timeout: 720

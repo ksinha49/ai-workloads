@@ -4,8 +4,8 @@ This module extracts PDFs from an uploaded archive, processes them individually 
 
 ## Lambdas
 
-- **zip-extract-lambda** – reads a ZIP from S3, extracts PDF/XML files and returns their S3 paths.
-- **zip-creation-lambda** – collects summarized PDFs and metadata then writes the final ZIP to S3.
+- **zip_extract_lambda.py** – reads a ZIP from S3, extracts PDF/XML files and returns their S3 paths.
+- **zip_creation_lambda.py** – collects summarized PDFs and metadata then writes the final ZIP to S3.
 
 The creation Lambda parses metadata XML files. It uses the
 [`defusedxml`](https://github.com/tiran/defusedxml) library to avoid
@@ -13,9 +13,9 @@ insecure entity expansion vulnerabilities. The dependency is declared in
 `common/layers/zip-creation-lambda-layer/requirements.txt`.
 
 A state machine defined in `template.yaml` orchestrates the flow:
-1. **ExtractZip** invokes `zip-extract-lambda`.
+1. **ExtractZip** invokes `zip_extract_lambda.py`.
 2. **ProcessAllPdfs** maps each extracted PDF through the `FileProcessingStepFunctionArn` state machine.
-3. **AssembleZip** calls `zip-creation-lambda` to build the output archive.
+3. **AssembleZip** calls `zip_creation_lambda.py` to build the output archive.
 4. Errors are summarized and emailed via an SNS topic subscribed to `FileProcessingEmailId`.
 
 ## Environment variables

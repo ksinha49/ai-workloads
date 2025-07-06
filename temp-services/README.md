@@ -25,8 +25,8 @@ Complete Intelligent Document Processing pipeline performing classification, pag
 ## zip-processing
 Unpacks uploaded ZIP archives, processes PDFs through the summarization workflow and assembles a new ZIP with the merged outputs.
 
-- **Lambdas:** `zip-extract-lambda`, `zip-creation-lambda`
-- Driven by a Step Function defined in the stack
+- **Lambdas:** `zip_extract_lambda.py`, `zip_creation_lambda.py`
+  - Driven by a Step Function defined in the stack
 
 ## rag-ingestion
 Splits text into overlapping chunks, generates embeddings and stores them in Milvus.
