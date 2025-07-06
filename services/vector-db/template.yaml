@@ -100,15 +100,23 @@ Outputs:
   VectorDbProxyFunctionArn:
     Description: ARN of the vector DB proxy Lambda
     Value: !GetAtt VectorDbProxyFunction.Arn
+    Export:
+      Name: VectorDbProxyFunctionArn
   MilvusHandlerFunctionArn:
     Description: ARN of the Milvus handler Lambda
     Value: !GetAtt MilvusHandlerFunction.Arn
+    Export:
+      Name: MilvusHandlerFunctionArn
   ElasticsearchHandlerFunctionArn:
     Description: ARN of the Elasticsearch handler Lambda
     Value: !GetAtt ElasticsearchHandlerFunction.Arn
+    Export:
+      Name: ElasticsearchHandlerFunctionArn
   CleanupEphemeralFunctionArn:
     Description: ARN of the cleanup Lambda
     Value: !GetAtt CleanupEphemeralFunction.Arn
+    Export:
+      Name: CleanupEphemeralFunctionArn
   EphemeralTableName:
     Description: Name of the DynamoDB table for ephemeral collections
     Value: !Ref EphemeralTable

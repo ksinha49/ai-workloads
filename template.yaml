@@ -82,14 +82,14 @@ Resources:
     Properties:
       Location: services/rag-stack/template.yaml
       Parameters:
-        MilvusInsertFunctionArn: !GetAtt VectorDBService.Outputs.VectorDbProxyFunctionArn
-        MilvusDeleteFunctionArn: !GetAtt VectorDBService.Outputs.VectorDbProxyFunctionArn
-        MilvusUpdateFunctionArn: !GetAtt VectorDBService.Outputs.VectorDbProxyFunctionArn
-        MilvusCreateCollectionFunctionArn: !GetAtt VectorDBService.Outputs.VectorDbProxyFunctionArn
-        MilvusDropCollectionFunctionArn: !GetAtt VectorDBService.Outputs.VectorDbProxyFunctionArn
+        MilvusInsertFunctionArn: !ImportValue VectorDbProxyFunctionArn
+        MilvusDeleteFunctionArn: !ImportValue VectorDbProxyFunctionArn
+        MilvusUpdateFunctionArn: !ImportValue VectorDbProxyFunctionArn
+        MilvusCreateCollectionFunctionArn: !ImportValue VectorDbProxyFunctionArn
+        MilvusDropCollectionFunctionArn: !ImportValue VectorDbProxyFunctionArn
         BucketName: !GetAtt IDPService.Outputs.BucketName
         TextDocPrefix: !GetAtt IDPService.Outputs.TextDocPrefix
-        VectorSearchFunctionArn: !GetAtt VectorDBService.Outputs.VectorDbProxyFunctionArn
+        VectorSearchFunctionArn: !ImportValue VectorDbProxyFunctionArn
 
   FileIngestionService:
     Type: AWS::Serverless::Application
