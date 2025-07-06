@@ -76,10 +76,10 @@ Resources:
         ElasticsearchUrl: !Ref ElasticsearchUrl
         ElasticsearchIndexPrefix: !Ref ElasticsearchIndexPrefix
 
-  RagIngestionService:
+  RagStackService:
     Type: AWS::Serverless::Application
     Properties:
-      Location: services/rag-ingestion/template.yaml
+      Location: services/rag-stack/template.yaml
       Parameters:
         MilvusInsertFunctionArn: !GetAtt VectorDBService.Outputs.MilvusInsertFunctionArn
         MilvusDeleteFunctionArn: !GetAtt VectorDBService.Outputs.MilvusDeleteFunctionArn
@@ -88,21 +88,16 @@ Resources:
         MilvusDropCollectionFunctionArn: !GetAtt VectorDBService.Outputs.MilvusDropCollectionFunctionArn
         BucketName: !GetAtt IDPService.Outputs.BucketName
         TextDocPrefix: !GetAtt IDPService.Outputs.TextDocPrefix
+        VectorSearchFunctionArn: !GetAtt VectorDBService.Outputs.VectorSearchFunctionArn
 
   FileIngestionService:
     Type: AWS::Serverless::Application
     Properties:
       Location: services/file-ingestion/template.yaml
       Parameters:
-        IngestionStateMachineArn: !GetAtt RagIngestionService.Outputs.IngestionStateMachineArn
+        IngestionStateMachineArn: !GetAtt RagStackService.Outputs.IngestionStateMachineArn
         IDPBucketName: !GetAtt IDPService.Outputs.BucketName
 
-  RagRetrievalService:
-    Type: AWS::Serverless::Application
-    Properties:
-      Location: services/rag-retrieval/template.yaml
-      Parameters:
-        VectorSearchFunctionArn: !GetAtt VectorDBService.Outputs.VectorSearchFunctionArn
 
   LLMGatewayService:
     Type: AWS::Serverless::Application
@@ -121,7 +116,7 @@ Resources:
     Properties:
       Location: services/knowledge-base/template.yaml
       Parameters:
-        IngestionStateMachineArn: !GetAtt RagIngestionService.Outputs.IngestionStateMachineArn
+        IngestionStateMachineArn: !GetAtt RagStackService.Outputs.IngestionStateMachineArn
         FileIngestionStateMachineArn: !GetAtt FileIngestionService.Outputs.FileIngestionStateMachineArn
         SummarizeQueueUrl: !GetAtt SummarizationService.Outputs.SummaryQueueUrl
 
