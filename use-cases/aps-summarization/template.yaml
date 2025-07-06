@@ -1,0 +1,83 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Wrapper state machine for APS summarization
+
+Globals:
+  Function:
+    Timeout: 3
+    Tracing: Active
+    Runtime: python3.13
+    Architectures:
+      - x86_64
+    LoggingConfig:
+      LogFormat: JSON
+
+Parameters:
+  AWSAccountName:
+    Type: String
+  SummarizationStateMachineArn:
+    Type: String
+  LambdaIAMRoleARN:
+    Type: String
+  LambdaSubnet1ID:
+    Type: String
+  LambdaSubnet2ID:
+    Type: String
+  LambdaSecurityGroupID1:
+    Type: String
+  LambdaSecurityGroupID2:
+    Type: String
+  FontDir:
+    Type: String
+    Default: ./src
+
+Resources:
+  APSWorkflowFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub '${AWSAccountName}-${AWS::StackName}-aps-workflow'
+      Handler: aps_workflow_lambda.lambda_handler
+      CodeUri: ./src/
+      Runtime: python3.13
+      Role: !Ref LambdaIAMRoleARN
+      MemorySize: 512
+      VpcConfig:
+        SecurityGroupIds:
+          - !Ref LambdaSecurityGroupID1
+          - !Ref LambdaSecurityGroupID2
+        SubnetIds:
+          - !Ref LambdaSubnet1ID
+          - !Ref LambdaSubnet2ID
+      Environment:
+        Variables:
+          FONT_DIR: !Ref FontDir
+
+  APSStateMachine:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      Definition:
+        Comment: APS summarization wrapper
+        StartAt: Summarize
+        States:
+          Summarize:
+            Type: Task
+            Resource: arn:aws:states:::states:startExecution.sync
+            Parameters:
+              StateMachineArn: !Ref SummarizationStateMachineArn
+              Input:
+                workflow_id: aps
+                font_dir: !Ref FontDir
+                body.$: $.body
+            Next: PostProcess
+          PostProcess:
+            Type: Task
+            Resource: !GetAtt APSWorkflowFunction.Arn
+            End: true
+        QueryLanguage: JSONata
+      Role: !Ref LambdaIAMRoleARN
+      Type: STANDARD
+
+Outputs:
+  APSStateMachineArn:
+    Description: ARN of the APS summarization workflow
+    Value: !Ref APSStateMachine
