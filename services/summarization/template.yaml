@@ -282,12 +282,17 @@ Resources:
                       router_params.$: $states.input.body.router_params
                       llm_params.$: $states.input.body.llm_params
                       collection_name.$: $states.input.body.collection_name
+                      file_guid.$: $states.input.body.file_guid
+                      document_id.$: $states.input.body.document_id
                   Next: add_title
                 add_title:
                   Type: Pass
                   Parameters:
                     Title.$: $.Title
                     content.$: $.summary
+                    file_guid.$: $.file_guid
+                    document_id.$: $.document_id
+                    collection_name.$: $.collection_name
                   End: true
             Next: file_summary
           file_summary:
@@ -296,7 +301,7 @@ Resources:
             Output: '{% $states.result.Payload %}'
             Arguments:
               FunctionName: !GetAtt FileSummaryLambdaFunction.Arn
-              Payload: '{% $merge([$states.input, {"summaries": $.run_prompts, "collection_name": $states.input.body.collection_name}]) %}'
+              Payload: '{% $merge([$states.input, {"summaries": $.run_prompts, "collection_name": $states.input.body.collection_name, "file_guid": $states.input.body.file_guid, "document_id": $states.input.body.document_id}]) %}'
             Retry:
               - ErrorEquals:
                   - States.TaskFailed

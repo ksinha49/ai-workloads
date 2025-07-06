@@ -44,9 +44,30 @@ def test_worker_prompt_engine(monkeypatch):
     monkeypatch.setattr(sys.modules["httpx"], "post", fake_post)
 
     module = load_lambda("worker", "services/summarization/src/summarize_worker_lambda.py")
-    event = {"Records": [{"body": json.dumps({"token": "tok", "query": "q", "collection_name": "c", "Title": "T", "prompt_id": "p1", "variables": {"a": 1}})}]}
+    event = {
+        "Records": [
+            {
+                "body": json.dumps(
+                    {
+                        "token": "tok",
+                        "query": "q",
+                        "collection_name": "c",
+                        "file_guid": "g",
+                        "document_id": "d",
+                        "Title": "T",
+                        "prompt_id": "p1",
+                        "variables": {"a": 1},
+                    }
+                )
+            }
+        ]
+    }
     module.lambda_handler(event, {})
 
     assert posted == {"url": "http://engine", "json": {"prompt_id": "p1", "variables": {"a": 1}}}
     assert invoked["payload"]["collection_name"] == "c"
+    assert invoked["payload"]["file_guid"] == "g"
+    assert invoked["payload"]["document_id"] == "d"
     assert success["output"]["summary"] == "sum"
+    assert success["output"]["file_guid"] == "g"
+    assert success["output"]["document_id"] == "d"
