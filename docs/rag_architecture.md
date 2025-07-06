@@ -6,11 +6,10 @@ This guide illustrates how the retrieval augmented generation components connect
 
 - **file-ingestion** – orchestrates text extraction and enqueues ingestion jobs.
 - **idp** – Intelligent Document Processing pipeline used by file-ingestion for OCR and classification.
-- **rag-ingestion** – chunks documents and generates embeddings.
-- **rag-ingestion-worker** – polls `IngestionQueue` and starts the ingestion workflow, moving failed messages to a DLQ. The queue URL is exported as `IngestionQueueUrl` for other stacks.
+- **rag-stack** – chunks documents, generates embeddings and performs retrieval.
+- **rag-stack-worker** – polls `IngestionQueue` and starts the ingestion workflow, moving failed messages to a DLQ. The queue URL is exported as `IngestionQueueUrl` for other stacks.
 - **vector-db** – maintains Milvus collections used for semantic search.
 - **knowledge-base** – stores metadata for ingested chunks and exposes `/kb/*` endpoints.
-- **rag-retrieval** – performs vector search and orchestrates summarization with context.
 - **summarization** – Step Function workflow that can call retrieval functions when creating summaries.
 
 ## End-to-End Flow
@@ -23,13 +22,13 @@ sequenceDiagram
     participant FileIng as file-ingestion
     participant IDP as idp
     participant Queue as IngestionQueue
-    participant Worker as rag-ingestion-worker
-    participant Ingestion as rag-ingestion
+    participant Worker as rag-stack-worker
+    participant Ingestion as rag-stack
     participant Queue as IngestionQueue
-    participant Worker as rag-ingestion-worker
+    participant Worker as rag-stack-worker
     participant DB as vector-db
     participant KB as knowledge-base
-    participant Retrieval as rag-retrieval
+    participant Retrieval as rag-stack
     participant Sum as summarization
 
     Client->>FileIng: upload file
@@ -57,7 +56,7 @@ retrieval rely on the `vector-db` service to manage Milvus collections.
 In a typical flow the `file-ingestion` Step Function copies the file to the IDP
 bucket and waits until text extraction completes. After the IDP pipeline
 produces the parsed document, `file-ingestion` publishes the ingestion
-parameters to `IngestionQueue`. The `rag-ingestion-worker` Lambda dequeues these
+parameters to `IngestionQueue`. The `rag-stack-worker` Lambda dequeues these
 messages and starts the `IngestionStateMachine`. Failed jobs are moved to a dead
 letter queue and retried automatically using the `batchItemFailures` response
 format.
