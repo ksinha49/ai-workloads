@@ -21,7 +21,7 @@ def test_worker_prompt_engine(monkeypatch):
     class FakeLambda:
         def invoke(self, FunctionName=None, Payload=None):
             invoked["payload"] = json.loads(Payload.decode())
-            data = {"summary": {"choices": [{"message": {"content": "sum"}}]}}
+            data = {"result": "sum"}
             return {"Payload": io.BytesIO(json.dumps(data).encode())}
 
     class FakeSF:
@@ -71,3 +71,29 @@ def test_worker_prompt_engine(monkeypatch):
     assert success["output"]["summary"] == "sum"
     assert success["output"]["file_guid"] == "g"
     assert success["output"]["document_id"] == "d"
+
+
+def test_worker_legacy_fallback(monkeypatch):
+    monkeypatch.setenv("RAG_SUMMARY_FUNCTION_ARN", "arn")
+
+    invoked = {}
+    success = {}
+
+    class FakeLambda:
+        def invoke(self, FunctionName=None, Payload=None):
+            invoked["payload"] = json.loads(Payload.decode())
+            data = {"summary": {"choices": [{"message": {"content": "old"}}]}}
+            return {"Payload": io.BytesIO(json.dumps(data).encode())}
+
+    class FakeSF:
+        def send_task_success(self, taskToken=None, output=None):
+            success["output"] = json.loads(output)
+
+    monkeypatch.setattr(sys.modules["boto3"], "client", lambda name: FakeLambda() if name == "lambda" else FakeSF())
+
+    module = load_lambda("worker_fallback", "services/summarization/src/summarize_worker_lambda.py")
+    event = {"Records": [{"body": json.dumps({"token": "tok", "query": "q", "collection_name": "c"})}]}
+
+    module.lambda_handler(event, {})
+
+    assert success["output"]["summary"] == "old"
