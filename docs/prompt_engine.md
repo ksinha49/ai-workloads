@@ -48,12 +48,12 @@ after loading the built in system prompt and the APS prompt collection.  The
 
 ## Adding Templates
 
-Insert new prompts with the standard DynamoDB `PutItem` API. Specify a unique `prompt_id` and increment the `version` when updating a template. Sample collections such as `file-summary-lambda/aps_prompts.json` can be loaded into the table using the AWS CLI:
+Insert new prompts with the standard DynamoDB `PutItem` API. Specify a unique `prompt_id` and increment the `version` when updating a template. Sample collections such as `use-cases/aps-summarization/config/aps_prompts.json` can be loaded into the table using the AWS CLI:
 
 ```bash
 aws dynamodb put-item \
   --table-name <PromptLibraryTable> \
-  --item file://aps_prompts.json
+  --item file://use-cases/aps-summarization/config/aps_prompts.json
 ```
 
 ## Invocation
