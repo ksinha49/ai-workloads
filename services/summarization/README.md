@@ -1,13 +1,12 @@
 # Summarization Service
 
-This service orchestrates document processing and summarization. The stack now
-provisions two Step Functions. `FileProcessingStepFunction` calls the
-`FileIngestionStateMachine` from the **file-ingestion** stack and then starts a
-separate `SummarizationWorkflow` which loads prompts and generates the summary
-file. When configured, the workflow merges the summary with the original PDF
-using the **file-assembly** service. The same processing state machine is also
-triggered from the **knowledge-base** ingestion pipeline when uploading new
-documents.
+This service orchestrates document processing and summarization. The Step
+Function defined in `template.yaml` begins by invoking the
+`FileIngestionStateMachine` from the **file-ingestion** stack. Once the uploaded
+file has been prepared, the workflow runs the prompts, generates summaries and
+merges them with the original PDF using the **file-assembly** service. The same
+state machine is also triggered from the **knowledge-base** ingestion pipeline
+when uploading new documents.
 
 Details of the state machine, including the parallel `run_prompts` map state, are documented in [docs/summarization_workflow.md](../../docs/summarization_workflow.md).
 

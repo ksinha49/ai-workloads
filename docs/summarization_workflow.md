@@ -1,13 +1,15 @@
 # Summarization Step Function Workflow
 
-This document describes the Step Functions that orchestrate the summarization pipeline. `FileProcessingStepFunction` runs the file ingestion workflow and then launches a dedicated `SummarizationWorkflow`. The latter loads prompts, runs them in parallel and returns a summary file that can be PDF, DOCX, JSON or XML. The processing state machine can optionally merge PDF or DOCX output with the original document.
+This document describes the multi-step AWS Step Functions state machine that orchestrates the summarization pipeline. The workflow ingests a document, runs a series of prompts in parallel, and generates a summary file that can be PDF, DOCX, JSON or XML, optionally merging PDF or DOCX output with the original document.
 
 ```mermaid
 stateDiagram-v2
+    file_ingestion --> check_workflow
     check_workflow --> load_prompts
     load_prompts --> run_prompts_map
     state "run_prompts (Map)" as run_prompts_map
     run_prompts_map --> file_summary
+    file_summary --> file_assemble
 ```
 
 ## Map State
