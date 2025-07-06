@@ -41,3 +41,6 @@ class SummaryEvent:
         extra = data.pop("extra", {})
         data.update(extra)
         return {k: v for k, v in data.items() if v is not None}
+
+
+__all__ = ["SummaryEvent"]
