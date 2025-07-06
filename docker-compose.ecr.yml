@@ -25,21 +25,11 @@ services:
       context: .
       dockerfile: services/knowledge-base/Dockerfile
     image: ${ECR_REGISTRY}/knowledge-base:${TAG:-latest}
-  llm-invocation:
+  llm-gateway:
     build:
       context: .
-      dockerfile: services/llm-invocation/Dockerfile
-    image: ${ECR_REGISTRY}/llm-invocation:${TAG:-latest}
-  llm-router:
-    build:
-      context: .
-      dockerfile: services/llm-router/Dockerfile
-    image: ${ECR_REGISTRY}/llm-router:${TAG:-latest}
-  prompt-engine:
-    build:
-      context: .
-      dockerfile: services/prompt-engine/Dockerfile
-    image: ${ECR_REGISTRY}/prompt-engine:${TAG:-latest}
+      dockerfile: services/llm-gateway/Dockerfile
+    image: ${ECR_REGISTRY}/llm-gateway:${TAG:-latest}
   rag-ingestion:
     build:
       context: .
