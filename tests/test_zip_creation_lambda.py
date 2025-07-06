@@ -34,7 +34,7 @@ def load_lambda(name, path):
 def test_parse_multiple_tags_basic(monkeypatch):
     _stub_botocore(monkeypatch)
     _stub_defusedxml(monkeypatch)
-    module = load_lambda('zip_creation', 'services/zip-processing/zip-creation-lambda/app.py')
+    module = load_lambda('zip_creation', 'temp-services/zip-processing/zip-creation-lambda/app.py')
     xml = '<root><PolNumber>123</PolNumber><TrackingID>T-1</TrackingID></root>'
     out = module.parse_multiple_tags(xml, ['PolNumber', 'TrackingID'])
     assert out == {'PolNumber': '123', 'TrackingID': 'T-1'}
@@ -43,7 +43,7 @@ def test_parse_multiple_tags_basic(monkeypatch):
 def test_parse_multiple_tags_missing(monkeypatch):
     _stub_botocore(monkeypatch)
     _stub_defusedxml(monkeypatch)
-    module = load_lambda('zip_creation_missing', 'services/zip-processing/zip-creation-lambda/app.py')
+    module = load_lambda('zip_creation_missing', 'temp-services/zip-processing/zip-creation-lambda/app.py')
     xml = '<root><PolNumber>123</PolNumber></root>'
     out = module.parse_multiple_tags(xml, ['PolNumber', 'TrackingID'])
     assert out == {'PolNumber': '123', 'TrackingID': None}

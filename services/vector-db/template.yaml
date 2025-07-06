@@ -1,0 +1,114 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Vector DB proxy and handlers.
+
+Parameters:
+  MilvusHost:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /rag/milvus/host
+  MilvusPort:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /rag/milvus/port
+  MilvusCollection:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /rag/milvus/collection
+  ElasticsearchUrl:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /rag/elasticsearch/url
+  ElasticsearchIndexPrefix:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /rag/elasticsearch/index
+  DefaultVectorDbBackend:
+    Type: String
+    Default: milvus
+
+Globals:
+  Function:
+    Handler: proxy/vector_db_proxy_lambda.lambda_handler
+    Runtime: python3.13
+    Timeout: 60
+    MemorySize: 512
+
+Resources:
+  EphemeralTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: collection_name
+          AttributeType: S
+      KeySchema:
+        - AttributeName: collection_name
+          KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
+      TimeToLiveSpecification:
+        AttributeName: expires_at
+        Enabled: true
+
+  VectorDbProxyFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./src/
+      Handler: proxy/vector_db_proxy_lambda.lambda_handler
+      Environment:
+        Variables:
+          DEFAULT_VECTOR_DB_BACKEND: !Ref DefaultVectorDbBackend
+          MILVUS_HOST: !Ref MilvusHost
+          MILVUS_PORT: !Ref MilvusPort
+          MILVUS_COLLECTION: !Ref MilvusCollection
+          ELASTICSEARCH_URL: !Ref ElasticsearchUrl
+          ELASTICSEARCH_INDEX_PREFIX: !Ref ElasticsearchIndexPrefix
+          EPHEMERAL_TABLE: !Ref EphemeralTable
+
+  MilvusHandlerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./src/
+      Handler: milvus_handler_lambda.lambda_handler
+      Environment:
+        Variables:
+          MILVUS_HOST: !Ref MilvusHost
+          MILVUS_PORT: !Ref MilvusPort
+          MILVUS_COLLECTION: !Ref MilvusCollection
+
+  ElasticsearchHandlerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./src/
+      Handler: elastic_search_handler_lambda.lambda_handler
+      Environment:
+        Variables:
+          ELASTICSEARCH_URL: !Ref ElasticsearchUrl
+          ELASTICSEARCH_INDEX_PREFIX: !Ref ElasticsearchIndexPrefix
+
+  CleanupEphemeralFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./src/
+      Handler: jobs/cleanup_ephemeral_lambda.lambda_handler
+      Environment:
+        Variables:
+          EPHEMERAL_TABLE: !Ref EphemeralTable
+          MILVUS_HOST: !Ref MilvusHost
+          MILVUS_PORT: !Ref MilvusPort
+      Events:
+        Daily:
+          Type: Schedule
+          Properties:
+            Schedule: rate(1 day)
+
+Outputs:
+  VectorDbProxyFunctionArn:
+    Description: ARN of the vector DB proxy Lambda
+    Value: !GetAtt VectorDbProxyFunction.Arn
+  MilvusHandlerFunctionArn:
+    Description: ARN of the Milvus handler Lambda
+    Value: !GetAtt MilvusHandlerFunction.Arn
+  ElasticsearchHandlerFunctionArn:
+    Description: ARN of the Elasticsearch handler Lambda
+    Value: !GetAtt ElasticsearchHandlerFunction.Arn
+  CleanupEphemeralFunctionArn:
+    Description: ARN of the cleanup Lambda
+    Value: !GetAtt CleanupEphemeralFunction.Arn
+  EphemeralTableName:
+    Description: Name of the DynamoDB table for ephemeral collections
+    Value: !Ref EphemeralTable
