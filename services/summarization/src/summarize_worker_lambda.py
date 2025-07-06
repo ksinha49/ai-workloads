@@ -80,9 +80,20 @@ def _process_record(record: Dict[str, Any]) -> None:
             FunctionName=SUMMARY_FUNCTION_ARN,
             Payload=json.dumps(payload).encode("utf-8"),
         )
-        summary = json.loads(resp["Payload"].read()).get(
-            "summary", {}
-        ).get("choices", [{}])[0].get("message", {}).get("content", "")
+        response = json.loads(resp["Payload"].read())
+
+        summary = response.get("result")
+        if summary is None:
+            logger.warning("result field missing from lambda response")
+            summary = (
+                response.get("summary", {})
+                .get("choices", [{}])[0]
+                .get("message", {})
+                .get("content")
+            )
+            if summary is None:
+                logger.warning("legacy summary fields missing from lambda response")
+                summary = ""
         sf_client.send_task_success(
             taskToken=token,
             output=json.dumps(
