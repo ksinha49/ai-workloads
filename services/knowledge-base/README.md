@@ -10,14 +10,14 @@ RAG ingestion and retrieval components. When ingesting documents you may include
 
 ## Lambdas and API Endpoints
 
-- **ingest-lambda/app.py** – invoked manually or via an API to start the
+- **src/ingest_lambda.py** – invoked manually or via an API to start the
   ingestion Step Function.
-- **query-lambda/app.py** – `/kb/query` endpoint that publishes requests to the summarization queue.
+- **src/query_lambda.py** – `/kb/query` endpoint that publishes requests to the summarization queue.
 
 ## Parameters
 
 - `IngestionStateMachineArn` – ARN of the ingestion workflow from the
-  `rag-ingestion` stack.
+  `rag-stack` stack.
 - `FileIngestionStateMachineArn` – ARN of the file ingestion workflow
   started before the main ingestion state machine.
 - `SummarizeQueueUrl` – URL of the SQS queue consumed by the summarization worker from the `summarization` stack.
