@@ -1,13 +1,13 @@
 # RAG Stack Service
 
-This service consolidates the ingestion and retrieval components used for Retrieval Augmented Generation workflows. It bundles the text chunking and embedding Lambdas, the SQS worker that starts the ingestion Step Function and the summarization lambda that performs retrieval with context.
+This service consolidates the ingestion and retrieval components used for Retrieval Augmented Generation workflows. It bundles the text chunking and embedding Lambdas, the SQS worker that starts the ingestion Step Function and the retrieval Lambda that assembles context and forwards requests to RouteLLM.
 
 ## Lambdas
 
 - **text_chunk_lambda.py** – splits text into overlapping chunks and optionally extracts entities.
 - **embed_lambda.py** – generates vector embeddings for each chunk.
 - **ingestion_worker_lambda.py** – dequeues messages and starts the ingestion workflow.
-- **retrieval_lambda.py** – searches the vector database and forwards the request to the LLM router.
+- **retrieval_lambda.py** – searches the vector database, assembles search context and forwards the request to the LLM router. The router's response is returned under a `result` key.
 - **extract_content_lambda.py** – fetches structured content from a content service using search context.
 - **extract_entities_lambda.py** – extracts entities by posting search context to an external service.
 - **rerank_lambda.py** – reorders vector search matches using a rerank provider.
@@ -51,7 +51,6 @@ This service consolidates the ingestion and retrieval components used for Retrie
 | `VectorSearchFunctionArn` | `VECTOR_SEARCH_FUNCTION` | Lambda used for vector search. |
 | `RerankFunctionArn` | `RERANK_FUNCTION` | Optional rerank Lambda. |
 | `VectorSearchCandidates` | `VECTOR_SEARCH_CANDIDATES` | Number of search results to retrieve. |
-| `SummaryEndpoint` | `SUMMARY_ENDPOINT` | Optional summarization service URL. |
 | `RouteLlmEndpoint` | `ROUTELLM_ENDPOINT` | URL for forwarding requests to RouteLLM. |
 | `CohereSecretName` | `COHERE_SECRET_NAME` | Name or ARN of the Cohere API key secret. |
 | `EmbedModel` | `EMBED_MODEL` | Default embedding provider. |
