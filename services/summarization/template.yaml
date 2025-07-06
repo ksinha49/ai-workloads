@@ -197,7 +197,7 @@ Resources:
             Action:
               - states:SendTaskSuccess
               - states:SendTaskFailure
-            Resource: !Ref SummarizationWorkflow
+            Resource: !Ref FileProcessingStepFunction
 
   FileIngestionSFInvokePolicy:
     Type: AWS::IAM::Policy
@@ -213,20 +213,6 @@ Resources:
               - states:StartExecution
             Resource: !Ref FileIngestionStateMachineArn
 
-  SummarizationSFInvokePolicy:
-    Type: AWS::IAM::Policy
-    Properties:
-      PolicyName: !Sub '${AWSAccountName}-${AWS::StackName}-summarization-sf-invoke'
-      Roles:
-        - !Select [1, !Split ['/', !Ref FileProcessingStepFunctionIAMRole]]
-      PolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: Allow
-            Action:
-              - states:StartExecution
-            Resource: !Ref SummarizationWorkflow
-
   StepFunctionSQSPolicy:
     Type: AWS::IAM::Policy
     Properties:
@@ -239,22 +225,6 @@ Resources:
           - Effect: Allow
             Action: sqs:SendMessage
             Resource: !GetAtt SummaryQueue.Arn
-
-  SummarizationWorkflow:
-    Type: AWS::Serverless::StateMachine
-    Properties:
-      DefinitionUri: workflow/summarization.asl.json
-      DefinitionSubstitutions:
-        SummaryQueueUrl: !Ref SummaryQueue
-        LoadPromptsFunctionArn: !GetAtt LoadPromptsFunction.Arn
-        FileSummaryLambdaFunctionArn: !GetAtt FileSummaryLambdaFunction.Arn
-        RunPromptsConcurrency: !Ref RunPromptsConcurrency
-      Name: !Sub '${AWSAccountName}-${AWS::StackName}-summarization-sf'
-      Type: STANDARD
-      Role: !Ref FileProcessingStepFunctionIAMRole
-      Logging:
-        Level: 'OFF'
-        IncludeExecutionData: false
 
   FileProcessingStepFunction:
     Type: AWS::Serverless::StateMachine
@@ -270,13 +240,74 @@ Resources:
             Parameters:
               StateMachineArn: !Ref FileIngestionStateMachineArn
               Input: '{% $states.input %}'
-            Next: summarization_workflow
-          summarization_workflow:
+            Next: check_workflow
+          check_workflow:
+            Type: Choice
+            Choices:
+              - Variable: $.body.workflow_id
+                IsPresent: true
+                Next: load_prompts
+            Default: run_prompts
+          load_prompts:
             Type: Task
-            Resource: arn:aws:states:::states:startExecution.sync
-            Parameters:
-              StateMachineArn: !Ref SummarizationWorkflow
-              Input.$: $
+            Resource: arn:aws:states:::lambda:invoke
+
+            Output: '{% $merge([$states.input.body, $states.result.Payload]) %}'
+            Arguments:
+              FunctionName: !GetAtt LoadPromptsFunction.Arn
+              Payload: '{% {"workflow_id": $states.input.body.workflow_id} %}'
+            ResultPath: $.body
+
+            Next: run_prompts
+          run_prompts:
+            Type: Map
+            ItemsPath: $.body.prompts
+            ResultPath: $.run_prompts
+            MaxConcurrency: !Ref RunPromptsConcurrency
+            Iterator:
+              StartAt: summarize
+              States:
+                summarize:
+                  Type: Task
+                  Resource: arn:aws:states:::sqs:sendMessage.waitForTaskToken
+                  Parameters:
+                    QueueUrl: !Ref SummaryQueue
+                    MessageBody:
+                      token.$: $$.Task.Token
+                      query.$: $$Map.Item.Value.query
+                      Title.$: $$Map.Item.Value.Title
+                      prompt_id.$: $$Map.Item.Value.prompt_id
+                      variables.$: $$Map.Item.Value.variables
+                      retrieve_params.$: $states.input.body.retrieve_params
+                      router_params.$: $states.input.body.router_params
+                      llm_params.$: $states.input.body.llm_params
+                      collection_name.$: $states.input.body.collection_name
+                  Next: add_title
+                add_title:
+                  Type: Pass
+                  Parameters:
+                    Title.$: $.Title
+                    content.$: $.summary
+                  End: true
+            Next: file_summary
+          file_summary:
+            Type: Task
+            Resource: arn:aws:states:::lambda:invoke
+            Output: '{% $states.result.Payload %}'
+            Arguments:
+              FunctionName: !GetAtt FileSummaryLambdaFunction.Arn
+              Payload: '{% $merge([$states.input, {"summaries": $.run_prompts, "collection_name": $states.input.body.collection_name}]) %}'
+            Retry:
+              - ErrorEquals:
+                  - States.TaskFailed
+                  - Lambda.ServiceException
+                  - Lambda.AWSLambdaException
+                  - Lambda.SdkClientException
+                  - Lambda.TooManyRequestsException
+                IntervalSeconds: 1
+                MaxAttempts: 3
+                BackoffRate: 2
+                JitterStrategy: FULL
             Next: file_assemble
           file_assemble:
             Type: Task
@@ -309,9 +340,6 @@ Outputs:
   FileProcessingStepFunctionArn:
     Description: ARN of the file processing state machine
     Value: !Ref FileProcessingStepFunction
-  SummarizationWorkflowArn:
-    Description: ARN of the summarization state machine
-    Value: !Ref SummarizationWorkflow
   SummaryQueueUrl:
     Description: URL of the summarization queue
     Value: !Ref SummaryQueue
