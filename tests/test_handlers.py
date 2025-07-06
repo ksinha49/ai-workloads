@@ -1,11 +1,15 @@
 import json
 import importlib.util
+import importlib
 import os
 import io
 import sys
 import pytest
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(__file__)), 'common', 'layers', 'common-utils', 'python'))
+VECTOR_SRC = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'services', 'vector-db', 'src')
+sys.path.insert(0, VECTOR_SRC)
+sys.path.insert(0, os.path.join(VECTOR_SRC, 'proxy'))
 from models import FileProcessingEvent, ProcessingStatusEvent
 from services.summarization.models import SummaryEvent
 
@@ -15,6 +19,11 @@ def load_lambda(name, path):
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
+
+
+def import_vector_module(name):
+    """Import a vector DB module by name, reloading it for isolation."""
+    return importlib.reload(importlib.import_module(name))
 
 
 def _make_fake_send(calls):
@@ -467,9 +476,8 @@ def test_milvus_delete_lambda(monkeypatch):
     monkeypatch.setattr(mc, "Collection", dummy.Collection, raising=False)
     monkeypatch.setattr(mc, "connections", dummy.connections, raising=False)
 
-    module = load_lambda(
-        "milvus_delete", "services/vector-db/src/milvus_handler_lambda.py"
-    )
+    module = import_vector_module("milvus_handler_lambda")
+    proxy = import_vector_module("vector_db_proxy_lambda")
     called = {}
 
     def fake_delete(self, ids):
@@ -477,7 +485,7 @@ def test_milvus_delete_lambda(monkeypatch):
         return len(called["ids"])
 
     monkeypatch.setattr(module, "client", type("C", (), {"delete": fake_delete})())
-    res = module.lambda_handler({"operation": "delete", "ids": [1, 2]}, {})
+    res = proxy.lambda_handler({"operation": "delete", "ids": [1, 2]}, {})
     assert called["ids"] == [1, 2]
     assert res["deleted"] == 2
 
@@ -494,9 +502,8 @@ def test_milvus_update_lambda(monkeypatch):
     monkeypatch.setattr(mc, "Collection", dummy.Collection, raising=False)
     monkeypatch.setattr(mc, "connections", dummy.connections, raising=False)
 
-    module = load_lambda(
-        "milvus_update", "services/vector-db/src/milvus_handler_lambda.py"
-    )
+    module = import_vector_module("milvus_handler_lambda")
+    proxy = import_vector_module("vector_db_proxy_lambda")
     received = {}
 
     def fake_update(items):
@@ -509,7 +516,7 @@ def test_milvus_update_lambda(monkeypatch):
         type("C", (), {"update": lambda self, items: fake_update(items)})(),
     )
     event = {"embeddings": [[0.1, 0.2]], "metadatas": [{"a": 1}], "ids": [5]}
-    res = module.lambda_handler(dict(event, operation="update"), {})
+    res = proxy.lambda_handler(dict(event, operation="update"), {})
     assert len(received["items"]) == 1
     item = received["items"][0]
     assert item.embedding == [0.1, 0.2]
@@ -540,9 +547,8 @@ def test_milvus_create_lambda(monkeypatch):
     monkeypatch.setattr(mc, "CollectionSchema", dummy.CollectionSchema, raising=False)
     monkeypatch.setattr(mc, "DataType", dummy.DataType, raising=False)
 
-    module = load_lambda(
-        "milvus_create", "services/vector-db/src/milvus_handler_lambda.py"
-    )
+    module = import_vector_module("milvus_handler_lambda")
+    proxy = import_vector_module("vector_db_proxy_lambda")
     called = {}
     monkeypatch.setattr(
         module,
@@ -557,7 +563,7 @@ def test_milvus_create_lambda(monkeypatch):
             },
         )(),
     )
-    res = module.lambda_handler({"operation": "create", "dimension": 42}, {})
+    res = proxy.lambda_handler({"operation": "create", "dimension": 42}, {})
     assert called["dimension"] == 42
     assert res["created"] is True
 
@@ -576,7 +582,8 @@ def test_milvus_drop_lambda(monkeypatch):
     monkeypatch.setattr(mc, "Collection", dummy.Collection, raising=False)
     monkeypatch.setattr(mc, "connections", dummy.connections, raising=False)
 
-    module = load_lambda("milvus_drop", "services/vector-db/src/milvus_handler_lambda.py")
+    module = import_vector_module("milvus_handler_lambda")
+    proxy = import_vector_module("vector_db_proxy_lambda")
     called = {"dropped": False}
 
     def fake_drop():
@@ -585,13 +592,14 @@ def test_milvus_drop_lambda(monkeypatch):
     monkeypatch.setattr(
         module, "client", type("C", (), {"drop_collection": lambda self: fake_drop()})()
     )
-    res = module.lambda_handler({"operation": "drop"}, {})
+    res = proxy.lambda_handler({"operation": "drop"}, {})
     assert called["dropped"] is True
     assert res["dropped"] is True
 
 
 def test_es_insert_lambda(monkeypatch):
-    module = load_lambda("es_insert", "services/vector-db/src/elastic_search_handler_lambda.py")
+    module = import_vector_module("elastic_search_handler_lambda")
+    proxy = import_vector_module("vector_db_proxy_lambda")
     captured = {}
 
     def fake_insert(self, docs):
@@ -599,13 +607,14 @@ def test_es_insert_lambda(monkeypatch):
         return len(captured["docs"])
 
     monkeypatch.setattr(module, "client", type("C", (), {"insert": fake_insert})())
-    res = module.lambda_handler({"operation": "insert", "documents": [{"id": "1", "text": "a"}]}, {})
+    res = proxy.lambda_handler({"operation": "insert", "documents": [{"id": "1", "text": "a"}], "storage_mode": "es"}, {})
     assert captured["docs"][0]["id"] == "1"
     assert res["inserted"] == 1
 
 
 def test_es_delete_lambda(monkeypatch):
-    module = load_lambda("es_delete", "services/vector-db/src/elastic_search_handler_lambda.py")
+    module = import_vector_module("elastic_search_handler_lambda")
+    proxy = import_vector_module("vector_db_proxy_lambda")
     called = {}
 
     def fake_delete(self, ids):
@@ -613,13 +622,14 @@ def test_es_delete_lambda(monkeypatch):
         return len(called["ids"])
 
     monkeypatch.setattr(module, "client", type("C", (), {"delete": fake_delete})())
-    res = module.lambda_handler({"operation": "delete", "ids": ["1", "2"]}, {})
+    res = proxy.lambda_handler({"operation": "delete", "ids": ["1", "2"], "storage_mode": "es"}, {})
     assert called["ids"] == ["1", "2"]
     assert res["deleted"] == 2
 
 
 def test_es_update_lambda(monkeypatch):
-    module = load_lambda("es_update", "services/vector-db/src/elastic_search_handler_lambda.py")
+    module = import_vector_module("elastic_search_handler_lambda")
+    proxy = import_vector_module("vector_db_proxy_lambda")
     captured = {}
 
     def fake_update(self, docs):
@@ -627,13 +637,14 @@ def test_es_update_lambda(monkeypatch):
         return len(captured["docs"])
 
     monkeypatch.setattr(module, "client", type("C", (), {"update": fake_update})())
-    res = module.lambda_handler({"operation": "update", "documents": [{"id": "1", "text": "x"}]}, {})
+    res = proxy.lambda_handler({"operation": "update", "documents": [{"id": "1", "text": "x"}], "storage_mode": "es"}, {})
     assert captured["docs"][0]["text"] == "x"
     assert res["updated"] == 1
 
 
 def test_es_create_lambda(monkeypatch):
-    module = load_lambda("es_create", "services/vector-db/src/elastic_search_handler_lambda.py")
+    module = import_vector_module("elastic_search_handler_lambda")
+    proxy = import_vector_module("vector_db_proxy_lambda")
     called = {"created": False}
     monkeypatch.setattr(
         module,
@@ -642,13 +653,14 @@ def test_es_create_lambda(monkeypatch):
             "C", (), {"create_index": lambda self: called.__setitem__("created", True)}
         )(),
     )
-    res = module.lambda_handler({"operation": "create-index"}, {})
+    res = proxy.lambda_handler({"operation": "create-index", "storage_mode": "es"}, {})
     assert called["created"] is True
     assert res["created"] is True
 
 
 def test_es_drop_lambda(monkeypatch):
-    module = load_lambda("es_drop", "services/vector-db/src/elastic_search_handler_lambda.py")
+    module = import_vector_module("elastic_search_handler_lambda")
+    proxy = import_vector_module("vector_db_proxy_lambda")
     called = {"dropped": False}
     monkeypatch.setattr(
         module,
@@ -657,13 +669,14 @@ def test_es_drop_lambda(monkeypatch):
             "C", (), {"drop_index": lambda self: called.__setitem__("dropped", True)}
         )(),
     )
-    res = module.lambda_handler({"operation": "drop-index"}, {})
+    res = proxy.lambda_handler({"operation": "drop-index", "storage_mode": "es"}, {})
     assert called["dropped"] is True
     assert res["dropped"] is True
 
 
 def test_es_search_lambda(monkeypatch):
-    module = load_lambda("es_search", "services/vector-db/src/elastic_search_handler_lambda.py")
+    module = import_vector_module("elastic_search_handler_lambda")
+    proxy = import_vector_module("vector_db_proxy_lambda")
     captured = {}
 
     def fake_search(self, embedding, top_k=5):
@@ -671,15 +684,14 @@ def test_es_search_lambda(monkeypatch):
         return [{"id": "1"}]
 
     monkeypatch.setattr(module, "client", type("C", (), {"search": fake_search})())
-    out = module.lambda_handler({"operation": "search", "embedding": [0.1], "top_k": 3}, {})
+    out = proxy.lambda_handler({"operation": "search", "embedding": [0.1], "top_k": 3, "storage_mode": "es"}, {})
     assert captured["top_k"] == 3
     assert out["matches"][0]["id"] == "1"
 
 
 def test_es_hybrid_search_lambda(monkeypatch):
-    module = load_lambda(
-        "es_hybrid", "services/vector-db/src/elastic_search_handler_lambda.py"
-    )
+    module = import_vector_module("elastic_search_handler_lambda")
+    proxy = import_vector_module("vector_db_proxy_lambda")
     captured = {}
 
     def fake_search(self, embedding, keywords=None, top_k=5):
@@ -689,7 +701,7 @@ def test_es_hybrid_search_lambda(monkeypatch):
     monkeypatch.setattr(
         module, "client", type("C", (), {"hybrid_search": fake_search})()
     )
-    out = module.lambda_handler({"operation": "hybrid-search", "embedding": [0.1], "keywords": ["x"]}, {})
+    out = proxy.lambda_handler({"operation": "hybrid-search", "embedding": [0.1], "keywords": ["x"], "storage_mode": "es"}, {})
     assert captured["kw"] == ["x"]
     assert out["matches"][0]["id"] == "1"
 
@@ -967,9 +979,8 @@ def test_vector_search_top_k(monkeypatch, config):
     monkeypatch.setattr(mc, "Collection", dummy.Collection, raising=False)
     monkeypatch.setattr(mc, "connections", dummy.connections, raising=False)
 
-    module = load_lambda(
-        "vector_search", "services/vector-db/src/milvus_handler_lambda.py"
-    )
+    module = import_vector_module("milvus_handler_lambda")
+    proxy = import_vector_module("vector_db_proxy_lambda")
     called = {}
 
     def fake_search(self, embedding, top_k=5):
@@ -977,7 +988,7 @@ def test_vector_search_top_k(monkeypatch, config):
         return [type("R", (), {"id": 1, "score": 0.1, "metadata": {}})]
 
     monkeypatch.setattr(module, "client", type("C", (), {"search": fake_search})())
-    module.lambda_handler({"operation": "search", "embedding": [0.1], "top_k": 7}, {})
+    proxy.lambda_handler({"operation": "search", "embedding": [0.1], "top_k": 7}, {})
     assert called["top_k"] == 7
 
 
@@ -994,10 +1005,9 @@ def test_vector_search_invalid(monkeypatch, config):
     monkeypatch.setattr(mc, "Collection", dummy.Collection, raising=False)
     monkeypatch.setattr(mc, "connections", dummy.connections, raising=False)
 
-    module = load_lambda(
-        "vector_invalid", "services/vector-db/src/milvus_handler_lambda.py"
-    )
-    out = module.lambda_handler({"operation": "search", "embedding": "bad"}, {})
+    module = import_vector_module("milvus_handler_lambda")
+    proxy = import_vector_module("vector_db_proxy_lambda")
+    out = proxy.lambda_handler({"operation": "search", "embedding": "bad"}, {})
     assert out["matches"] == []
 
 
@@ -1014,9 +1024,8 @@ def test_vector_search_filters(monkeypatch, config):
     monkeypatch.setattr(mc, "Collection", dummy.Collection, raising=False)
     monkeypatch.setattr(mc, "connections", dummy.connections, raising=False)
 
-    module = load_lambda(
-        "vector_search", "services/vector-db/src/milvus_handler_lambda.py"
-    )
+    module = import_vector_module("milvus_handler_lambda")
+    proxy = import_vector_module("vector_db_proxy_lambda")
 
     def fake_search(self, embedding, top_k=5):
         meta1 = {"department": "HR", "team": "x", "user": "u1"}
@@ -1027,7 +1036,7 @@ def test_vector_search_filters(monkeypatch, config):
         ]
 
     monkeypatch.setattr(module, "client", type("C", (), {"search": fake_search})())
-    res = module.lambda_handler({"operation": "search", "embedding": [0.1], "department": "HR"}, {})
+    res = proxy.lambda_handler({"operation": "search", "embedding": [0.1], "department": "HR"}, {})
     assert (
         len(res["matches"]) == 1 and res["matches"][0]["metadata"]["department"] == "HR"
     )
@@ -1046,9 +1055,8 @@ def test_vector_search_entity_filter(monkeypatch, config):
     monkeypatch.setattr(mc, "Collection", dummy.Collection, raising=False)
     monkeypatch.setattr(mc, "connections", dummy.connections, raising=False)
 
-    module = load_lambda(
-        "vector_search_ent", "services/vector-db/src/milvus_handler_lambda.py"
-    )
+    module = import_vector_module("milvus_handler_lambda")
+    proxy = import_vector_module("vector_db_proxy_lambda")
 
     def fake_search(self, embedding, top_k=5):
         meta1 = {"entities": ["ORG:Acme"]}
@@ -1059,7 +1067,7 @@ def test_vector_search_entity_filter(monkeypatch, config):
         ]
 
     monkeypatch.setattr(module, "client", type("C", (), {"search": fake_search})())
-    res = module.lambda_handler({"operation": "search", "embedding": [0.1], "entities": ["ORG:Acme"]}, {})
+    res = proxy.lambda_handler({"operation": "search", "embedding": [0.1], "entities": ["ORG:Acme"]}, {})
     assert len(res["matches"]) == 1 and res["matches"][0]["metadata"]["entities"] == [
         "ORG:Acme"
     ]
@@ -1078,9 +1086,8 @@ def test_vector_search_guid_filter(monkeypatch, config):
     monkeypatch.setattr(mc, "Collection", dummy.Collection, raising=False)
     monkeypatch.setattr(mc, "connections", dummy.connections, raising=False)
 
-    module = load_lambda(
-        "vector_search_guid", "services/vector-db/src/milvus_handler_lambda.py"
-    )
+    module = import_vector_module("milvus_handler_lambda")
+    proxy = import_vector_module("vector_db_proxy_lambda")
 
     def fake_search(self, embedding, top_k=5):
         meta1 = {"file_guid": "g1", "file_name": "a"}
@@ -1091,7 +1098,7 @@ def test_vector_search_guid_filter(monkeypatch, config):
         ]
 
     monkeypatch.setattr(module, "client", type("C", (), {"search": fake_search})())
-    res = module.lambda_handler({"operation": "search", "embedding": [0.1], "file_guid": "g2"}, {})
+    res = proxy.lambda_handler({"operation": "search", "embedding": [0.1], "file_guid": "g2"}, {})
     assert len(res["matches"]) == 1 and res["matches"][0]["metadata"]["file_guid"] == "g2"
 
 
@@ -1233,10 +1240,11 @@ def test_milvus_insert_adds_guid(monkeypatch, config):
     monkeypatch.setattr(mc, "Collection", dummy.Collection, raising=False)
     monkeypatch.setattr(mc, "connections", dummy.connections, raising=False)
 
-    module = load_lambda("milvus_ins", "services/vector-db/src/milvus_handler_lambda.py")
+    module = import_vector_module("milvus_handler_lambda")
+    proxy = import_vector_module("vector_db_proxy_lambda")
     monkeypatch.setattr(module, "client", type("C", (), {"insert": lambda s, i, upsert=True: len(i)})())
     event = {"embeddings": [[0.1]], "metadatas": [{}], "file_guid": "g", "file_name": "n"}
-    res = module.lambda_handler(dict(event, operation="insert"), {})
+    res = proxy.lambda_handler(dict(event, operation="insert"), {})
     assert res["inserted"] == 1
 
 
@@ -1253,9 +1261,8 @@ def test_vector_search_guid_filter(monkeypatch, config):
     monkeypatch.setattr(mc, "Collection", dummy.Collection, raising=False)
     monkeypatch.setattr(mc, "connections", dummy.connections, raising=False)
 
-    module = load_lambda(
-        "vector_search_guid", "services/vector-db/src/milvus_handler_lambda.py"
-    )
+    module = import_vector_module("milvus_handler_lambda")
+    proxy = import_vector_module("vector_db_proxy_lambda")
 
     def fake_search(self, embedding, top_k=5):
         meta1 = {"file_guid": "g1", "file_name": "a"}
@@ -1266,7 +1273,7 @@ def test_vector_search_guid_filter(monkeypatch, config):
         ]
 
     monkeypatch.setattr(module, "client", type("C", (), {"search": fake_search})())
-    res = module.lambda_handler({"operation": "search", "embedding": [0.1], "file_guid": "g2"}, {})
+    res = proxy.lambda_handler({"operation": "search", "embedding": [0.1], "file_guid": "g2"}, {})
     assert len(res["matches"]) == 1
     assert res["matches"][0]["metadata"]["file_guid"] == "g2"
 
