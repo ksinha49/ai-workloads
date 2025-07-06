@@ -30,6 +30,9 @@ Parameters:
   FontDir:
     Type: String
     Default: ./src
+  LabelsPath:
+    Type: String
+    Default: ./config/summary_labels.json
 
 Resources:
   APSWorkflowFunction:
@@ -67,6 +70,7 @@ Resources:
               Input:
                 workflow_id: aps
                 font_dir: !Ref FontDir
+                labels_path: !Ref LabelsPath
                 body.$: $.body
             Next: PostProcess
           PostProcess:
