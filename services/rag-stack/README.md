@@ -49,7 +49,7 @@ This service consolidates the ingestion and retrieval components used for Retrie
 | Parameter | Environment variable | Description |
 |-----------|---------------------|-------------|
 | `VectorSearchFunctionArn` | `VECTOR_SEARCH_FUNCTION` | Lambda used for vector search. |
-| – | `RERANK_FUNCTION` | ARN of the built-in rerank Lambda. |
+| `RerankFunctionArn`  | `RERANK_FUNCTION` | ARN of the built-in rerank Lambda. |
 | `VectorSearchCandidates` | `VECTOR_SEARCH_CANDIDATES` | Number of search results to retrieve. |
 | `RouteLlmEndpoint` | `ROUTELLM_ENDPOINT` | URL for forwarding requests to RouteLLM. |
 | `CohereSecretName` | `COHERE_SECRET_NAME` | Name or ARN of the Cohere API key secret. |
