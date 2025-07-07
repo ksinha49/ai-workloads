@@ -6,9 +6,11 @@ import os
 from typing import Any, Dict, List, Optional
 from fpdf import FPDF
 
-from common_utils import lambda_response
+from common_utils import configure_logger, lambda_response
 from common_utils.get_ssm import get_values_from_ssm
 from services.summarization.models import SummaryEvent
+
+logger = configure_logger(__name__)
 
 FONT_DIR = os.environ.get("FONT_DIR")
 SUMMARY_LABELS: Dict[str, str] = {}
@@ -24,6 +26,10 @@ def _load_labels(label_path: Optional[str] = None, font_dir: Optional[str] = Non
         if os.path.isfile(test_path):
             path = test_path
     labels: Dict[str, str] = {}
+    if path:
+        logger.info("Loading summary labels from %s", path)
+    else:
+        logger.info("Loading summary labels using defaults")
     if path:
         try:  # pragma: no cover - optional
             if os.path.isfile(path):
@@ -99,11 +105,16 @@ def lambda_handler(event: SummaryEvent | dict, context: Any) -> dict:
     labels_path = event.extra.get("labels_path") if isinstance(event, SummaryEvent) else None
     _load_labels(labels_path, font_dir)
     if event.output_format == "pdf":  # pragma: no cover - used in production
-        pdf = FPDF(unit="mm", format="A4")
-        font_name = _register_fonts(pdf, font_dir)
-        _add_title_page(pdf, 10, 12, font_name=font_name)
-        _finish_pdf(pdf, 10, 12, font_name)
-        pdf.output(dest="S")  # discard - ensures fonts are loaded
+        try:
+            logger.info("Generating summary PDF")
+            pdf = FPDF(unit="mm", format="A4")
+            font_name = _register_fonts(pdf, font_dir)
+            _add_title_page(pdf, 10, 12, font_name=font_name)
+            _finish_pdf(pdf, 10, 12, font_name)
+            pdf.output(dest="S")  # discard - ensures fonts are loaded
+        except Exception as exc:
+            logger.exception("Failed to generate summary PDF")
+            return lambda_response(500, {"error": str(exc)})
     return lambda_response(200, event.to_dict())
 
 
