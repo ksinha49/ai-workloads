@@ -8,6 +8,7 @@ Each service loads its configuration from Parameter Store or the Lambda environm
 - `SSM_CACHE_TABLE` – DynamoDB table used by the SSM caching layer.
 - `LOG_LEVEL` – override the default logging level for all services.
 - `LOG_JSON` – set to `true` to output log lines as JSON.
+  Both options can also be configured via Parameter Store using the same names.
 
 ### ZIP Processing
 

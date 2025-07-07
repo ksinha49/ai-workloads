@@ -68,7 +68,8 @@ uses DynamoDB to persist entries across cold starts.
 
 The default log level is `INFO` but can be overridden using the `LOG_LEVEL`
 environment variable. Set `LOG_JSON=true` to emit structured logs in JSON
-format.
+format. Both variables may also be supplied via Parameter Store using the same
+names.
 
 ### OCR Engine
 

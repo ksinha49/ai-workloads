@@ -9,10 +9,21 @@ def configure_logger(name: str, level: str = "INFO") -> logging.Logger:
     """Return a logger configured with a standard formatter.
 
     The log level can be overridden via the ``LOG_LEVEL`` environment variable.
+    When ``LOG_JSON`` is ``true`` logs are formatted as JSON. Both options may
+    also be supplied via Parameter Store under the same names.
     """
+    try:  # late import to avoid circular dependency during package init
+        from common_utils.get_ssm import get_config  # type: ignore
+    except Exception:  # pragma: no cover - fallback if module not ready
+        from typing import Optional
+
+        def get_config(name: str) -> Optional[str]:  # type: ignore
+            return None
+
     logger = logging.getLogger(name)
-    log_level = os.getenv("LOG_LEVEL", level).upper()
-    level_const = getattr(logging, log_level, logging.INFO)
+
+    log_level = os.getenv("LOG_LEVEL") or get_config("LOG_LEVEL") or level
+    level_const = getattr(logging, str(log_level).upper(), logging.INFO)
     logger.setLevel(level_const)
 
     class JsonFormatter(logging.Formatter):
@@ -26,7 +37,8 @@ def configure_logger(name: str, level: str = "INFO") -> logging.Logger:
             return json.dumps(payload)
 
     handler = logging.StreamHandler()
-    if os.getenv("LOG_JSON", "false").lower() == "true":
+    json_flag = os.getenv("LOG_JSON") or get_config("LOG_JSON") or "false"
+    if str(json_flag).lower() == "true":
         formatter = JsonFormatter()
     else:
         formatter = logging.Formatter(
