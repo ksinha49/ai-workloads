@@ -84,3 +84,63 @@ def test_cleanup_removes_expired(monkeypatch):
     result = module.lambda_handler({}, {})
     assert result["dropped"] == 1
     assert table.deleted == [{"collection_name": "c1"}]
+
+
+def test_cleanup_drops_multiple(monkeypatch):
+    now = int(time.time())
+    items = [
+        {"collection_name": "c1", "expires_at": now - 5},
+        {"collection_name": "c2", "expires_at": now - 1},
+        {"collection_name": "c3", "expires_at": now + 100},
+    ]
+    table = FakeTable(items)
+    import common_utils.get_ssm as g
+    monkeypatch.setattr(g, "get_config", lambda name, **_: None)
+    monkeypatch.setenv("EPHEMERAL_TABLE", "tbl")
+    import boto3
+    monkeypatch.setattr(sys.modules["boto3"], "resource", lambda name: FakeResource(table), raising=False)
+    module = load_module("cleanup", "services/vector-db/src/jobs/cleanup_ephemeral_lambda.py")
+    module.ddb = FakeResource(table)
+
+    dropped = []
+
+    class RecordingMilvus(FakeMilvus):
+        def drop_collection(self):
+            super().drop_collection()
+            dropped.append(self.collection_name)
+
+    monkeypatch.setattr(module, "MilvusClient", RecordingMilvus)
+    result = module.lambda_handler({}, {})
+    assert result["dropped"] == 2
+    assert set(dropped) == {"c1", "c2"}
+    assert table.deleted == [{"collection_name": "c1"}, {"collection_name": "c2"}]
+    remaining = [i["collection_name"] for i in table.items]
+    assert remaining == ["c3"]
+
+
+def test_cleanup_no_expired(monkeypatch):
+    now = int(time.time())
+    items = [{"collection_name": "c1", "expires_at": now + 100}]
+    table = FakeTable(items)
+    import common_utils.get_ssm as g
+    monkeypatch.setattr(g, "get_config", lambda name, **_: None)
+    monkeypatch.setenv("EPHEMERAL_TABLE", "tbl")
+    import boto3
+    monkeypatch.setattr(sys.modules["boto3"], "resource", lambda name: FakeResource(table), raising=False)
+    module = load_module("cleanup", "services/vector-db/src/jobs/cleanup_ephemeral_lambda.py")
+    module.ddb = FakeResource(table)
+
+    dropped = []
+
+    class RecordingMilvus(FakeMilvus):
+        def drop_collection(self):
+            super().drop_collection()
+            dropped.append(self.collection_name)
+
+    monkeypatch.setattr(module, "MilvusClient", RecordingMilvus)
+    result = module.lambda_handler({}, {})
+    assert result["dropped"] == 0
+    assert dropped == []
+    assert table.deleted == []
+    remaining = [i["collection_name"] for i in table.items]
+    assert remaining == ["c1"]
