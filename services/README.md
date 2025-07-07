@@ -1,6 +1,6 @@
 # Services Overview
 
-This directory contains individual microservices used to build end‑to‑end document processing workflows. Each service has its own `README.md` with deployment instructions and environment variables. The table below summarizes the purpose of each service.
+This directory contains individual microservices used to build end‑to‑end AI processing workflows. Each service has its own `README.md` with deployment instructions and environment variables. The table below summarizes the purpose of each service.
 
 | Service directory | Description |
 |-------------------|-------------|
