@@ -1,6 +1,6 @@
 # Enterprise AI Services
 
-Enterprise AI Services is a collection of AWS Lambda microservices for building serverless document processing workflows. Each service focuses on a specific task such as OCR extraction, PDF assembly or embedding generation.
+Ameritas Enterprise AI Services is a collection of custom built microservices for building serverless document processing workflows. Each service focuses on a specific task such as OCR extraction, PDF assembly or embedding generation.
 
 ## Services
 
@@ -47,7 +47,7 @@ Detailed descriptions of each service are available in
 Refer to [INSTALL.md](INSTALL.md) for detailed steps. In short:
 
 ```bash
-git clone https://github.com/ksinha49/ai-workloads.git
+git clone https://github.com/ameritascorp/aio-enterprise-ai-services.git
 cd ai-workloads
 sam build
 ```
@@ -104,18 +104,18 @@ so services can import modules and load models directly from EFS.
 ## Documentation
 
 Additional documentation is available in the `docs/` directory:
-- [docs/summarization_workflow.md](docs/summarization_workflow.md)
-- [docs/rag_ingestion_workflow.md](docs/rag_ingestion_workflow.md)
+- [summarization_workflow](docs/summarization_workflow.md)
+- [rag_ingestion_workflow](docs/rag_ingestion_workflow.md)
 
-- [docs/idp_output_format.md](docs/idp_output_format.md)
-- [docs/router_configuration.md](docs/router_configuration.md) – LLM Gateway router parameters and heuristics
-- [docs/prompt_engine.md](docs/prompt_engine.md)
-- [docs/knowledge_rag_usage.md](docs/knowledge_rag_usage.md)
-- [docs/rag_architecture.md](docs/rag_architecture.md)
-- [docs/event_schemas.md](docs/event_schemas.md)
-- [docs/entity_tokenization_service.md](docs/entity_tokenization_service.md)
-- [docs/tokenization_workflow.md](docs/tokenization_workflow.md)
-- [docs/environment_variables.md](docs/environment_variables.md)
-- [docs/file_ingestion_workflow.md](docs/file_ingestion_workflow.md)
-- [docs/ecr_deployment.md](docs/ecr_deployment.md)
+- [idp_output_format](docs/idp_output_format.md)
+- [router_configuration](docs/router_configuration.md)
+- [prompt_engine](docs/prompt_engine.md)
+- [knowledge_rag_usage](docs/knowledge_rag_usage.md)
+- [rag_architecture](docs/rag_architecture.md)
+- [event_schemas](docs/event_schemas.md)
+- [entity_tokenization_service](docs/entity_tokenization_service.md)
+- [tokenization_workflow](docs/tokenization_workflow.md)
+- [environment_variables](docs/environment_variables.md)
+- [file_ingestion_workflow](docs/file_ingestion_workflow.md)
+- [ecr_deployment](docs/ecr_deployment.md)
 - [Deploying Lambdas from ECR Images](docs/ecr_deployment.md#deploying-lambdas-from-ecr-images)
