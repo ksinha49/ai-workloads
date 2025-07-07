@@ -5,6 +5,11 @@ from __future__ import annotations
 import os
 import logging
 from common_utils import configure_logger
+try:  # pragma: no cover - optional dependency
+    from httpx import HTTPError
+except Exception:  # pragma: no cover - allow import without httpx
+    class HTTPError(Exception):
+        pass
 from typing import Any, Dict, List, Callable
 from pydantic import BaseModel, ValidationError
 import json
@@ -97,7 +102,7 @@ def _nvidia_rerank(query: str, docs: List[str]) -> List[float]:
         resp.raise_for_status()
         data = resp.json()
         return [float(s) for s in data.get("scores", [])]
-    except Exception:  # pragma: no cover - network or dependency issues
+    except HTTPError:  # pragma: no cover - network or dependency issues
         logger.exception("NVIDIA rerank failed")
         return [0.0] * len(docs)
 
