@@ -275,9 +275,10 @@ def invoke_bedrock_openai(payload: Dict[str, Any]) -> Dict[str, Any]:
     try:
         resp = httpx.post(endpoint, json=payload, headers=headers)
         resp.raise_for_status()
-    except HTTPError:
+    except HTTPError as exc:
+        logger.exception("Bedrock OpenAI request failed")
         _bedrock_selector.record_failure(endpoint)
-        raise
+        return {"error": str(exc)}
     else:
         _bedrock_selector.record_success(endpoint)
     return resp.json()
@@ -302,9 +303,10 @@ def invoke_ollama(payload: Dict[str, Any]) -> Dict[str, Any]:
     try:
         resp = httpx.post(endpoint, json=payload)
         resp.raise_for_status()
-    except HTTPError:
+    except HTTPError as exc:
+        logger.exception("Ollama request failed")
         _ollama_selector.record_failure(endpoint)
-        raise
+        return {"error": str(exc)}
     else:
         _ollama_selector.record_success(endpoint)
     return resp.json()

@@ -7,6 +7,11 @@ from paddleocr import PaddleOCR
 import cv2
 import numpy as np
 import httpx
+try:  # pragma: no cover - optional dependency
+    from httpx import HTTPError
+except Exception:  # pragma: no cover - allow import without httpx
+    class HTTPError(Exception):
+        pass
 
 from common_utils import configure_logger
 
@@ -124,8 +129,12 @@ def _results_to_layout_text(results: list[tuple[list[list[int]], str, float]]) -
 def _remote_trocr(img_bytes: bytes, url: str) -> tuple[str, float]:
     """Send *img_bytes* to a remote TrOCR service at *url*."""
 
-    response = httpx.post(url, files={"file": ("image.png", img_bytes, "image/png")})
-    response.raise_for_status()
+    try:
+        response = httpx.post(url, files={"file": ("image.png", img_bytes, "image/png")})
+        response.raise_for_status()
+    except HTTPError as exc:
+        logger.exception("TrOCR request failed")
+        return "", 0.0
     data = response.json()
     text = data.get("text", "")
     confidence = float(data.get("confidence", 0.0))
@@ -135,8 +144,12 @@ def _remote_trocr(img_bytes: bytes, url: str) -> tuple[str, float]:
 def _remote_docling(img_bytes: bytes, url: str) -> tuple[str, float]:
     """Send *img_bytes* to a remote Docling service at *url*."""
 
-    response = httpx.post(url, files={"file": ("image.png", img_bytes, "image/png")})
-    response.raise_for_status()
+    try:
+        response = httpx.post(url, files={"file": ("image.png", img_bytes, "image/png")})
+        response.raise_for_status()
+    except HTTPError as exc:
+        logger.exception("Docling request failed")
+        return "", 0.0
     data = response.json()
     text = data.get("text", "")
     confidence = float(data.get("confidence", 0.0))

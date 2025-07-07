@@ -11,6 +11,11 @@ import logging
 from common_utils import configure_logger
 import boto3
 import httpx
+try:  # pragma: no cover - optional dependency
+    from httpx import HTTPError
+except Exception:  # pragma: no cover - allow import without httpx
+    class HTTPError(Exception):
+        pass
 
 from typing import Any, Dict
 import json
@@ -60,9 +65,9 @@ def _process_event(event: Dict[str, Any]) -> Dict[str, Any]:
     try:
         r = httpx.post(CONTENT_ENDPOINT, json={"query": query, "context": context_text})
         r.raise_for_status()
-    except Exception:
+    except HTTPError as exc:
         logger.exception("Content service request failed")
-        return {"content": {}}
+        return {"content": {}, "error": str(exc)}
     logger.info("Content service returned status %s", r.status_code)
     return {"content": r.json()}
 

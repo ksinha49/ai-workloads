@@ -8,6 +8,11 @@ from typing import Any, Dict
 
 import boto3
 import httpx
+try:  # pragma: no cover - optional dependency
+    from httpx import HTTPError
+except Exception:  # pragma: no cover - allow import without httpx
+    class HTTPError(Exception):
+        pass
 from common_utils import configure_logger
 
 logger = configure_logger(__name__)
@@ -45,11 +50,12 @@ def _process_record(record: Dict[str, Any]) -> None:
     token = body.get("token")
     if body.get("prompt_id") and PROMPT_ENGINE_ENDPOINT:
         try:
-            httpx.post(
+            resp = httpx.post(
                 PROMPT_ENGINE_ENDPOINT,
                 json={"prompt_id": body.get("prompt_id"), "variables": body.get("variables")},
-            ).raise_for_status()
-        except Exception:  # pragma: no cover - log and continue
+            )
+            resp.raise_for_status()
+        except HTTPError:  # pragma: no cover - log and continue
             logger.exception("Failed to render prompt")
 
     result = _invoke_summary(body)
