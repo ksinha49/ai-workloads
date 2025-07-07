@@ -11,6 +11,24 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ### Added
 - Summarization service with Step Function workflow and helper Lambdas.
 
+## [1.0.15] - 2025-07-07
+### Added
+- JSON logging option controlled by the `LOG_JSON` environment variable with
+  support for `LOG_LEVEL` and `LOG_JSON` values stored in Parameter Store.
+- `CommonUtilsLayer` referenced in each service template.
+
+### Changed
+- File ingestion and ZIP processing Lambdas now read S3 prefixes from
+  configuration parameters.
+- Documentation for available services and install steps updated.
+
+### Fixed
+- Cleanup Lambda gracefully handles S3 client errors and reports failures.
+- Summarization worker and PDF generation Lambdas include improved error
+  handling and logging.
+- HTTPX calls across services catch request failures and return structured
+  error responses.
+
 ## [1.0.12] - 2025-07-04
 ### Added
 - Dockerfiles and `docker-compose.yml` files for each service.
