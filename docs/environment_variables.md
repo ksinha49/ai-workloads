@@ -7,6 +7,12 @@ Each service loads its configuration from Parameter Store or the Lambda environm
 - `AWS_ACCOUNT_NAME` – scopes stack resources for the file‑assembly, zip‑processing and summarization stacks.
 - `SSM_CACHE_TABLE` – DynamoDB table used by the SSM caching layer.
 
+### ZIP Processing
+
+- `RAW_PREFIX` – incoming ZIP folder for extracted files.
+- `EXTRACTED_PREFIX` – location where archives are unpacked.
+- `CURATED_PREFIX` – path for the final assembled ZIPs.
+
 ### Intelligent Document Processing (IDP)
 
 - `BUCKET_NAME` – S3 bucket for pipeline objects.

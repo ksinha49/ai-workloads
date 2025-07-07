@@ -36,6 +36,21 @@ Parameters:
   TEXT_DOC_PREFIX:
     Type: String
     Default: text-docs/
+  PDF_RAW_PREFIX:
+    Type: String
+    Default: pdf-raw/
+  PDF_PAGE_PREFIX:
+    Type: String
+    Default: pdf-pages/
+  PDF_TEXT_PAGE_PREFIX:
+    Type: String
+    Default: text-pages/
+  PDF_SCAN_PAGE_PREFIX:
+    Type: String
+    Default: scan-pages/
+  TEXT_PAGE_PREFIX:
+    Type: String
+    Default: text-pages/
   OCR_ENGINE:
     Type: String
     Default: easyocr
@@ -68,6 +83,11 @@ Globals:
         COMBINE_PREFIX: !Ref COMBINE_PREFIX
         OUTPUT_PREFIX: !Ref OUTPUT_PREFIX
         TEXT_DOC_PREFIX: !Ref TEXT_DOC_PREFIX
+        PDF_RAW_PREFIX: !Ref PDF_RAW_PREFIX
+        PDF_PAGE_PREFIX: !Ref PDF_PAGE_PREFIX
+        PDF_TEXT_PAGE_PREFIX: !Ref PDF_TEXT_PAGE_PREFIX
+        PDF_SCAN_PAGE_PREFIX: !Ref PDF_SCAN_PAGE_PREFIX
+        TEXT_PAGE_PREFIX: !Ref TEXT_PAGE_PREFIX
         OCR_ENGINE: !Ref OCR_ENGINE
         DOCUMENT_AUDIT_TABLE: !Ref DocumentAuditTableName
 

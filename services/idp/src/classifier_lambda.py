@@ -93,9 +93,9 @@ def _handle_record(record: dict) -> None:
     bucket = record.get("s3", {}).get("bucket", {}).get("name")
     key = record.get("s3", {}).get("object", {}).get("key")
     bucket_name = get_config("BUCKET_NAME", bucket, key)
-    raw_prefix = get_config("RAW_PREFIX", bucket, key) or ""
-    office_prefix = get_config("OFFICE_PREFIX", bucket, key) or "office-docs/"
-    pdf_raw_prefix = get_config("PDF_RAW_PREFIX", bucket, key) or "pdf-raw/"
+    raw_prefix = get_config("RAW_PREFIX", bucket, key) or os.environ.get("RAW_PREFIX", "")
+    office_prefix = get_config("OFFICE_PREFIX", bucket, key) or os.environ.get("OFFICE_PREFIX")
+    pdf_raw_prefix = get_config("PDF_RAW_PREFIX", bucket, key) or os.environ.get("PDF_RAW_PREFIX")
     if raw_prefix and not raw_prefix.endswith("/"):
         raw_prefix += "/"
     if office_prefix and not office_prefix.endswith("/"):

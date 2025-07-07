@@ -106,8 +106,8 @@ def _handle_record(record: dict, document_id: str | None = None) -> None:
     bucket = record.get("s3", {}).get("bucket", {}).get("name")
     key = record.get("s3", {}).get("object", {}).get("key")
     bucket_name = get_config("BUCKET_NAME", bucket, key)
-    pdf_raw_prefix = get_config("PDF_RAW_PREFIX", bucket, key) or ""
-    pdf_page_prefix = get_config("PDF_PAGE_PREFIX", bucket, key) or "pdf-pages/"
+    pdf_raw_prefix = get_config("PDF_RAW_PREFIX", bucket, key) or os.environ.get("PDF_RAW_PREFIX", "")
+    pdf_page_prefix = get_config("PDF_PAGE_PREFIX", bucket, key) or os.environ.get("PDF_PAGE_PREFIX")
     if pdf_raw_prefix and not pdf_raw_prefix.endswith("/"):
         pdf_raw_prefix += "/"
     if pdf_page_prefix and not pdf_page_prefix.endswith("/"):

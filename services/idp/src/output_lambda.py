@@ -74,7 +74,7 @@ def _handle_record(record: dict) -> None:
     bucket = record.get("s3", {}).get("bucket", {}).get("name")
     key = record.get("s3", {}).get("object", {}).get("key")
     bucket_name = get_config("BUCKET_NAME", bucket, key)
-    text_doc_prefix = get_config("TEXT_DOC_PREFIX", bucket, key) or "text-docs/"
+    text_doc_prefix = get_config("TEXT_DOC_PREFIX", bucket, key) or os.environ.get("TEXT_DOC_PREFIX")
     api_url = get_config("EDI_SEARCH_API_URL", bucket, key)
     api_key = get_config("EDI_SEARCH_API_KEY", bucket, key)
     if text_doc_prefix and not text_doc_prefix.endswith("/"):

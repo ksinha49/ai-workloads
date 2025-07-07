@@ -36,6 +36,16 @@ Parameters:
     Type: String
     Description: IAM Role ARN for Lambda functions
 
+  RAW_PREFIX:
+    Type: String
+    Default: raw/
+  EXTRACTED_PREFIX:
+    Type: String
+    Default: processed/summarization/extracted/
+  CURATED_PREFIX:
+    Type: String
+    Default: curated/
+
   FileProcessingStepFunctionArn:
     Type: String
     Description: ARN of the per-file processing state machine
@@ -102,6 +112,9 @@ Resources:
       Environment:
         Variables:
           AWS_ACCOUNT_NAME: !Ref AWSAccountName
+          CURATED_PREFIX: !Ref CURATED_PREFIX
+          RAW_PREFIX: !Ref RAW_PREFIX
+          EXTRACTED_PREFIX: !Ref EXTRACTED_PREFIX
 
   ZipfileCreationLambdaFunction:
     Type: AWS::Serverless::Function
