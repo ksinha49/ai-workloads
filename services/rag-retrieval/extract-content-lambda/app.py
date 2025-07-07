@@ -25,9 +25,16 @@ __modified_by__ = "Koushik Sinha"
 logger = configure_logger(__name__)
 
 LAMBDA_FUNCTION = get_config("VECTOR_SEARCH_FUNCTION") or os.environ.get("VECTOR_SEARCH_FUNCTION")
+ES_LAMBDA_FUNCTION = get_config("ES_VECTOR_SEARCH_FUNCTION") or os.environ.get("ES_VECTOR_SEARCH_FUNCTION")
 CONTENT_ENDPOINT = get_config("CONTENT_ENDPOINT") or os.environ.get("CONTENT_ENDPOINT")
 
 lambda_client = boto3.client("lambda")
+
+
+def _select_search_function(vector_db: str | None) -> str:
+    if vector_db and vector_db.lower() in {"es", "elasticsearch"}:
+        return ES_LAMBDA_FUNCTION or LAMBDA_FUNCTION
+    return LAMBDA_FUNCTION
 
 
 def _process_event(event: Dict[str, Any]) -> Dict[str, Any]:
@@ -42,10 +49,11 @@ def _process_event(event: Dict[str, Any]) -> Dict[str, Any]:
 
     query = event.get("query")
     emb = event.get("embedding")
-    logger.info("Invoking vector search function %s", LAMBDA_FUNCTION)
+    search_lambda = _select_search_function(event.get("vectorDb"))
+    logger.info("Invoking vector search function %s", search_lambda)
     try:
         resp = lambda_client.invoke(
-            FunctionName=LAMBDA_FUNCTION,
+            FunctionName=search_lambda,
             Payload=json.dumps({"embedding": emb}).encode("utf-8"),
         )
         result = json.loads(resp["Payload"].read())
