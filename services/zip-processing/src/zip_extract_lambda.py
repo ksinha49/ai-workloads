@@ -17,10 +17,12 @@ import logging
 from json import JSONDecodeError
 from botocore.exceptions import ClientError
 from common_utils import configure_logger
+from common_utils.get_ssm import get_config
 import io
 import zipfile
 import boto3
 import datetime
+import os
 
 # ─── Logging Configuration ─────────────────────────────────────────────────────
 logger = configure_logger(__name__)
@@ -139,8 +141,14 @@ def extract_zip_file(event: dict) -> dict:
         }
         now = datetime.datetime.now()
         date_time_folder = now.strftime('%Y/%m/%d/%H/%M/%S/')
-        folder_path =  f"raw/{date_time_folder}"
-        extracted_file_key = f"processed/summarization/extracted/{date_time_folder}"
+        raw_prefix = get_config("RAW_PREFIX", source_bucket_name, zip_file_key) or os.environ.get("RAW_PREFIX", "")
+        extracted_prefix = get_config("EXTRACTED_PREFIX", source_bucket_name, zip_file_key) or os.environ.get("EXTRACTED_PREFIX", "")
+        if raw_prefix and not raw_prefix.endswith("/"):
+            raw_prefix += "/"
+        if extracted_prefix and not extracted_prefix.endswith("/"):
+            extracted_prefix += "/"
+        folder_path = f"{raw_prefix}{date_time_folder}"
+        extracted_file_key = f"{extracted_prefix}{date_time_folder}"
         zip_file_name = zip_file_name[-1]
         destination_key = f"{folder_path}{zip_file_name}"
         zip_file_name = zip_file_name.split(".")[0]

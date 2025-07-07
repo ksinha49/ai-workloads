@@ -79,8 +79,8 @@ def _process_record(record: dict, document_id: str | None = None) -> None:
     bucket = record.get("s3", {}).get("bucket", {}).get("name")
     key = record.get("s3", {}).get("object", {}).get("key")
     bucket_name = get_config("BUCKET_NAME", bucket, key)
-    office_prefix = get_config("OFFICE_PREFIX", bucket, key) or ""
-    text_doc_prefix = get_config("TEXT_DOC_PREFIX", bucket, key) or "text-docs/"
+    office_prefix = get_config("OFFICE_PREFIX", bucket, key) or os.environ.get("OFFICE_PREFIX", "")
+    text_doc_prefix = get_config("TEXT_DOC_PREFIX", bucket, key) or os.environ.get("TEXT_DOC_PREFIX")
     if office_prefix and not office_prefix.endswith("/"):
         office_prefix += "/"
     if text_doc_prefix and not text_doc_prefix.endswith("/"):

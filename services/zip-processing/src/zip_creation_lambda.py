@@ -23,6 +23,8 @@ from defusedxml import ElementTree as ET
 import json
 import logging
 from common_utils import configure_logger
+from common_utils.get_ssm import get_config
+import os
 
 # ─── Logging Configuration ─────────────────────────────────────────────────────
 logger = configure_logger(__name__)
@@ -150,7 +152,10 @@ def assemble_zip_files(event, s3_client=s3_client):
     zip_file_name = event['zipFileName']
     zip_file_name = zip_file_name.split("/")[-1]
     logger.info("zip_file_name:%s", zip_file_name)
-    zip_file_name = f"curated/{zip_file_name}"
+    curated_prefix = get_config("CURATED_PREFIX") or os.environ.get("CURATED_PREFIX", "")
+    if curated_prefix and not curated_prefix.endswith("/"):
+        curated_prefix += "/"
+    zip_file_name = f"{curated_prefix}{zip_file_name}"
 
     pdf_files = [file['pdffile'] for file in event.get('pdfFiles', [])]
     xml_files = event.get('xmlFiles', [])

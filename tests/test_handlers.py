@@ -39,11 +39,13 @@ def test_office_extractor(monkeypatch, s3_stub, validate_schema, config):
     prefix = "/parameters/aio/ameritasAI/dev"
     config["/parameters/aio/ameritasAI/SERVER_ENV"] = "dev"
     config[f"{prefix}/BUCKET_NAME"] = "bucket"
-    config[f"{prefix}/OFFICE_PREFIX"] = "office-docs/"
-    config[f"{prefix}/TEXT_DOC_PREFIX"] = "text-docs/"
+    office_prefix = "office-docs/"
+    text_doc_prefix = "text-docs/"
+    config[f"{prefix}/OFFICE_PREFIX"] = office_prefix
+    config[f"{prefix}/TEXT_DOC_PREFIX"] = text_doc_prefix
     module = load_lambda("office", "services/idp/src/office_extractor_lambda.py")
 
-    s3_stub.objects[("bucket", "office-docs/test.docx")] = b"data"
+    s3_stub.objects[("bucket", f"{office_prefix}test.docx")] = b"data"
 
     monkeypatch.setattr(module, "_extract_docx", lambda b: ["## Page 1\n\ntext\n"])
     monkeypatch.setattr(module, "_extract_pptx", lambda b: ["## Page 1\n\ntext\n"])
@@ -55,14 +57,14 @@ def test_office_extractor(monkeypatch, s3_stub, validate_schema, config):
             {
                 "s3": {
                     "bucket": {"name": "bucket"},
-                    "object": {"key": "office-docs/test.docx"},
+                    "object": {"key": f"{office_prefix}test.docx"},
                 }
             }
         ]
     }
     module.lambda_handler(event, {})
 
-    out_key = "text-docs/doc123.json"
+    out_key = f"{text_doc_prefix}doc123.json"
     payload = json.loads(s3_stub.objects[("bucket", out_key)].decode())
     assert payload["documentId"] == "doc123"
     assert payload["pageCount"] == 1
@@ -78,11 +80,13 @@ def test_pdf_text_extractor(monkeypatch, s3_stub, validate_schema, config):
     prefix = "/parameters/aio/ameritasAI/dev"
     config["/parameters/aio/ameritasAI/SERVER_ENV"] = "dev"
     config[f"{prefix}/BUCKET_NAME"] = "bucket"
-    config[f"{prefix}/PDF_TEXT_PAGE_PREFIX"] = "text-pages/"
-    config[f"{prefix}/TEXT_PAGE_PREFIX"] = "text-pages/"
+    pdf_text_page_prefix = "text-pages/"
+    text_page_prefix = "text-pages/"
+    config[f"{prefix}/PDF_TEXT_PAGE_PREFIX"] = pdf_text_page_prefix
+    config[f"{prefix}/TEXT_PAGE_PREFIX"] = text_page_prefix
     module = load_lambda("pdf_text", "services/idp/src/pdf_text_extractor_lambda.py")
 
-    s3_stub.objects[("bucket", "text-pages/doc1/page_001.pdf")] = b"data"
+    s3_stub.objects[("bucket", f"{pdf_text_page_prefix}doc1/page_001.pdf")] = b"data"
 
     monkeypatch.setattr(module, "_extract_text", lambda b: "## Page 1\n\nhello\n")
 
@@ -91,14 +95,14 @@ def test_pdf_text_extractor(monkeypatch, s3_stub, validate_schema, config):
             {
                 "s3": {
                     "bucket": {"name": "bucket"},
-                    "object": {"key": "text-pages/doc1/page_001.pdf"},
+                    "object": {"key": f"{pdf_text_page_prefix}doc1/page_001.pdf"},
                 }
             }
         ]
     }
     module.lambda_handler(event, {})
 
-    md = s3_stub.objects[("bucket", "text-pages/doc1/page_001.md")].decode()
+    md = s3_stub.objects[("bucket", f"{text_page_prefix}doc1/page_001.md")].decode()
     schema = {"documentId": "doc1", "pageNumber": 1, "content": md}
     validate_schema(schema)
 
@@ -107,11 +111,13 @@ def test_pdf_ocr_extractor(monkeypatch, s3_stub, validate_schema, config):
     prefix = "/parameters/aio/ameritasAI/dev"
     config["/parameters/aio/ameritasAI/SERVER_ENV"] = "dev"
     config[f"{prefix}/BUCKET_NAME"] = "bucket"
-    config[f"{prefix}/PDF_SCAN_PAGE_PREFIX"] = "scan-pages/"
-    config[f"{prefix}/TEXT_PAGE_PREFIX"] = "text-pages/"
+    pdf_scan_prefix = "scan-pages/"
+    text_page_prefix = "text-pages/"
+    config[f"{prefix}/PDF_SCAN_PAGE_PREFIX"] = pdf_scan_prefix
+    config[f"{prefix}/TEXT_PAGE_PREFIX"] = text_page_prefix
     module = load_lambda("ocr", "services/idp/src/pdf_ocr_extractor_lambda.py")
 
-    s3_stub.objects[("bucket", "scan-pages/doc1/page_001.pdf")] = b"data"
+    s3_stub.objects[("bucket", f"{pdf_scan_prefix}doc1/page_001.pdf")] = b"data"
 
     monkeypatch.setattr(module, "_rasterize_page", lambda b, dpi: object())
     monkeypatch.setattr(module, "_ocr_image", lambda img, e, t, d: "## Page 1\n\nocr\n")
@@ -121,14 +127,14 @@ def test_pdf_ocr_extractor(monkeypatch, s3_stub, validate_schema, config):
             {
                 "s3": {
                     "bucket": {"name": "bucket"},
-                    "object": {"key": "scan-pages/doc1/page_001.pdf"},
+                    "object": {"key": f"{pdf_scan_prefix}doc1/page_001.pdf"},
                 }
             }
         ]
     }
     module.lambda_handler(event, {})
 
-    md = s3_stub.objects[("bucket", "text-pages/doc1/page_001.md")].decode()
+    md = s3_stub.objects[("bucket", f"{text_page_prefix}doc1/page_001.md")].decode()
     schema = {"documentId": "doc1", "pageNumber": 1, "content": md}
     validate_schema(schema)
 
@@ -137,13 +143,15 @@ def test_pdf_ocr_extractor_trocr(monkeypatch, s3_stub, validate_schema, config):
     prefix = "/parameters/aio/ameritasAI/dev"
     config["/parameters/aio/ameritasAI/SERVER_ENV"] = "dev"
     config[f"{prefix}/BUCKET_NAME"] = "bucket"
-    config[f"{prefix}/PDF_SCAN_PAGE_PREFIX"] = "scan-pages/"
-    config[f"{prefix}/TEXT_PAGE_PREFIX"] = "text-pages/"
+    pdf_scan_prefix = "scan-pages/"
+    text_page_prefix = "text-pages/"
+    config[f"{prefix}/PDF_SCAN_PAGE_PREFIX"] = pdf_scan_prefix
+    config[f"{prefix}/TEXT_PAGE_PREFIX"] = text_page_prefix
     config[f"{prefix}/OCR_ENGINE"] = "trocr"
     config[f"{prefix}/TROCR_ENDPOINT"] = "http://example"
     module = load_lambda("ocr_trocr", "services/idp/src/pdf_ocr_extractor_lambda.py")
 
-    s3_stub.objects[("bucket", "scan-pages/doc1/page_001.pdf")] = b"data"
+    s3_stub.objects[("bucket", f"{pdf_scan_prefix}doc1/page_001.pdf")] = b"data"
 
     monkeypatch.setattr(module, "_rasterize_page", lambda b, dpi: object())
     called = {}
@@ -159,14 +167,14 @@ def test_pdf_ocr_extractor_trocr(monkeypatch, s3_stub, validate_schema, config):
             {
                 "s3": {
                     "bucket": {"name": "bucket"},
-                    "object": {"key": "scan-pages/doc1/page_001.pdf"},
+                    "object": {"key": f"{pdf_scan_prefix}doc1/page_001.pdf"},
                 }
             }
         ]
     }
     module.lambda_handler(event, {})
 
-    md = s3_stub.objects[("bucket", "text-pages/doc1/page_001.md")].decode()
+    md = s3_stub.objects[("bucket", f"{text_page_prefix}doc1/page_001.md")].decode()
     assert called["engine"] == "trocr"
     schema = {"documentId": "doc1", "pageNumber": 1, "content": md}
     validate_schema(schema)
@@ -176,13 +184,15 @@ def test_pdf_ocr_extractor_docling(monkeypatch, s3_stub, validate_schema, config
     prefix = "/parameters/aio/ameritasAI/dev"
     config["/parameters/aio/ameritasAI/SERVER_ENV"] = "dev"
     config[f"{prefix}/BUCKET_NAME"] = "bucket"
-    config[f"{prefix}/PDF_SCAN_PAGE_PREFIX"] = "scan-pages/"
-    config[f"{prefix}/TEXT_PAGE_PREFIX"] = "text-pages/"
+    pdf_scan_prefix = "scan-pages/"
+    text_page_prefix = "text-pages/"
+    config[f"{prefix}/PDF_SCAN_PAGE_PREFIX"] = pdf_scan_prefix
+    config[f"{prefix}/TEXT_PAGE_PREFIX"] = text_page_prefix
     config[f"{prefix}/OCR_ENGINE"] = "docling"
     config[f"{prefix}/DOCLING_ENDPOINT"] = "http://example"
     module = load_lambda("ocr_docling", "services/idp/src/pdf_ocr_extractor_lambda.py")
 
-    s3_stub.objects[("bucket", "scan-pages/doc1/page_001.pdf")] = b"data"
+    s3_stub.objects[("bucket", f"{pdf_scan_prefix}doc1/page_001.pdf")] = b"data"
 
     monkeypatch.setattr(module, "_rasterize_page", lambda b, dpi: object())
     called = {}
@@ -198,14 +208,14 @@ def test_pdf_ocr_extractor_docling(monkeypatch, s3_stub, validate_schema, config
             {
                 "s3": {
                     "bucket": {"name": "bucket"},
-                    "object": {"key": "scan-pages/doc1/page_001.pdf"},
+                    "object": {"key": f"{pdf_scan_prefix}doc1/page_001.pdf"},
                 }
             }
         ]
     }
     module.lambda_handler(event, {})
 
-    md = s3_stub.objects[("bucket", "text-pages/doc1/page_001.md")].decode()
+    md = s3_stub.objects[("bucket", f"{text_page_prefix}doc1/page_001.md")].decode()
     assert called["engine"] == "docling"
     schema = {"documentId": "doc1", "pageNumber": 1, "content": md}
     validate_schema(schema)
@@ -215,30 +225,33 @@ def test_combine(monkeypatch, s3_stub, validate_schema, config):
     prefix = "/parameters/aio/ameritasAI/dev"
     config["/parameters/aio/ameritasAI/SERVER_ENV"] = "dev"
     config[f"{prefix}/BUCKET_NAME"] = "bucket"
-    config[f"{prefix}/PDF_PAGE_PREFIX"] = "pdf-pages/"
-    config[f"{prefix}/TEXT_PAGE_PREFIX"] = "text-pages/"
-    config[f"{prefix}/TEXT_DOC_PREFIX"] = "text-docs/"
+    pdf_page_prefix = "pdf-pages/"
+    text_page_prefix = "text-pages/"
+    text_doc_prefix = "text-docs/"
+    config[f"{prefix}/PDF_PAGE_PREFIX"] = pdf_page_prefix
+    config[f"{prefix}/TEXT_PAGE_PREFIX"] = text_page_prefix
+    config[f"{prefix}/TEXT_DOC_PREFIX"] = text_doc_prefix
     module = load_lambda("combine", "services/idp/src/combine_lambda.py")
 
-    s3_stub.objects[("bucket", "pdf-pages/doc1/manifest.json")] = json.dumps(
+    s3_stub.objects[("bucket", f"{pdf_page_prefix}doc1/manifest.json")] = json.dumps(
         {"documentId": "doc1", "pages": 2}
     ).encode()
-    s3_stub.objects[("bucket", "text-pages/doc1/page_001.md")] = b"## Page 1\n\none\n"
-    s3_stub.objects[("bucket", "text-pages/doc1/page_002.md")] = b"## Page 2\n\ntwo\n"
+    s3_stub.objects[("bucket", f"{text_page_prefix}doc1/page_001.md")] = b"## Page 1\n\none\n"
+    s3_stub.objects[("bucket", f"{text_page_prefix}doc1/page_002.md")] = b"## Page 2\n\ntwo\n"
 
     event = {
         "Records": [
             {
                 "s3": {
                     "bucket": {"name": "bucket"},
-                    "object": {"key": "text-pages/doc1/page_001.md"},
+                    "object": {"key": f"{text_page_prefix}doc1/page_001.md"},
                 }
             }
         ]
     }
     module.lambda_handler(event, {})
 
-    output = json.loads(s3_stub.objects[("bucket", "text-docs/doc1.json")].decode())
+    output = json.loads(s3_stub.objects[("bucket", f"{text_doc_prefix}doc1.json")].decode())
     assert output["documentId"] == "doc1"
     assert output["pageCount"] == 2
     for i, page in enumerate(output["pages"], start=1):
@@ -251,7 +264,8 @@ def test_output(monkeypatch, s3_stub, validate_schema, config):
     prefix = "/parameters/aio/ameritasAI/dev"
     config["/parameters/aio/ameritasAI/SERVER_ENV"] = "dev"
     config[f"{prefix}/BUCKET_NAME"] = "bucket"
-    config[f"{prefix}/TEXT_DOC_PREFIX"] = "text-docs/"
+    text_doc_prefix = "text-docs/"
+    config[f"{prefix}/TEXT_DOC_PREFIX"] = text_doc_prefix
     config[f"{prefix}/EDI_SEARCH_API_URL"] = "http://example"
     config[f"{prefix}/EDI_SEARCH_API_KEY"] = "key"
     module = load_lambda("output", "services/idp/src/output_lambda.py")
@@ -262,7 +276,7 @@ def test_output(monkeypatch, s3_stub, validate_schema, config):
         "pageCount": 1,
         "pages": ["## Page 1\n\nhi\n"],
     }
-    s3_stub.objects[("bucket", "text-docs/doc1.json")] = json.dumps(payload).encode()
+    s3_stub.objects[("bucket", f"{text_doc_prefix}doc1.json")] = json.dumps(payload).encode()
 
     sent = {}
     monkeypatch.setattr(
@@ -276,7 +290,7 @@ def test_output(monkeypatch, s3_stub, validate_schema, config):
             {
                 "s3": {
                     "bucket": {"name": "bucket"},
-                    "object": {"key": "text-docs/doc1.json"},
+                    "object": {"key": f"{text_doc_prefix}doc1.json"},
                 }
             }
         ]
@@ -1161,12 +1175,13 @@ def test_processing_status(monkeypatch, s3_stub, config):
     prefix = "/parameters/aio/ameritasAI/dev"
     config["/parameters/aio/ameritasAI/SERVER_ENV"] = "dev"
     config[f"{prefix}/IDP_BUCKET"] = "bucket"
-    config[f"{prefix}/TEXT_DOC_PREFIX"] = "text-docs/"
+    text_doc_prefix = "text-docs/"
+    config[f"{prefix}/TEXT_DOC_PREFIX"] = text_doc_prefix
     module = load_lambda(
         "status_lambda", "services/file-ingestion/src/file_processing_status_lambda.py"
     )
     monkeypatch.setattr(module, "s3_client", s3_stub)
-    s3_stub.objects[("bucket", "text-docs/doc.json")] = b"x"
+    s3_stub.objects[("bucket", f"{text_doc_prefix}doc.json")] = b"x"
     event = ProcessingStatusEvent(document_id="doc")
     resp = module.lambda_handler(event, {})
     assert resp["statusCode"] == 200

@@ -16,7 +16,8 @@ def test_file_processing_lambda(monkeypatch, s3_stub, config):
     prefix = '/parameters/aio/ameritasAI/dev'
     config['/parameters/aio/ameritasAI/SERVER_ENV'] = 'dev'
     config[f'{prefix}/IDP_BUCKET'] = 'dest-bucket'
-    config[f'{prefix}/RAW_PREFIX'] = 'raw/'
+    raw_prefix = 'raw/'
+    config[f'{prefix}/RAW_PREFIX'] = raw_prefix
 
     s3_stub.objects[('bucket', 'path/test.docx')] = b'data'
 
@@ -27,7 +28,7 @@ def test_file_processing_lambda(monkeypatch, s3_stub, config):
     assert resp['statusCode'] == 200
     body = resp['body']
     assert len(body['document_id']) == 32 and all(c in '0123456789abcdef' for c in body['document_id'])
-    assert body['s3_location'] == 's3://dest-bucket/raw/test.docx'
+    assert body['s3_location'] == f's3://dest-bucket/{raw_prefix}test.docx'
     assert body['collection_name'] == 'c'
     # ensure the source file was tagged for deletion rather than removed
     assert ('bucket', 'path/test.docx') in s3_stub.objects
@@ -38,7 +39,8 @@ def test_file_processing_lambda_copy_verification_failed(monkeypatch, s3_stub, c
     prefix = '/parameters/aio/ameritasAI/dev'
     config['/parameters/aio/ameritasAI/SERVER_ENV'] = 'dev'
     config[f'{prefix}/IDP_BUCKET'] = 'dest-bucket'
-    config[f'{prefix}/RAW_PREFIX'] = 'raw/'
+    raw_prefix = 'raw/'
+    config[f'{prefix}/RAW_PREFIX'] = raw_prefix
 
     s3_stub.objects[('bucket', 'path/test.docx')] = b'data'
 
