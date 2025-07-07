@@ -15,8 +15,11 @@ Parameters:
   RouteLlmEndpoint:
     Type: String
     Default: ''
-  VectorSearchFunctionArn:
+  MilvusSearchFunctionArn:
     Type: String
+  EsSearchFunctionArn:
+    Type: String
+    Default: ''
   RerankFunctionArn:
     Type: String
     Default: ''
@@ -45,7 +48,8 @@ Resources:
       CodeUri: ./summarize-with-context-lambda/
       Environment:
         Variables:
-          VECTOR_SEARCH_FUNCTION: !Ref VectorSearchFunctionArn
+          VECTOR_SEARCH_FUNCTION: !Ref MilvusSearchFunctionArn
+          ES_VECTOR_SEARCH_FUNCTION: !Ref EsSearchFunctionArn
           RERANK_FUNCTION: !Ref RerankFunctionArn
           VECTOR_SEARCH_CANDIDATES: !Ref VectorSearchCandidates
           SUMMARY_ENDPOINT: !Ref SummaryEndpoint
@@ -64,7 +68,8 @@ Resources:
       CodeUri: ./extract-content-lambda/
       Environment:
         Variables:
-          VECTOR_SEARCH_FUNCTION: !Ref VectorSearchFunctionArn
+          VECTOR_SEARCH_FUNCTION: !Ref MilvusSearchFunctionArn
+          ES_VECTOR_SEARCH_FUNCTION: !Ref EsSearchFunctionArn
           CONTENT_ENDPOINT: !Ref ContentEndpoint
       Events:
         Api:
@@ -79,7 +84,8 @@ Resources:
       CodeUri: ./extract-entities-lambda/
       Environment:
         Variables:
-          VECTOR_SEARCH_FUNCTION: !Ref VectorSearchFunctionArn
+          VECTOR_SEARCH_FUNCTION: !Ref MilvusSearchFunctionArn
+          ES_VECTOR_SEARCH_FUNCTION: !Ref EsSearchFunctionArn
           ENTITIES_ENDPOINT: !Ref EntitiesEndpoint
       Events:
         Api:

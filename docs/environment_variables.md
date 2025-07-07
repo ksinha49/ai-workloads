@@ -53,6 +53,7 @@ Each service loads its configuration from Parameter Store or the Lambda environm
 ### RAG Retrieval
 
 - `VECTOR_SEARCH_FUNCTION` – ARN or name of the search Lambda. Set this to `VectorSearchFunctionArn` for pure similarity search or `HybridSearchFunctionArn` to enable keyword filtering.
+- `ES_VECTOR_SEARCH_FUNCTION` – ARN of the Elasticsearch search Lambda used when a request specifies `vectorDb: "es"`.
 - `SUMMARY_ENDPOINT` – optional summarization service URL.
 - `CONTENT_ENDPOINT` – endpoint for content extraction.
 - `ENTITIES_ENDPOINT` – endpoint for entity extraction.

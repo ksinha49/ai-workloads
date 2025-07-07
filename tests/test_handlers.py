@@ -807,6 +807,39 @@ def test_summarize_with_context_router(monkeypatch, config):
     assert out["summary"] == {"text": "ok"}
 
 
+def test_summarize_with_context_es(monkeypatch, config):
+    prefix = "/parameters/aio/ameritasAI/dev"
+    config["/parameters/aio/ameritasAI/SERVER_ENV"] = "dev"
+    config[f"{prefix}/VECTOR_SEARCH_FUNCTION"] = "vector-search"
+    config[f"{prefix}/ES_VECTOR_SEARCH_FUNCTION"] = "es-search"
+
+    class FakePayload:
+        def __init__(self, data):
+            self._data = data
+
+        def read(self):
+            return json.dumps(self._data).encode("utf-8")
+
+    def fake_invoke(FunctionName=None, Payload=None):
+        fake_invoke.calls.append(FunctionName)
+        return {"Payload": FakePayload({"matches": []})}
+
+    fake_invoke.calls = []
+
+    module = load_lambda(
+        "summ_ctx_es", "services/rag-retrieval/summarize-with-context-lambda/app.py"
+    )
+    monkeypatch.setattr(
+        module, "lambda_client", type("C", (), {"invoke": staticmethod(fake_invoke)})()
+    )
+    monkeypatch.setattr(module, "_sbert_embed", lambda t: [0.1])
+    module._MODEL_MAP["sbert"] = module._sbert_embed
+    monkeypatch.setattr(module, "forward_to_routellm", lambda p: {})
+
+    module.lambda_handler({"query": "hi", "collection_name": "c", "vectorDb": "es"}, {})
+    assert fake_invoke.calls[0] == "es-search"
+
+
 def test_rerank_lambda(monkeypatch, config):
     config["/parameters/aio/ameritasAI/SERVER_ENV"] = "dev"
     module = load_lambda("rerank", "services/rag-retrieval/rerank-lambda/app.py")

@@ -27,6 +27,7 @@ __modified_by__ = "Koushik Sinha"
 logger = configure_logger(__name__)
 
 LAMBDA_FUNCTION = get_config("VECTOR_SEARCH_FUNCTION") or os.environ.get("VECTOR_SEARCH_FUNCTION")
+ES_LAMBDA_FUNCTION = get_config("ES_VECTOR_SEARCH_FUNCTION") or os.environ.get("ES_VECTOR_SEARCH_FUNCTION")
 RERANK_FUNCTION = get_config("RERANK_FUNCTION") or os.environ.get("RERANK_FUNCTION")
 SEARCH_CANDIDATES = int(
     get_config("VECTOR_SEARCH_CANDIDATES")
@@ -38,11 +39,19 @@ ROUTELLM_ENDPOINT = get_config("ROUTELLM_ENDPOINT") or os.environ.get("ROUTELLM_
 lambda_client = boto3.client("lambda")
 
 
+def _select_search_function(vector_db: str | None) -> str:
+    """Return the Lambda name for the requested vector DB."""
+    if vector_db and vector_db.lower() in {"es", "elasticsearch"}:
+        return ES_LAMBDA_FUNCTION or LAMBDA_FUNCTION
+    return LAMBDA_FUNCTION
+
+
 class SummarizeEvent(BaseModel):
     collection_name: str
     query: str | None = None
     embedding: list[float] | None = None
     embedModel: str | None = None
+    vectorDb: str | None = None
     department: str | None = None
     team: str | None = None
     user: str | None = None
@@ -167,14 +176,15 @@ def _process_event(event: SummarizeEvent) -> Dict[str, Any]:
         if val is not None:
             search_payload[key] = val
     search_payload["collection_name"] = event.collection_name
+    search_lambda = _select_search_function(event.vectorDb)
     logger.info(
         "Invoking vector search function %s with payload %s",
-        LAMBDA_FUNCTION,
+        search_lambda,
         search_payload,
     )
     try:
         resp = lambda_client.invoke(
-            FunctionName=LAMBDA_FUNCTION,
+            FunctionName=search_lambda,
             Payload=json.dumps(search_payload).encode("utf-8"),
         )
         result = json.loads(resp["Payload"].read())
@@ -201,7 +211,7 @@ def _process_event(event: SummarizeEvent) -> Dict[str, Any]:
     router_payload = {
         k: v
         for k, v in event.model_dump().items()
-        if k != "embedding" and v is not None
+        if k not in {"embedding", "vectorDb"} and v is not None
     }
     router_payload["context"] = context_text
     logger.info("Forwarding payload to router at %s", ROUTELLM_ENDPOINT)
