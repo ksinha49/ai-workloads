@@ -1,6 +1,6 @@
 # Use Cases Overview
 
-Sample workflows built from the services in this repository live in this directory. Each use case demonstrates how multiple services can be composed to solve a specific problem.
+Use case workflows built from the AI services in this repository live in this directory. Each use case demonstrates how multiple services can be composed to solve a specific problem.
 
 | Use case directory | Description |
 |--------------------|-------------|
