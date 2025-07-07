@@ -114,6 +114,7 @@ Optionally include an `output_format` property to select `pdf`, `docx`, `json` o
 {
   "embedding": [0.1, 0.2, 0.3],
   "top_k": 5,
+  "storage_mode": "elastic",
   "collection_name": "my-collection",
   "department": "corp",
   "file_guid": "guid"
@@ -126,7 +127,7 @@ Optionally include an `output_format` property to select `pdf`, `docx`, `json` o
 {
   "collection_name": "my-collection",
   "query": "Explain AI",
-  "retrieve_params": {"top_k": 5},
+  "retrieve_params": {"top_k": 5, "storage_mode": "elastic"},
   "router_params": {"backend": "bedrock"},
   "llm_params": {"model": "llama2"}
 }
@@ -152,7 +153,8 @@ Optionally include an `output_format` property to select `pdf`, `docx`, `json` o
   "collection_name": "my-collection",
   "query": "What is AI?",
   "file_guid": "guid",
-  "department": "sales"
+  "department": "sales",
+  "storage_mode": "elastic"
 }
 ```
 

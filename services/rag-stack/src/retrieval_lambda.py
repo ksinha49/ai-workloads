@@ -51,6 +51,7 @@ class RetrievalEvent(BaseModel):
     department: str | None = None
     team: str | None = None
     user: str | None = None
+    storage_mode: str | None = None
 
     class Config:
         extra = "allow"
@@ -171,6 +172,8 @@ def _process_event(event: RetrievalEvent) -> Dict[str, Any]:
         if val is not None:
             search_payload[key] = val
     search_payload["collection_name"] = event.collection_name
+    if event.storage_mode:
+        search_payload["storage_mode"] = event.storage_mode
     logger.info(
         "Invoking vector search function %s with payload %s",
         LAMBDA_FUNCTION,

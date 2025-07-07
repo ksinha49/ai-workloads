@@ -58,9 +58,13 @@ def _process_event(event: Dict[str, Any]) -> Dict[str, Any]:
     emb = event.get("embedding")
     logger.info("Invoking vector search function %s", LAMBDA_FUNCTION)
     try:
+        payload = {"embedding": emb}
+        storage_mode = event.get("storage_mode")
+        if storage_mode:
+            payload["storage_mode"] = storage_mode
         resp = lambda_client.invoke(
             FunctionName=LAMBDA_FUNCTION,
-            Payload=json.dumps({"embedding": emb}).encode("utf-8"),
+            Payload=json.dumps(payload).encode("utf-8"),
         )
         result = json.loads(resp["Payload"].read())
     except (ClientError, BotoCoreError, json.JSONDecodeError) as exc:
