@@ -71,6 +71,16 @@ Resources:
         - python3.13
       RetentionPolicy: Delete
 
+  RouterLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: router-layer
+      Description: Helpers for router lambda
+      ContentUri: ../../common/layers/router-layer/
+      CompatibleRuntimes:
+        - python3.13
+      RetentionPolicy: Delete
+
   TextChunkFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -209,6 +219,8 @@ Resources:
     Properties:
       CodeUri: ./src/
       Handler: retrieval_lambda.lambda_handler
+      Layers:
+        - !Ref RouterLayer
       Environment:
         Variables:
           VECTOR_SEARCH_FUNCTION: !Ref VectorSearchFunctionArn
