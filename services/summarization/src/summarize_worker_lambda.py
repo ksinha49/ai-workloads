@@ -14,6 +14,10 @@ except Exception:  # pragma: no cover - allow import without httpx
     class HTTPError(Exception):
         pass
 from common_utils import configure_logger
+try:
+    from botocore.exceptions import BotoCoreError, ClientError
+except Exception:  # pragma: no cover - allow missing botocore
+    BotoCoreError = ClientError = Exception  # type: ignore
 
 logger = configure_logger(__name__)
 
@@ -31,11 +35,18 @@ def _invoke_summary(body: Dict[str, Any]) -> Dict[str, Any]:
         "file_guid": body.get("file_guid"),
         "document_id": body.get("document_id"),
     }
-    resp = lambda_client.invoke(
-        FunctionName=SUMMARY_FUNCTION_ARN,
-        Payload=json.dumps(payload).encode(),
-    )
-    data = json.load(resp["Payload"])
+    try:
+        resp = lambda_client.invoke(
+            FunctionName=SUMMARY_FUNCTION_ARN,
+            Payload=json.dumps(payload).encode(),
+        )
+        data = json.load(resp["Payload"])
+    except (ClientError, BotoCoreError, json.JSONDecodeError) as exc:
+        logger.exception("Failed to invoke summary function")
+        return {"error": str(exc)}
+    if "error" in data:
+        return {"error": data.get("error")}
+
     summary = data.get("result")
     if summary is None:
         try:
@@ -45,7 +56,7 @@ def _invoke_summary(body: Dict[str, Any]) -> Dict[str, Any]:
     return {"summary": summary}
 
 
-def _process_record(record: Dict[str, Any]) -> None:
+def _process_record(record: Dict[str, Any]) -> Dict[str, Any]:
     body = json.loads(record.get("body", record.get("Body", "{}")))
     token = body.get("token")
     if body.get("prompt_id") and PROMPT_ENGINE_ENDPOINT:
@@ -61,7 +72,12 @@ def _process_record(record: Dict[str, Any]) -> None:
     result = _invoke_summary(body)
     result.update({"file_guid": body.get("file_guid"), "document_id": body.get("document_id")})
     if token:
-        sf_client.send_task_success(taskToken=token, output=json.dumps(result))
+        try:
+            sf_client.send_task_success(taskToken=token, output=json.dumps(result))
+        except ClientError:
+            logger.exception("Failed to send task success")
+            result.setdefault("error", "Failed to send task success")
+    return result
 
 
 def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
