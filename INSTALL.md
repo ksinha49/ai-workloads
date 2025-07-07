@@ -9,8 +9,8 @@ This repository contains several AWS SAM templates. You can deploy all services 
 
 ## Clone the Repository
 ```bash
-git clone https://github.com/ameritascorp/aio-enterprise-ai-services.git
-cd aio-enterprise-ai-services
+git clone https://github.com/ksinha49/ai-workloads.git
+cd ai-workloads
 ```
 
 ## Dependency Layers

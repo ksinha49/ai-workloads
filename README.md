@@ -11,14 +11,12 @@ The repository includes the following directories under `services/`:
   extraction status
 - `idp` – Intelligent Document Processing pipeline (classification, OCR and text extraction)
 - `zip-processing` – extracts PDFs from uploaded archives and assembles new ZIPs
-- `rag-stack` – combined ingestion and retrieval Lambdas used for RAG workflows
+- `rag-stack` – combined ingestion and retrieval Lambdas used for RAG workflows. Includes a worker that polls the ingestion queue and starts the workflow
 - `vector-db` – manages Milvus collections and search Lambdas
- - `summarization` – runs the summarization workflow and generates PDF or DOCX reports
+- `summarization` – Step Function orchestrates retrieval and summary generation into PDF or DOCX reports
 - `llm-gateway` – renders templates and routes requests to the selected LLM backend
 - `knowledge-base` – ingest text snippets and query them through the retrieval stack
-- `sensitive-info-detection` – PII/PHI detection for text including legal entities
-- `entity-tokenization` – replaces sensitive entities with stable tokens
-- `text-anonymization` – replaces or masks detected entities in text
+- `anonymization` – detects sensitive entities, generates tokens and masks or pseudonymizes text
 
 Shared dependencies are packaged as layers in `common/layers/`.
 
@@ -49,8 +47,8 @@ Detailed descriptions of each service are available in
 Refer to [INSTALL.md](INSTALL.md) for detailed steps. In short:
 
 ```bash
-git clone https://github.com/ameritascorp/aio-enterprise-ai-services.git
-cd aio-enterprise-ai-services
+git clone https://github.com/ksinha49/ai-workloads.git
+cd ai-workloads
 sam build
 ```
 
@@ -106,10 +104,11 @@ so services can import modules and load models directly from EFS.
 ## Documentation
 
 Additional documentation is available in the `docs/` directory:
+- [docs/summarization_workflow.md](docs/summarization_workflow.md)
+- [docs/rag_ingestion_workflow.md](docs/rag_ingestion_workflow.md)
 
 - [docs/idp_output_format.md](docs/idp_output_format.md)
 - [docs/router_configuration.md](docs/router_configuration.md) – LLM Gateway router parameters and heuristics
-- [docs/summarization_workflow.md](docs/summarization_workflow.md) – APS summarization workflow from ZIP upload through final ZIP
 - [docs/prompt_engine.md](docs/prompt_engine.md)
 - [docs/knowledge_rag_usage.md](docs/knowledge_rag_usage.md)
 - [docs/rag_architecture.md](docs/rag_architecture.md)
@@ -118,6 +117,5 @@ Additional documentation is available in the `docs/` directory:
 - [docs/tokenization_workflow.md](docs/tokenization_workflow.md)
 - [docs/environment_variables.md](docs/environment_variables.md)
 - [docs/file_ingestion_workflow.md](docs/file_ingestion_workflow.md)
-- [docs/rag_ingestion_workflow.md](docs/rag_ingestion_workflow.md)
 - [docs/ecr_deployment.md](docs/ecr_deployment.md)
 - [Deploying Lambdas from ECR Images](docs/ecr_deployment.md#deploying-lambdas-from-ecr-images)
