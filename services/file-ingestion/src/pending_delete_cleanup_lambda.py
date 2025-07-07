@@ -1,6 +1,7 @@
 import os
 import datetime
 import boto3
+from botocore.exceptions import ClientError
 from common_utils import configure_logger
 from common_utils.get_ssm import get_config
 
@@ -22,20 +23,49 @@ CLEANUP_BUCKETS = [
 def lambda_handler(event, context):
     cutoff = datetime.datetime.utcnow() - datetime.timedelta(days=DELETE_AFTER_DAYS)
     deleted = 0
+    failures = []
     for bucket in CLEANUP_BUCKETS:
         token = None
         while True:
-            resp = _s3.list_objects_v2(Bucket=bucket, ContinuationToken=token) if token else _s3.list_objects_v2(Bucket=bucket)
+            try:
+                resp = (
+                    _s3.list_objects_v2(Bucket=bucket, ContinuationToken=token)
+                    if token
+                    else _s3.list_objects_v2(Bucket=bucket)
+                )
+            except ClientError:
+                logger.exception("Failed to list objects for bucket %s", bucket)
+                failures.append({"bucket": bucket, "action": "list_objects"})
+                break
             for obj in resp.get("Contents", []):
                 if obj.get("LastModified", datetime.datetime.utcnow()) >= cutoff:
                     continue
-                tags = _s3.get_object_tagging(Bucket=bucket, Key=obj["Key"]).get("TagSet", [])
+                try:
+                    tags = _s3.get_object_tagging(Bucket=bucket, Key=obj["Key"]).get(
+                        "TagSet", []
+                    )
+                except ClientError:
+                    logger.exception(
+                        "Failed to get tags for %s in bucket %s", obj["Key"], bucket
+                    )
+                    failures.append(
+                        {"bucket": bucket, "key": obj["Key"], "action": "get_tags"}
+                    )
+                    continue
                 if any(t["Key"] == "pending-delete" and t["Value"] == "true" for t in tags):
-                    _s3.delete_object(Bucket=bucket, Key=obj["Key"])
-                    deleted += 1
+                    try:
+                        _s3.delete_object(Bucket=bucket, Key=obj["Key"])
+                        deleted += 1
+                    except ClientError:
+                        logger.exception(
+                            "Failed to delete %s from bucket %s", obj["Key"], bucket
+                        )
+                        failures.append(
+                            {"bucket": bucket, "key": obj["Key"], "action": "delete"}
+                        )
             if resp.get("IsTruncated"):
                 token = resp.get("NextContinuationToken")
             else:
                 break
     logger.info("Deleted %s objects", deleted)
-    return {"deleted": deleted}
+    return {"deleted": deleted, "failures": failures}

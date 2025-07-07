@@ -108,6 +108,14 @@ _stub_module("PyPDF2", {"PdfReader": _DummyReader, "PdfWriter": object})
 
 @pytest.fixture(autouse=True)
 def external_stubs():
+    _stub_module("botocore", {})
+    _stub_module(
+        "botocore.exceptions",
+        {
+            "ClientError": DummyS3.exceptions.ClientError,
+            "BotoCoreError": Exception,
+        },
+    )
     _stub_module("fitz", {"open": lambda *a, **k: types.SimpleNamespace(page_count=1, __iter__=lambda self: [], __getitem__=lambda self, i: types.SimpleNamespace(get_text=lambda: ""), __enter__=lambda self: self, __exit__=lambda self, exc_type, exc, tb: None)})
     _stub_module("docx", {"Document": lambda *a, **k: types.SimpleNamespace(paragraphs=[types.SimpleNamespace(text="doc text")])})
     _stub_module("pptx", {"Presentation": lambda *a, **k: types.SimpleNamespace(slides=[types.SimpleNamespace(shapes=[types.SimpleNamespace(text="slide text")])])})
