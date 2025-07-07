@@ -50,11 +50,20 @@ Globals:
     MemorySize: 512
 
 Resources:
+  CommonUtilsLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      ContentUri: ../../common/layers/common-utils/
+      CompatibleRuntimes:
+        - python3.13
+      RetentionPolicy: Delete
   DetectSensitiveInfoFunction:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: ./src/
       Handler: detect_sensitive_info_lambda.lambda_handler
+      Layers:
+        - !Ref CommonUtilsLayer
       Environment:
         Variables:
           NER_LIBRARY: !Ref NerLibrary
@@ -88,6 +97,8 @@ Resources:
     Properties:
       CodeUri: ./src/
       Handler: tokenize_entities_lambda.lambda_handler
+      Layers:
+        - !Ref CommonUtilsLayer
       Environment:
         Variables:
           TOKEN_TABLE: !Ref TokenTableName
@@ -108,6 +119,8 @@ Resources:
     Properties:
       CodeUri: ./src/
       Handler: mask_text_lambda.lambda_handler
+      Layers:
+        - !Ref CommonUtilsLayer
       Environment:
         Variables:
           ANON_MODE: !Ref AnonymizationMode

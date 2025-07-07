@@ -90,6 +90,14 @@ Resources:
       CompatibleRuntimes:
         - python3.13
 
+  CommonUtilsLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      ContentUri: ../../common/layers/common-utils/
+      CompatibleRuntimes:
+        - python3.13
+      RetentionPolicy: Delete
+
   DocumentAuditTable:
     Type: AWS::DynamoDB::Table
     Properties:
@@ -116,6 +124,7 @@ Resources:
         Size: 2068
       Layers:
         - !Ref FileProcessingLambdaLayer
+        - !Ref CommonUtilsLayer
       VpcConfig:
         SecurityGroupIds:
           - !Ref LambdaSecurityGroupID1
@@ -159,6 +168,7 @@ Resources:
         Size: 2068
       Layers:
         - !Ref FileProcessingStatusLambdaLayer
+        - !Ref CommonUtilsLayer
       VpcConfig:
         SecurityGroupIds:
           - !Ref LambdaSecurityGroupID1
@@ -194,6 +204,8 @@ Resources:
       Role: !Ref LambdaIAMRoleARN
       MemorySize: 256
       Timeout: 300
+      Layers:
+        - !Ref CommonUtilsLayer
       Environment:
         Variables:
           CLEANUP_BUCKETS: !Ref CleanupBuckets

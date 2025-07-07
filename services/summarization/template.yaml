@@ -60,6 +60,14 @@ Resources:
       CompatibleRuntimes:
         - python3.13
 
+  CommonUtilsLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      ContentUri: ../../common/layers/common-utils/
+      CompatibleRuntimes:
+        - python3.13
+      RetentionPolicy: Delete
+
   LoadPromptsFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -71,6 +79,7 @@ Resources:
       MemorySize: 512
       Layers:
         - !Ref PromptEngineLayer
+        - !Ref CommonUtilsLayer
       VpcConfig:
         SecurityGroupIds:
           - !Ref LambdaSecurityGroupID1
@@ -95,6 +104,7 @@ Resources:
       Timeout: 900
       Layers:
         - !Ref PromptEngineLayer
+        - !Ref CommonUtilsLayer
       VpcConfig:
         SecurityGroupIds:
           - !Ref LambdaSecurityGroupID1
@@ -118,6 +128,7 @@ Resources:
       MemorySize: 512
       Layers:
         - !Ref FileSummaryLayer
+        - !Ref CommonUtilsLayer
       VpcConfig:
         SecurityGroupIds:
           - !Ref LambdaSecurityGroupID1

@@ -21,11 +21,20 @@ Globals:
     MemorySize: 512
 
 Resources:
+  CommonUtilsLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      ContentUri: ../../common/layers/common-utils/
+      CompatibleRuntimes:
+        - python3.13
+      RetentionPolicy: Delete
   IngestFunction:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: ./src/
       Handler: ingest_lambda.lambda_handler
+      Layers:
+        - !Ref CommonUtilsLayer
       Environment:
         Variables:
           STATE_MACHINE_ARN: !Ref IngestionStateMachineArn
@@ -37,6 +46,8 @@ Resources:
     Properties:
       CodeUri: ./src/
       Handler: query_lambda.lambda_handler
+      Layers:
+        - !Ref CommonUtilsLayer
       Environment:
         Variables:
           SUMMARY_QUEUE_URL: !Ref SummarizeQueueUrl
