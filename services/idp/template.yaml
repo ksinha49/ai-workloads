@@ -115,11 +115,21 @@ Resources:
         - python3.13
       RetentionPolicy: Delete
 
+  CommonUtilsLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      ContentUri: ../../common/layers/common-utils/
+      CompatibleRuntimes:
+        - python3.13
+      RetentionPolicy: Delete
+
   ClassifierFunction:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: ./src/
       Handler: classifier_lambda.lambda_handler
+      Layers:
+        - !Ref CommonUtilsLayer
       Events:
         RawUpload:
           Type: S3
@@ -137,6 +147,8 @@ Resources:
     Properties:
       CodeUri: ./src/
       Handler: office_extractor_lambda.lambda_handler
+      Layers:
+        - !Ref CommonUtilsLayer
       Events:
         FromClassifier:
           Type: S3
@@ -154,6 +166,8 @@ Resources:
     Properties:
       CodeUri: ./src/
       Handler: pdf_split_lambda.lambda_handler
+      Layers:
+        - !Ref CommonUtilsLayer
       Events:
         FromOffice:
           Type: S3
@@ -171,6 +185,8 @@ Resources:
     Properties:
       CodeUri: ./src/
       Handler: pdf_page_classifier_lambda.lambda_handler
+      Layers:
+        - !Ref CommonUtilsLayer
       Events:
         FromSplit:
           Type: S3
@@ -188,6 +204,8 @@ Resources:
     Properties:
       CodeUri: ./src/
       Handler: pdf_text_extractor_lambda.lambda_handler
+      Layers:
+        - !Ref CommonUtilsLayer
       Events:
         FromPageClassifier:
           Type: S3
@@ -207,6 +225,7 @@ Resources:
       Handler: pdf_ocr_extractor_lambda.lambda_handler
       Layers:
         - !Ref OCRLayer
+        - !Ref CommonUtilsLayer
       Environment:
         Variables:
           OCR_ENGINE: !Ref OCR_ENGINE
@@ -229,6 +248,8 @@ Resources:
     Properties:
       CodeUri: ./src/
       Handler: combine_lambda.lambda_handler
+      Layers:
+        - !Ref CommonUtilsLayer
       Events:
         FromOcr:
           Type: S3
@@ -246,6 +267,8 @@ Resources:
     Properties:
       CodeUri: ./src/
       Handler: output_lambda.lambda_handler
+      Layers:
+        - !Ref CommonUtilsLayer
       Events:
         FromCombine:
           Type: S3

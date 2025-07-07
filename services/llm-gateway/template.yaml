@@ -136,11 +136,21 @@ Resources:
         - python3.13
       RetentionPolicy: Delete
 
+  CommonUtilsLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      ContentUri: ../../common/layers/common-utils/
+      CompatibleRuntimes:
+        - python3.13
+      RetentionPolicy: Delete
+
   PromptEngineFunction:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: ./src/
       Handler: prompt_engine_lambda.lambda_handler
+      Layers:
+        - !Ref CommonUtilsLayer
       Role: !Ref LambdaIAMRoleARN
       VpcConfig:
         SecurityGroupIds:
@@ -162,6 +172,7 @@ Resources:
       Handler: llm_router_lambda.lambda_handler
       Layers:
         - !Ref RouterLayer
+        - !Ref CommonUtilsLayer
       Environment:
         Variables:
           BEDROCK_OPENAI_ENDPOINTS: !Ref BedrockOpenAIEndpoint
@@ -179,6 +190,7 @@ Resources:
       Handler: llm_invocation_lambda.lambda_handler
       Layers:
         - !Ref LlmInvocationLayer
+        - !Ref CommonUtilsLayer
       Environment:
         Variables:
           BEDROCK_OPENAI_ENDPOINTS: !Ref BedrockOpenAIEndpoint

@@ -44,11 +44,21 @@ Resources:
         AttributeName: expires_at
         Enabled: true
 
+  CommonUtilsLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      ContentUri: ../../common/layers/common-utils/
+      CompatibleRuntimes:
+        - python3.13
+      RetentionPolicy: Delete
+
   VectorDbProxyFunction:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: ./src/
       Handler: proxy.vector_db_proxy_lambda.lambda_handler
+      Layers:
+        - !Ref CommonUtilsLayer
       Environment:
         Variables:
           DEFAULT_VECTOR_DB_BACKEND: !Ref DefaultVectorDbBackend
@@ -64,6 +74,8 @@ Resources:
     Properties:
       CodeUri: ./src/
       Handler: milvus_handler_lambda.lambda_handler
+      Layers:
+        - !Ref CommonUtilsLayer
       Environment:
         Variables:
           MILVUS_HOST: !Ref MilvusHost
@@ -75,6 +87,8 @@ Resources:
     Properties:
       CodeUri: ./src/
       Handler: elastic_search_handler_lambda.lambda_handler
+      Layers:
+        - !Ref CommonUtilsLayer
       Environment:
         Variables:
           ELASTICSEARCH_URL: !Ref ElasticsearchUrl
@@ -85,6 +99,8 @@ Resources:
     Properties:
       CodeUri: ./src/
       Handler: jobs.cleanup_ephemeral_lambda.lambda_handler
+      Layers:
+        - !Ref CommonUtilsLayer
       Environment:
         Variables:
           EPHEMERAL_TABLE: !Ref EphemeralTable

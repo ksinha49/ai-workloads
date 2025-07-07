@@ -81,6 +81,14 @@ Resources:
         - python3.13
       RetentionPolicy: Delete
 
+  CommonUtilsLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      ContentUri: ../../common/layers/common-utils/
+      CompatibleRuntimes:
+        - python3.13
+      RetentionPolicy: Delete
+
   TextChunkFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -88,12 +96,15 @@ Resources:
       Handler: text_chunk_lambda.lambda_handler
       Layers:
         - !Ref ChunkingLayer
+        - !Ref CommonUtilsLayer
 
   EmbedFunction:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: ./src/
       Handler: embed_lambda.lambda_handler
+      Layers:
+        - !Ref CommonUtilsLayer
 
   IngestionStateMachine:
     Type: AWS::Serverless::StateMachine
@@ -167,6 +178,8 @@ Resources:
       Role: !Ref LambdaIAMRoleARN
       MemorySize: 512
       Timeout: 300
+      Layers:
+        - !Ref CommonUtilsLayer
       VpcConfig:
         SecurityGroupIds:
           - !Ref LambdaSecurityGroupID1
@@ -221,6 +234,7 @@ Resources:
       Handler: retrieval_lambda.lambda_handler
       Layers:
         - !Ref RouterLayer
+        - !Ref CommonUtilsLayer
       Environment:
         Variables:
           VECTOR_SEARCH_FUNCTION: !Ref VectorSearchFunctionArn
@@ -235,6 +249,8 @@ Resources:
     Properties:
       CodeUri: ./src/
       Handler: extract_content_lambda.lambda_handler
+      Layers:
+        - !Ref CommonUtilsLayer
       Environment:
         Variables:
           VECTOR_SEARCH_FUNCTION: !Ref VectorSearchFunctionArn
@@ -245,6 +261,8 @@ Resources:
     Properties:
       CodeUri: ./src/
       Handler: extract_entities_lambda.lambda_handler
+      Layers:
+        - !Ref CommonUtilsLayer
       Environment:
         Variables:
           VECTOR_SEARCH_FUNCTION: !Ref VectorSearchFunctionArn
@@ -255,6 +273,8 @@ Resources:
     Properties:
       CodeUri: ./src/
       Handler: rerank_lambda.lambda_handler
+      Layers:
+        - !Ref CommonUtilsLayer
       Environment:
         Variables:
           TOP_K: !Ref VectorSearchCandidates

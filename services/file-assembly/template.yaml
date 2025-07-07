@@ -43,6 +43,14 @@ Resources:
       CompatibleRuntimes:
         - python3.13
 
+  CommonUtilsLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      ContentUri: ../../common/layers/common-utils/
+      CompatibleRuntimes:
+        - python3.13
+      RetentionPolicy: Delete
+
   FileAssembleLambdaFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -57,6 +65,7 @@ Resources:
         Size: 2068
       Layers:
         - !Ref FileAssembleLambdaLayer
+        - !Ref CommonUtilsLayer
       VpcConfig:
         SecurityGroupIds:
           - !Ref LambdaSecurityGroupID1
