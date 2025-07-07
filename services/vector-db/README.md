@@ -42,6 +42,19 @@ Collections created for short‑lived experiments can be marked as
 drops any expired collections from Milvus before removing the table
 entries.
 
+To create an ephemeral collection send a `create` request with the
+`ephemeral` flag set to `true` and an `expires_at` UNIX timestamp:
+
+```json
+{
+  "operation": "create",
+  "collection_name": "tmp123",
+  "dimension": 768,
+  "ephemeral": true,
+  "expires_at": 1700000000
+}
+```
+
 ## Environment variables
 
 `template.yaml` exposes several parameters that become Lambda environment

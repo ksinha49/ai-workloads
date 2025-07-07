@@ -74,11 +74,29 @@ def _update(event: Dict[str, Any]) -> Dict[str, Any]:
 
 def _create(event: Dict[str, Any]) -> Dict[str, Any]:
     dimension = int(event.get("dimension", 768))
+    collection = event.get("collection_name")
+    client_obj = client if collection is None else MilvusClient(collection_name=collection)
     try:
-        client.create_collection(dimension=dimension)
+        client_obj.create_collection(dimension=dimension)
     except Exception as exc:
         logger.exception("Failed to create Milvus collection")
         return {"error": str(exc)}
+
+    if event.get("ephemeral"):
+        table_name = os.environ.get("EPHEMERAL_TABLE")
+        expires = event.get("expires_at")
+        if table_name and expires:
+            try:
+                import boto3
+
+                boto3.resource("dynamodb").Table(table_name).put_item(
+                    Item={
+                        "collection_name": client_obj.collection_name,
+                        "expires_at": int(expires),
+                    }
+                )
+            except Exception:  # pragma: no cover - runtime safety
+                logger.exception("Failed to record ephemeral collection")
     return {"created": True}
 
 
