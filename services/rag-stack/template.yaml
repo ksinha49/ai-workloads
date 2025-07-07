@@ -138,13 +138,15 @@ Resources:
               Payload: '{% $states.input %}'
             End: true
         QueryLanguage: JSONata
-      Policies:
-        - LambdaInvokePolicy:
-            FunctionName: !Ref TextChunkFunction
-        - LambdaInvokePolicy:
-            FunctionName: !Ref EmbedFunction
-      Events:
-        NewTextDoc:
+        Policies:
+          - LambdaInvokePolicy:
+              FunctionName: !Ref TextChunkFunction
+          - LambdaInvokePolicy:
+              FunctionName: !Ref EmbedFunction
+          - LambdaInvokePolicy:
+              FunctionName: !Ref MilvusInsertFunctionArn
+        Events:
+          NewTextDoc:
           Type: S3
           Properties:
             Bucket: !Ref BucketName
