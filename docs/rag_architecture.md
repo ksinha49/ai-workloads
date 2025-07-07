@@ -8,7 +8,7 @@ This guide illustrates how the retrieval augmented generation components connect
 - **idp** – Intelligent Document Processing pipeline used by file-ingestion for OCR and classification.
 - **rag-stack** – chunks documents, generates embeddings and performs retrieval.
 - **rag-stack-worker** – polls `IngestionQueue` and starts the ingestion workflow, moving failed messages to a DLQ. The queue URL is exported as `IngestionQueueUrl` for other stacks.
-- **vector-db** – maintains Milvus collections used for semantic search.
+- **vector-db** – manages Milvus or Elasticsearch backends used for semantic search.
 - **knowledge-base** – stores metadata for ingested chunks and exposes `/kb/*` endpoints.
 - **summarization** – Step Function workflow that can call retrieval functions when creating summaries.
 
@@ -51,7 +51,7 @@ sequenceDiagram
 
 The summarization Step Function may invoke retrieval during its workflow to supply
 relevant context before generating the final response. Both ingestion and
-retrieval rely on the `vector-db` service to manage Milvus collections.
+retrieval rely on the `vector-db` service to manage vector database backends.
 
 In a typical flow the `file-ingestion` Step Function copies the file to the IDP
 bucket and waits until text extraction completes. After the IDP pipeline

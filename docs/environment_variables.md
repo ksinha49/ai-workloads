@@ -62,6 +62,7 @@ Each service loads its configuration from Parameter Store or the Lambda environm
 - `ELASTICSEARCH_URL` – Elasticsearch endpoint.
 - `ELASTICSEARCH_INDEX_PREFIX` – index name prefix used by the proxy.
 - `EPHEMERAL_TABLE` – DynamoDB table storing ephemeral collections.
+- `storage_mode` event field can override the backend per invocation.
 
 ### RAG Retrieval
 
