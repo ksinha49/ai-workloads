@@ -64,6 +64,13 @@ Values are cached by the shared `get_values_from_ssm` helper using
 When the `SSM_CACHE_TABLE` environment variable is defined, the cache
 uses DynamoDB to persist entries across cold starts.
 
+### Logging
+
+The default log level is `INFO` but can be overridden using the `LOG_LEVEL`
+environment variable. Set `LOG_JSON=true` to emit structured logs in JSON
+format. Both variables may also be supplied via Parameter Store using the same
+names.
+
 ### OCR Engine
 
 The `OCR_ENGINE` variable controls which OCR backend to use:
