@@ -6,6 +6,8 @@ import logging
 import os
 from typing import Any, Dict
 
+from pydantic import BaseModel, ValidationError
+
 import boto3
 from common_utils import configure_logger
 from common_utils.get_ssm import get_config
@@ -24,8 +26,31 @@ STATE_MACHINE_ARN = get_config("STATE_MACHINE_ARN") or os.environ.get("STATE_MAC
 QUEUE_URL = get_config("QUEUE_URL") or os.environ.get("QUEUE_URL")
 
 
+class IngestionRecord(BaseModel):
+    text: str
+    collection_name: str
+    docType: str | None = None
+    file_guid: str | None = None
+    file_name: str | None = None
+    department: str | None = None
+    team: str | None = None
+    user: str | None = None
+
+    class Config:
+        extra = "allow"
+
+
 def _process_record(record: Dict[str, Any]) -> None:
-    body = json.loads(record.get("body", record.get("Body", "{}")))
+    try:
+        body = json.loads(record.get("body", record.get("Body", "{}")))
+    except json.JSONDecodeError as exc:
+        logger.error("Failed to decode record body: %s", exc)
+        return
+    try:
+        data = IngestionRecord.parse_obj(body)
+    except ValidationError as exc:
+        logger.error("Invalid record: %s", exc)
+        return
     try:
         sf_client.start_execution(
             stateMachineArn=STATE_MACHINE_ARN,

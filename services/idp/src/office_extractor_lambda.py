@@ -13,6 +13,7 @@ import io
 import json
 import os
 from typing import Iterable
+from pydantic import BaseModel, ValidationError
 from models import S3Event, LambdaResponse
 
 import boto3
@@ -29,6 +30,17 @@ __modified_by__ = "Koushik Sinha"
 logger = configure_logger(__name__)
 
 s3_client = boto3.client("s3")
+
+
+class OfficeRecord(BaseModel):
+    bucket: str
+    key: str
+
+    @classmethod
+    def parse_record(cls, record: dict) -> "OfficeRecord":
+        bucket = record.get("s3", {}).get("bucket", {}).get("name")
+        key = record.get("s3", {}).get("object", {}).get("key")
+        return cls(bucket=bucket, key=key)
 
 
 
@@ -76,8 +88,13 @@ def _process_record(record: dict, document_id: str | None = None) -> None:
     ``TEXT_DOC_PREFIX``.
     """
 
-    bucket = record.get("s3", {}).get("bucket", {}).get("name")
-    key = record.get("s3", {}).get("object", {}).get("key")
+    try:
+        rec = OfficeRecord.parse_record(record)
+    except ValidationError as exc:
+        logger.error("Invalid record: %s", exc)
+        return
+    bucket = rec.bucket
+    key = rec.key
     bucket_name = get_config("BUCKET_NAME", bucket, key)
     office_prefix = get_config("OFFICE_PREFIX", bucket, key) or os.environ.get("OFFICE_PREFIX", "")
     text_doc_prefix = get_config("TEXT_DOC_PREFIX", bucket, key) or os.environ.get("TEXT_DOC_PREFIX")

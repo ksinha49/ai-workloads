@@ -6,6 +6,8 @@ import os
 import logging
 from typing import Any, Dict
 
+from pydantic import BaseModel, ValidationError
+
 import boto3
 import httpx
 try:  # pragma: no cover - optional dependency
@@ -32,6 +34,19 @@ SUMMARY_FUNCTION_ARN = (
 PROMPT_ENGINE_ENDPOINT = (
     get_config("PROMPT_ENGINE_ENDPOINT") or os.environ.get("PROMPT_ENGINE_ENDPOINT")
 )
+
+
+class SummaryRecord(BaseModel):
+    collection_name: str
+    query: str | None = None
+    file_guid: str | None = None
+    document_id: str | None = None
+    token: str | None = None
+    prompt_id: str | None = None
+    variables: Dict[str, Any] | None = None
+
+    class Config:
+        extra = "allow"
 
 
 def _invoke_summary(body: Dict[str, Any]) -> Dict[str, Any]:
@@ -63,13 +78,22 @@ def _invoke_summary(body: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def _process_record(record: Dict[str, Any]) -> Dict[str, Any]:
-    body = json.loads(record.get("body", record.get("Body", "{}")))
-    token = body.get("token")
-    if body.get("prompt_id") and PROMPT_ENGINE_ENDPOINT:
+    try:
+        body = json.loads(record.get("body", record.get("Body", "{}")))
+    except json.JSONDecodeError as exc:
+        logger.error("Failed to decode record body: %s", exc)
+        return {}
+    try:
+        data = SummaryRecord.parse_obj(body)
+    except ValidationError as exc:
+        logger.error("Invalid record: %s", exc)
+        return {}
+    token = data.token
+    if data.prompt_id and PROMPT_ENGINE_ENDPOINT:
         try:
             resp = httpx.post(
                 PROMPT_ENGINE_ENDPOINT,
-                json={"prompt_id": body.get("prompt_id"), "variables": body.get("variables")},
+                json={"prompt_id": data.prompt_id, "variables": data.variables},
             )
             resp.raise_for_status()
         except HTTPError:  # pragma: no cover - log and continue
