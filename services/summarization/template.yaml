@@ -35,10 +35,18 @@ Parameters:
     Type: String
 
 Resources:
+  SummaryDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      MessageRetentionPeriod: 1209600
+
   SummaryQueue:
     Type: AWS::SQS::Queue
     Properties:
       VisibilityTimeout: 300
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt SummaryDLQ.Arn
+        maxReceiveCount: 5
 
   PromptEngineLayer:
     Type: AWS::Serverless::LayerVersion
@@ -189,3 +197,6 @@ Outputs:
   SummaryQueueUrl:
     Description: URL of the summary SQS queue
     Value: !Ref SummaryQueue
+  SummaryDLQArn:
+    Description: ARN of the summary dead letter queue
+    Value: !GetAtt SummaryDLQ.Arn

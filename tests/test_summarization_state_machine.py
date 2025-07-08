@@ -5,3 +5,4 @@ def test_summarization_template_contains_workflow_only():
     assert 'SummarizationWorkflow:' in content
     assert 'FileProcessingStepFunction' not in content
     assert 'SummarizationWorkflowArn' in content
+    assert 'deadLetterTargetArn: !GetAtt SummaryDLQ.Arn' in content
