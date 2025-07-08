@@ -33,6 +33,8 @@ Parameters:
     Type: String
   RAGSummaryFunctionArn:
     Type: String
+  VectorDbProxyFunctionArn:
+    Type: String
   FileProcessingEmailId:
     Type: String
   FontDir:
@@ -93,6 +95,7 @@ Resources:
       Environment:
         Variables:
           FONT_DIR: !Ref FontDir
+          DEFAULT_VECTOR_DB_BACKEND: milvus
 
   ZipSFStartPolicy:
     Type: AWS::IAM::Policy
@@ -107,13 +110,35 @@ Resources:
             Action: states:StartExecution
             Resource: !GetAtt ZipProcessingService.Outputs.ZipFileProcessingStepFunctionArn
 
+  VectorDbInvokePolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Sub '${AWSAccountName}-${AWS::StackName}-vector-db-invoke'
+      Roles:
+        - !Select [1, !Split ['/', !Ref LambdaIAMRoleARN]]
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action: lambda:InvokeFunction
+            Resource: !Ref VectorDbProxyFunctionArn
+
   APSStateMachine:
     Type: AWS::Serverless::StateMachine
     Properties:
       Definition:
         Comment: APS summarization wrapper
-        StartAt: ProcessZip
+        StartAt: CreateCollection
         States:
+          CreateCollection:
+            Type: Task
+            Resource: !Ref VectorDbProxyFunctionArn
+            Parameters:
+              operation: create
+              collection_name: aps-summary-collection
+              ephemeral: true
+              expires_at.$: States.Format('{}', States.MathAdd($$.Execution.StartTime, 86400))
+            Next: ProcessZip
           ProcessZip:
             Type: Task
             Resource: arn:aws:states:::states:startExecution.sync
@@ -123,6 +148,8 @@ Resources:
                 workflow_id: aps
                 font_dir: !Ref FontDir
                 labels_path: !Ref LabelsPath
+                collection_name: aps-summary-collection
+                storage_mode: milvus
                 body.$: $.body
             Next: PostProcess
           PostProcess:
