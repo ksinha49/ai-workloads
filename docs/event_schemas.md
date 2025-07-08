@@ -140,6 +140,8 @@ Optionally include an `output_format` property to select `pdf`, `docx`, `json` o
   "text": "Document text",
   "collection_name": "my-collection",
   "docType": "pdf",
+  "file_guid": "guid",
+  "file_name": "document.pdf",
   "department": "sales",
   "team": "team1",
   "user": "alice"
