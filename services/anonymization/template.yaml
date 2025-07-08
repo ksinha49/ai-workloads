@@ -84,11 +84,26 @@ Resources:
     Type: AWS::DynamoDB::Table
     Properties:
       AttributeDefinitions:
-        - AttributeName: token
+        - AttributeName: entity
+          AttributeType: S
+        - AttributeName: entity_type
+          AttributeType: S
+        - AttributeName: domain
           AttributeType: S
       KeySchema:
-        - AttributeName: token
+        - AttributeName: entity
           KeyType: HASH
+        - AttributeName: entity_type
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: DomainIndex
+          KeySchema:
+            - AttributeName: entity
+              KeyType: HASH
+            - AttributeName: domain
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
       BillingMode: PAY_PER_REQUEST
       TableName: !Ref TokenTableName
 

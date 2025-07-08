@@ -42,7 +42,7 @@ This consolidated service groups three Lambdas for detecting, tokenizing and ano
 
 ### DynamoDB tables
 
-The `tokenize_entities_lambda` uses the `TOKEN_TABLE` DynamoDB table to persist entity/token mappings. The table name is exported as `TokenTableName` for other stacks.
+The `tokenize_entities_lambda` uses the `TOKEN_TABLE` DynamoDB table to persist entity/token mappings. The table stores items with `entity` as the partition key and `entity_type` as the sort key. A `DomainIndex` GSI allows lookups by domain. The table name is exported as `TokenTableName` for other stacks.
 
 ## Deployment
 

@@ -15,8 +15,19 @@ class FakeTable:
     def __init__(self, items=None):
         self.items = items or []
 
-    def scan(self):
-        return {"Items": list(self.items)}
+    def query(self, **kwargs):
+        vals = kwargs.get("ExpressionAttributeValues", {})
+        e = vals.get(":e")
+        d = vals.get(":d")
+        t = vals.get(":t")
+        items = [
+            i
+            for i in self.items
+            if i.get("entity") == e
+            and i.get("domain") == d
+            and i.get("entity_type") == t
+        ]
+        return {"Items": items}
 
     def put_item(self, Item=None):
         self.items.append(Item)
