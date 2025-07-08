@@ -113,10 +113,23 @@ def test_lambda_handler_malicious_prompt(monkeypatch):
     out = module.lambda_handler(event, {})
     assert out["statusCode"] == 202
     queued = calls[0]
-    assert "<" not in queued["prompt"]
-    assert ">" not in queued["prompt"]
-    assert "'" not in queued["prompt"]
-    assert '"' not in queued["prompt"]
+    from html import escape as html_escape
+    assert queued["prompt"] == html_escape("<script>alert('x')</script>")
+
+
+def test_lambda_handler_malicious_img_prompt(monkeypatch):
+    monkeypatch.setenv("INVOCATION_QUEUE_URL", "url")
+    calls = []
+    monkeypatch.setattr(sys.modules["boto3"], "client", lambda name: _make_fake_send(calls))
+    module = load_lambda("router_lambda_malicious_img", "services/llm-gateway/src/llm_router_lambda.py")
+    module.sqs_client = sys.modules["boto3"].client("sqs")
+
+    event = {"body": json.dumps({"prompt": "<img src=x onerror=alert(1)>"})}
+    out = module.lambda_handler(event, {})
+    assert out["statusCode"] == 202
+    queued = calls[0]
+    from html import escape as html_escape
+    assert queued["prompt"] == html_escape("<img src=x onerror=alert(1)>")
 
 
 def test_lambda_handler_bad_prompt_type(monkeypatch):

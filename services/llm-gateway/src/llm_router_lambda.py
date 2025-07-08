@@ -93,10 +93,15 @@ def _sanitize_payload(payload: Dict[str, Any]) -> Dict[str, Any]:
     if payload.get("backend") and payload["backend"] not in ALLOWED_BACKENDS:
         raise ValueError("unsupported backend")
 
-    # Strip non-printable characters that could be used for injection
-    safe = re.sub(r"[^\x20-\x7E]+", "", prompt)
-    # Remove characters commonly used in injection attacks
-    safe = re.sub(r"[<>\"']", "", safe)
+    try:
+        from markupsafe import escape as _escape  # type: ignore
+    except Exception:  # pragma: no cover - fallback when dependency missing
+        from html import escape as _escape
+
+    # Escape any HTML/JS content
+    safe = str(_escape(prompt))
+    # Remove control characters but allow common whitespace
+    safe = re.sub(r"[^\x09\x0A\x0D\x20-\x7E]", "", safe)
     payload["prompt"] = safe
     return payload
 
