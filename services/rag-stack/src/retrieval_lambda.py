@@ -14,6 +14,7 @@ import os
 import json
 import logging
 from common_utils import configure_logger
+from common_utils.error_utils import log_exception
 import boto3
 from routellm_integration import forward_to_routellm
 import hashlib
@@ -186,8 +187,8 @@ def _process_event(event: RetrievalEvent) -> Dict[str, Any]:
             Payload=json.dumps(search_payload).encode("utf-8"),
         )
         result = json.loads(resp["Payload"].read())
-    except Exception:
-        logger.exception("Vector search invocation failed")
+    except Exception as exc:
+        log_exception("Vector search invocation failed", exc, logger)
         return {"result": {}}
     logger.info("Vector search returned %d matches", len(result.get("matches", [])))
     matches = result.get("matches", [])
@@ -200,8 +201,8 @@ def _process_event(event: RetrievalEvent) -> Dict[str, Any]:
                 Payload=json.dumps(rerank_payload).encode("utf-8"),
             )
             matches = json.loads(rresp["Payload"].read()).get("matches", matches)
-        except Exception:
-            logger.exception("Rerank invocation failed")
+        except Exception as exc:
+            log_exception("Rerank invocation failed", exc, logger)
     logger.info("Using %d matches after rerank", len(matches))
     context_text = " ".join(
         m.get("metadata", {}).get("text", "") for m in matches
@@ -215,8 +216,8 @@ def _process_event(event: RetrievalEvent) -> Dict[str, Any]:
     logger.info("Forwarding payload to router at %s", ROUTELLM_ENDPOINT)
     try:
         response = forward_to_routellm(router_payload)
-    except Exception:
-        logger.exception("RouterLLM request failed")
+    except Exception as exc:
+        log_exception("RouterLLM request failed", exc, logger)
         return {"result": {}}
     logger.info("Router returned payload keys: %s", list(response.keys()))
     return {"result": response}
@@ -230,7 +231,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Any:
             try:
                 ev = RetrievalEvent.parse_obj(json.loads(r.get("body", "{}")))
             except ValidationError as exc:
-                logger.error("Invalid event: %s", exc)
+                log_exception("Invalid event", exc, logger)
                 results.append({"result": {}})
             else:
                 results.append(_process_event(ev))
@@ -238,7 +239,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Any:
     try:
         ev = RetrievalEvent.parse_obj(event)
     except ValidationError as exc:
-        logger.error("Invalid event: %s", exc)
+        log_exception("Invalid event", exc, logger)
         return {"result": {}}
     return _process_event(ev)
 
