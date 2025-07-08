@@ -823,6 +823,7 @@ def test_summarize_with_context_router(monkeypatch, config):
     sent_payload = fake_invoke.calls[0]
     assert "embedding" in sent_payload
     assert isinstance(sent_payload["embedding"], list)
+    assert sent_payload["operation"] == "search"
     assert sent["payload"] == {
         "query": "hi",
         "model": "phi",
@@ -884,6 +885,7 @@ def test_summarize_with_rerank(monkeypatch, config):
     def fake_invoke(FunctionName=None, Payload=None):
         payload = json.loads(Payload)
         if FunctionName == "vector-search":
+            fake_invoke.search = payload
             return {
                 "Payload": FakePayload(
                     {
@@ -903,6 +905,7 @@ def test_summarize_with_rerank(monkeypatch, config):
             }
 
     fake_invoke.rerank = None
+    fake_invoke.search = None
 
     module = load_lambda(
         "summ_ctx_rerank", "services/rag-stack/src/retrieval_lambda.py"
@@ -915,6 +918,7 @@ def test_summarize_with_rerank(monkeypatch, config):
     monkeypatch.setattr(module, "forward_to_routellm", lambda p: {"text": p["context"]})
 
     out = module.lambda_handler({"query": "hi", "collection_name": "c"}, {})
+    assert fake_invoke.search["operation"] == "search"
     assert fake_invoke.rerank["query"] == "hi"
     assert out["result"] == {"text": "t2"}
 
