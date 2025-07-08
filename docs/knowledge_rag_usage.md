@@ -6,7 +6,10 @@ This guide covers recommended practices for ingesting documents into the knowled
 
 1. Use the `/kb/ingest` endpoint provided by the **knowledge-base** service or invoke the `ingest-lambda` function directly.
 2. Always include `collection_name` beginning with `kb_` to specify the target collection where embeddings should be stored. The backend defaults to persistent storage but can be changed by setting `KB_VECTOR_DB_BACKEND`.
-3. Include optional metadata fields such as `department`, `team`, `user` and `entities` in your request. These values are stored with each chunk and can later be used to filter queries.
+3. Include optional metadata fields such as `department`, `team`, `user`,
+   `entities`, `file_guid` and `file_name` in your request. These values are
+   stored with each chunk along with a `hash_key` of the text so you can trace or
+   filter results.
 4. Large files should be processed by the IDP pipeline first and then passed to the ingestion Step Function from `rag-stack`.
 5. Tune the chunk size and overlap through the `CHUNK_SIZE` and `CHUNK_OVERLAP` parameters in Parameter Store to balance retrieval accuracy and cost.
 

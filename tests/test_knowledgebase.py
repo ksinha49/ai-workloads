@@ -42,7 +42,14 @@ def test_kb_ingest(monkeypatch):
     module = load_lambda('ingest', 'services/knowledge-base/src/ingest_lambda.py')
     module.sfn = FakeSFN()
     out = module.lambda_handler(
-        {'text': 't', 'docType': 'pdf', 'department': 'HR', 'collection_name': 'kb_c'},
+        {
+            'text': 't',
+            'docType': 'pdf',
+            'department': 'HR',
+            'collection_name': 'kb_c',
+            'file_guid': 'guid',
+            'file_name': 'doc.txt'
+        },
         {}
     )
     assert out['started'] is True
@@ -51,6 +58,8 @@ def test_kb_ingest(monkeypatch):
     assert calls[1][1]['text'] == 't'
     assert calls[1][1]['collection_name'] == 'kb_c'
     assert calls[1][1]['docType'] == 'pdf'
+    assert calls[1][1]['file_guid'] == 'guid'
+    assert calls[1][1]['file_name'] == 'doc.txt'
     assert calls[1][1]['metadata']['department'] == 'HR'
     assert calls[1][1]['storage_mode'] == 'persistent'
 

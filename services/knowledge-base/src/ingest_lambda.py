@@ -73,6 +73,12 @@ def lambda_handler(event: dict, context: object) -> dict:
         "collection_name": collection_name,
         "storage_mode": KB_VECTOR_DB_BACKEND,
     }
+    file_guid = event.get("file_guid")
+    if file_guid:
+        payload["file_guid"] = file_guid
+    file_name = event.get("file_name")
+    if file_name:
+        payload["file_name"] = file_name
     doc_type = event.get("docType") or event.get("type")
     metadata = {}
     if doc_type:
