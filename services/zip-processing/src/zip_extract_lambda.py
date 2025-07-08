@@ -37,6 +37,19 @@ __modified_by__ = "Koushik Sinha"
 # Initialize S3 client
 s3_client: boto3.client = boto3.client('s3')
 
+# Limits to guard against zip bomb attacks
+DEFAULT_MAX_FILE_BYTES = 10 * 1024 * 1024  # 10 MB per entry
+DEFAULT_MAX_ARCHIVE_BYTES = 50 * 1024 * 1024  # 50 MB total uncompressed
+
+MAX_FILE_BYTES = int(
+    get_config("ZIP_MAX_FILE_BYTES")
+    or os.environ.get("ZIP_MAX_FILE_BYTES", str(DEFAULT_MAX_FILE_BYTES))
+)
+MAX_ARCHIVE_BYTES = int(
+    get_config("ZIP_MAX_ARCHIVE_BYTES")
+    or os.environ.get("ZIP_MAX_ARCHIVE_BYTES", str(DEFAULT_MAX_ARCHIVE_BYTES))
+)
+
 
 def zip_has_any_folder(zip_file_content: str) -> bool:
     """
@@ -166,10 +179,25 @@ def extract_zip_file(event: dict) -> dict:
         xmlfileList: list[str] = []
 
         bytes_Content = io.BytesIO(zip_file_content)
-        # Open the zip file using BytesIO and iterate over its contents
-        has_folder = zip_has_any_folder(bytes_Content)
+        # Inspect archive for unusually large entries before extracting
         with zipfile.ZipFile(bytes_Content) as zf:
-            for info in zf.infolist():
+            entries = zf.infolist()
+            total_uncompressed = 0
+            for info in entries:
+                size = info.file_size
+                if max(size, info.compress_size) > MAX_FILE_BYTES:
+                    logger.error("Entry too large: %s", info.filename)
+                    return _error_response(400, "Archive entry too large")
+                total_uncompressed += size
+                if total_uncompressed > MAX_ARCHIVE_BYTES:
+                    logger.error("Archive exceeds size limit")
+                    return _error_response(400, "Archive too large")
+
+        bytes_Content.seek(0)
+        has_folder = zip_has_any_folder(bytes_Content)
+        bytes_Content.seek(0)
+        with zipfile.ZipFile(bytes_Content) as zf:
+            for info in entries:
                 if info.is_dir():
                     continue
                 if info.filename.lower().endswith(".pdf") or info.filename.lower().endswith(".xml"):

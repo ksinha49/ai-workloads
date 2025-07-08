@@ -21,6 +21,12 @@ A state machine defined in `template.yaml` orchestrates the flow:
 ## Environment variables
 
 Both Lambdas require `AWS_ACCOUNT_NAME` which is passed from the stack parameter of the same name.
+`zip_extract_lambda.py` also supports:
+
+- `ZIP_MAX_FILE_BYTES` – maximum allowed size of any entry within an uploaded
+  archive. Defaults to `10MB`.
+- `ZIP_MAX_ARCHIVE_BYTES` – maximum total uncompressed size of an archive.
+  Defaults to `50MB`.
 
 ## Parameters
 
