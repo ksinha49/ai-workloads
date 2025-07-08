@@ -32,7 +32,9 @@ _table = _dynamo.Table(TABLE_NAME)
 def _generate_token(entity: str) -> str:
     """Return a token for ``entity`` using SALT or a random UUID."""
     if SALT:
-        digest = hashlib.sha256((SALT + entity).encode("utf-8")).hexdigest()[:8]
+        digest = hashlib.blake2b(
+            (SALT + entity).encode("utf-8"), digest_size=4
+        ).hexdigest()
     else:
         digest = uuid.uuid4().hex[:8]
     return PREFIX + digest
