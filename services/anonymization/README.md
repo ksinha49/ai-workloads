@@ -2,6 +2,10 @@
 
 This consolidated service groups three Lambdas for detecting, tokenizing and anonymizing sensitive text.
 
+All API endpoints in this stack are protected using IAM authentication. Requests
+must be signed with AWS credentials (SigV4) or invoked directly from other AWS
+services with appropriate IAM roles.
+
 ## Lambdas
 
 - **detect_sensitive_info_lambda.py** – returns detected PII entities.

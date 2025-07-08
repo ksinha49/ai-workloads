@@ -4,7 +4,7 @@ This guide covers recommended practices for ingesting documents into the knowled
 
 ## Ingesting Documents
 
-1. Use the `/kb/ingest` endpoint provided by the **knowledge-base** service or invoke the `ingest-lambda` function directly.
+1. Use the `/kb/ingest` endpoint provided by the **knowledge-base** service or invoke the `ingest-lambda` function directly. The HTTP API requires IAM authentication, so requests must be signed with AWS credentials.
 2. Always include `collection_name` beginning with `kb_` to specify the target collection where embeddings should be stored. The backend defaults to persistent storage but can be changed by setting `KB_VECTOR_DB_BACKEND`.
 3. Include optional metadata fields such as `department`, `team`, `user`,
    `entities`, `file_guid` and `file_name` in your request. These values are
@@ -15,7 +15,7 @@ This guide covers recommended practices for ingesting documents into the knowled
 
 ## Querying the Knowledge Base
 
-1. Use `/kb/query` to search the indexed documents. Provide natural language queries and optionally pass the same metadata fields (`department`, `team`, `user`, `entities`) to narrow results.
+1. Use `/kb/query` to search the indexed documents. The endpoint is IAM-protected, so sign each request with AWS credentials. Provide natural language queries and optionally pass the same metadata fields (`department`, `team`, `user`, `entities`) to narrow results.
 2. Specify the same `collection_name` used during ingestion so the search runs against the correct collection. Provide a `file_guid` to limit results to chunks from a single document. Set `storage_mode` to `elastic` when querying Elasticsearch.
 3. The query Lambda calls the summarization with context function from the `rag-stack` stack. Configure `VECTOR_SEARCH_FUNCTION` to `HybridSearchFunctionArn` for keyword filtering in addition to vector similarity.
 4. Enable the re-rank Lambda when higher quality ordering of results is required. Set `RERANK_FUNCTION` in the retrieval stack to the ARN of `rerank-lambda`.

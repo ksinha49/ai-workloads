@@ -57,6 +57,13 @@ Resources:
       CompatibleRuntimes:
         - python3.13
       RetentionPolicy: Delete
+
+  SecureApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: prod
+      Auth:
+        DefaultAuthorizer: AWS_IAM
   DetectSensitiveInfoFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -79,6 +86,7 @@ Resources:
           Properties:
             Path: /detect-pii
             Method: post
+            RestApiId: !Ref SecureApi
 
   EntityTokenTable:
     Type: AWS::DynamoDB::Table
@@ -128,6 +136,7 @@ Resources:
           Properties:
             Path: /tokenize-entity
             Method: post
+            RestApiId: !Ref SecureApi
 
   AnonymizeTextFunction:
     Type: AWS::Serverless::Function
@@ -147,6 +156,7 @@ Resources:
           Properties:
             Path: /anonymize-text
             Method: post
+            RestApiId: !Ref SecureApi
 
 Outputs:
   DetectSensitiveInfoFunctionArn:

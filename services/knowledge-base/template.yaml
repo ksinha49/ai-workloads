@@ -31,6 +31,13 @@ Resources:
       CompatibleRuntimes:
         - python3.13
       RetentionPolicy: Delete
+
+  SecureApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: prod
+      Auth:
+        DefaultAuthorizer: AWS_IAM
   IngestFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -62,6 +69,7 @@ Resources:
           Properties:
             Path: /kb/query
             Method: post
+            RestApiId: !Ref SecureApi
 
 Outputs:
   IngestFunctionArn:
