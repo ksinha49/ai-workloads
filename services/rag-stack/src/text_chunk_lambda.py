@@ -8,6 +8,7 @@ from __future__ import annotations
 import os
 import json
 import logging
+import hashlib
 from common_utils import configure_logger
 from chunking import UniversalFileChunker
 
@@ -171,6 +172,8 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             meta["file_guid"] = file_guid
         if file_name:
             meta["file_name"] = file_name
+        hash_key = hashlib.sha256(c.encode("utf-8")).hexdigest()
+        meta["hash_key"] = hash_key
         chunk_list.append({"text": c, "metadata": meta})
     if EXTRACT_ENTITIES:
         for idx, chunk in enumerate(chunk_list):

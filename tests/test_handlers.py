@@ -1198,16 +1198,23 @@ def test_text_chunk_guid_metadata(config):
     event = {"text": "hello world", "file_guid": "abc", "file_name": "f.pdf"}
     out = module.lambda_handler(event, {})
     md = out["chunks"][0]["metadata"]
+    import hashlib
+    expected_hash = hashlib.sha256("hello world".encode("utf-8")).hexdigest()
     assert md["file_guid"] == "abc" and md["file_name"] == "f.pdf"
+    assert md["hash_key"] == expected_hash
 
 
 def test_embed_propagates_guid(config):
     config["/parameters/aio/ameritasAI/SERVER_ENV"] = "dev"
-    module = load_lambda("embed_guid", "services/rag-stack/src/embed_lambda.py")
-    module._MODEL_MAP["sbert"] = lambda t: [0.0]
-    event = {"chunks": [{"text": "x", "metadata": {}}], "file_guid": "g", "file_name": "n"}
-    out = module.lambda_handler(event, {})
-    assert out["metadatas"][0]["file_guid"] == "g" and out["metadatas"][0]["file_name"] == "n"
+    chunk_mod = load_lambda("chunk_guid", "services/rag-stack/src/text_chunk_lambda.py")
+    embed_mod = load_lambda("embed_guid", "services/rag-stack/src/embed_lambda.py")
+    embed_mod._MODEL_MAP["sbert"] = lambda t: [0.0]
+    chunks = chunk_mod.lambda_handler({"text": "hello", "file_guid": "g", "file_name": "n"}, {})["chunks"]
+    out = embed_mod.lambda_handler({"chunks": chunks}, {})
+    md = out["metadatas"][0]
+    import hashlib
+    expected_hash = hashlib.sha256("hello".encode("utf-8")).hexdigest()
+    assert md["file_guid"] == "g" and md["file_name"] == "n" and md["hash_key"] == expected_hash
 
 
 def test_milvus_insert_adds_guid(monkeypatch, config):
