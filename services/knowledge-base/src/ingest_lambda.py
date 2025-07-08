@@ -30,6 +30,11 @@ FILE_INGESTION_STATE_MACHINE_ARN = (
 if not FILE_INGESTION_STATE_MACHINE_ARN:
     raise RuntimeError("FILE_INGESTION_STATE_MACHINE_ARN not configured")
 
+KB_VECTOR_DB_BACKEND = (
+    get_config("KB_VECTOR_DB_BACKEND")
+    or os.environ.get("KB_VECTOR_DB_BACKEND", "persistent")
+)
+
 sfn = boto3.client("stepfunctions")
 
 
@@ -50,6 +55,9 @@ def lambda_handler(event: dict, context: object) -> dict:
     if not collection_name:
         logger.error("collection_name missing from request")
         return {"started": False}
+    if not collection_name.startswith("kb_"):
+        logger.error("collection_name must start with kb_")
+        return {"started": False}
 
     try:
         sfn.start_execution(
@@ -60,7 +68,11 @@ def lambda_handler(event: dict, context: object) -> dict:
         logger.error("Failed to start file ingestion state machine: %s", exc)
         return {"started": False, "error": str(exc)}
 
-    payload = {"text": text, "collection_name": collection_name}
+    payload = {
+        "text": text,
+        "collection_name": collection_name,
+        "storage_mode": KB_VECTOR_DB_BACKEND,
+    }
     doc_type = event.get("docType") or event.get("type")
     metadata = {}
     if doc_type:

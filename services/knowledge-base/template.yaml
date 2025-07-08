@@ -12,6 +12,9 @@ Parameters:
   KnowledgeBaseName:
     Type: String
     Default: 'kb'
+  KbVectorDbBackend:
+    Type: String
+    Default: persistent
 
 Globals:
   Function:
@@ -40,6 +43,7 @@ Resources:
           STATE_MACHINE_ARN: !Ref IngestionStateMachineArn
           FILE_INGESTION_STATE_MACHINE_ARN: !Ref FileIngestionStateMachineArn
           KNOWLEDGE_BASE_NAME: !Ref KnowledgeBaseName
+          KB_VECTOR_DB_BACKEND: !Ref KbVectorDbBackend
 
   QueryFunction:
     Type: AWS::Serverless::Function
