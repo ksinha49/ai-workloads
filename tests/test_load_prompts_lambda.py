@@ -13,6 +13,10 @@ def load_lambda(name, path):
 def test_load_prompts(monkeypatch):
     monkeypatch.setenv("PROMPT_ENGINE_ENDPOINT", "http://engine")
     monkeypatch.setenv("SYSTEM_WORKFLOW_ID", "sys")
+    monkeypatch.setattr(
+        "common_utils.get_ssm.get_config",
+        lambda name, **_: None,
+    )
     sent = []
 
     class Resp:
