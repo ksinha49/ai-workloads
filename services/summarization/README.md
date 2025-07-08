@@ -17,6 +17,7 @@ Function.
 
 * **SummarizationWorkflow** – starts at `LoadPrompts` and runs the summarization
   tasks. Messages posted to `SummaryQueue` trigger this workflow.
+  Failed messages are sent to `SummaryDLQ` after five unsuccessful deliveries.
 
 The payload passed to `file-summary-lambda` may include an optional
 `output_format` field which determines the format of the summary file.
