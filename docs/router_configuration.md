@@ -27,7 +27,7 @@ This document details the environment variables used by the router Lambda that f
 | `OLLAMA_TOP_P` | Nucleus sampling parameter (default `0.9`). |
 | `OLLAMA_MIN_P` | Minimum probability threshold (default `0.05`). |
 | `ALLOWED_BACKENDS` | Comma-separated list of permitted backend names (default `bedrock,ollama`). |
-| `PROMPT_COMPLEXITY_THRESHOLD` | Word count threshold that determines when to switch from Ollama to Bedrock (defaults to `20`). |
+| `PROMPT_COMPLEXITY_THRESHOLD` | Word count threshold that determines when to switch from Ollama to Bedrock. |
 | `ROUTELLM_ENDPOINT` | Optional URL for forwarding requests to a RouteLLM service. |
 | `STRONG_MODEL_ID` | Identifier for the more capable Bedrock model. |
 | `WEAK_MODEL_ID` | Identifier for the lightweight model used with shorter prompts. |

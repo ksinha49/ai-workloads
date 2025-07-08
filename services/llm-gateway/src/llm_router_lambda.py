@@ -39,11 +39,12 @@ INVOCATION_QUEUE_URL = get_config("INVOCATION_QUEUE_URL") or os.environ.get(
 )
 sqs_client = boto3.client("sqs")
 
-DEFAULT_PROMPT_COMPLEXITY_THRESHOLD = 20
-PROMPT_COMPLEXITY_THRESHOLD = int(
-    get_config("PROMPT_COMPLEXITY_THRESHOLD")
-    or os.environ.get("PROMPT_COMPLEXITY_THRESHOLD", str(DEFAULT_PROMPT_COMPLEXITY_THRESHOLD))
+_THRESHOLD_RAW = get_config("PROMPT_COMPLEXITY_THRESHOLD") or os.environ.get(
+    "PROMPT_COMPLEXITY_THRESHOLD"
 )
+if _THRESHOLD_RAW is None:
+    raise RuntimeError("PROMPT_COMPLEXITY_THRESHOLD not configured")
+PROMPT_COMPLEXITY_THRESHOLD = int(_THRESHOLD_RAW)
 
 # allowlist of permitted backends
 DEFAULT_ALLOWED_BACKENDS = {"bedrock", "ollama"}

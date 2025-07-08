@@ -104,6 +104,7 @@ def test_lambda_handler_invoke_error(monkeypatch):
 
 def test_lambda_handler_malicious_prompt(monkeypatch):
     monkeypatch.setenv("INVOCATION_QUEUE_URL", "url")
+    monkeypatch.setenv("PROMPT_COMPLEXITY_THRESHOLD", "3")
     calls = []
     monkeypatch.setattr(sys.modules["boto3"], "client", lambda name: _make_fake_send(calls))
     module = load_lambda("router_lambda_malicious", "services/llm-gateway/src/llm_router_lambda.py")
@@ -119,6 +120,7 @@ def test_lambda_handler_malicious_prompt(monkeypatch):
 
 def test_lambda_handler_malicious_img_prompt(monkeypatch):
     monkeypatch.setenv("INVOCATION_QUEUE_URL", "url")
+    monkeypatch.setenv("PROMPT_COMPLEXITY_THRESHOLD", "3")
     calls = []
     monkeypatch.setattr(sys.modules["boto3"], "client", lambda name: _make_fake_send(calls))
     module = load_lambda("router_lambda_malicious_img", "services/llm-gateway/src/llm_router_lambda.py")
@@ -134,6 +136,7 @@ def test_lambda_handler_malicious_img_prompt(monkeypatch):
 
 def test_lambda_handler_bad_prompt_type(monkeypatch):
     monkeypatch.setenv("INVOCATION_QUEUE_URL", "url")
+    monkeypatch.setenv("PROMPT_COMPLEXITY_THRESHOLD", "3")
     calls = []
     monkeypatch.setattr(sys.modules["boto3"], "client", lambda name: _make_fake_send(calls))
     module = load_lambda("router_lambda_bad", "services/llm-gateway/src/llm_router_lambda.py")
