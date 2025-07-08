@@ -6,13 +6,13 @@ This document describes the `IngestionStateMachine` defined in
 pipeline to extract text from an uploaded file and enqueues a message. New
 objects placed under `TextDocPrefix` in the configured S3 bucket can also
 trigger the workflow directly. The state machine splits the text into chunks,
-generates embeddings and stores them in Milvus.
+generates embeddings and stores them in a vector database.
 
 ```mermaid
 stateDiagram-v2
     [*] --> TextChunk
     TextChunk --> Embed
-    Embed --> MilvusInsert
+    Embed --> VectorDbInsert
 ```
 
 ## States
@@ -24,8 +24,8 @@ stateDiagram-v2
 **Embed**
 : Calls `embed-lambda` for each chunk to compute vector embeddings.
 
-**MilvusInsert**
-: Sends the embeddings to the Milvus insert Lambda which stores them along with
+**VectorDbInsert**
+: Sends the embeddings to the vector database insert Lambda which stores them along with
   any metadata, ending the workflow.
 
 ## Chunk Strategy
@@ -83,7 +83,7 @@ Environment variables used:
 - `SBERT_MODEL`, `OPENAI_EMBED_MODEL`, `COHERE_SECRET_NAME`
 
 The lambda embeds each chunk with the resolved provider and forwards the
-embeddings and metadata to the Milvus insert step.
+embeddings and metadata to the vector DB insert step.
 
 ## Queue-based Invocation
 
