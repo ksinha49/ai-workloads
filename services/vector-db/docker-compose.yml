@@ -1,0 +1,16 @@
+version: '3.8'
+services:
+  app:
+    build:
+      context: ../..
+      dockerfile: services/vector-db/Dockerfile
+    environment:
+      DEFAULT_VECTOR_DB_BACKEND: milvus
+      MILVUS_HOST: localhost
+      MILVUS_PORT: "19530"
+      MILVUS_COLLECTION: docs
+      ELASTICSEARCH_URL: http://localhost:9200
+      ELASTICSEARCH_INDEX_PREFIX: docs
+      EPHEMERAL_TABLE: ephemeral-table
+    ports:
+      - "9011:8080"
