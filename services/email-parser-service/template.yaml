@@ -1,0 +1,30 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Lambda for parsing raw email files.
+
+Parameters:
+  RawEmailBucket:
+    Type: String
+  AttachmentsBucket:
+    Type: String
+
+Resources:
+  EmailParserFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: email_parser_lambda.lambda_handler
+      Runtime: python3.13
+      Environment:
+        Variables:
+          ATTACHMENTS_BUCKET: !Ref AttachmentsBucket
+      Events:
+        RawEmail:
+          Type: S3
+          Properties:
+            Bucket: !Ref RawEmailBucket
+            Events: s3:ObjectCreated:*
+
+Outputs:
+  EmailParserFunctionArn:
+    Value: !GetAtt EmailParserFunction.Arn

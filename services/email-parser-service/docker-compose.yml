@@ -1,0 +1,10 @@
+version: '3.8'
+services:
+  app:
+    build:
+      context: ../..
+      dockerfile: services/email-parser-service/Dockerfile
+    environment:
+      ATTACHMENTS_BUCKET: attachments
+    ports:
+      - "9006:8080"

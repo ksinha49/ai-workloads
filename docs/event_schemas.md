@@ -172,3 +172,13 @@ Optionally include an `output_format` property to select `pdf`, `docx`, `json` o
   "user": "alice"
 }
 ```
+
+## Email Parser Payload
+
+```json
+{
+  "metadata": {"From": "sender@example.com", "Subject": "Subject"},
+  "body": "Email text",
+  "attachments": ["s3://bucket/prefix/file.txt"]
+}
+```
