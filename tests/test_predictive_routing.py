@@ -5,6 +5,7 @@ import io
 
 
 def test_predictive_routing_complex_short(monkeypatch):
+    monkeypatch.setenv("PROMPT_COMPLEXITY_THRESHOLD", "20")
     monkeypatch.setenv("CLASSIFIER_MODEL_ID", "clf")
     monkeypatch.setenv("WEAK_MODEL_ID", "weak")
     monkeypatch.setenv("STRONG_MODEL_ID", "strong")

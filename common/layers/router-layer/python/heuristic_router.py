@@ -18,11 +18,12 @@ from common_utils.get_ssm import get_config
 
 __all__ = ["HeuristicRouter", "handle_heuristic_route"]
 
-DEFAULT_PROMPT_COMPLEXITY_THRESHOLD = 20
-PROMPT_COMPLEXITY_THRESHOLD = int(
-    get_config("PROMPT_COMPLEXITY_THRESHOLD")
-    or os.environ.get("PROMPT_COMPLEXITY_THRESHOLD", str(DEFAULT_PROMPT_COMPLEXITY_THRESHOLD))
+_THRESHOLD_RAW = get_config("PROMPT_COMPLEXITY_THRESHOLD") or os.environ.get(
+    "PROMPT_COMPLEXITY_THRESHOLD"
 )
+if _THRESHOLD_RAW is None:
+    raise RuntimeError("PROMPT_COMPLEXITY_THRESHOLD not configured")
+PROMPT_COMPLEXITY_THRESHOLD = int(_THRESHOLD_RAW)
 
 
 def _prompt_text(event: Dict[str, Any]) -> str:
