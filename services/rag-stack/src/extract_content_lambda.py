@@ -49,7 +49,7 @@ def _process_event(event: Dict[str, Any]) -> Dict[str, Any]:
     emb = event.get("embedding")
     logger.info("Invoking vector search function %s", LAMBDA_FUNCTION)
     try:
-        payload = {"embedding": emb}
+        payload = {"embedding": emb, "operation": "search"}
         storage_mode = event.get("storage_mode")
         if storage_mode:
             payload["storage_mode"] = storage_mode

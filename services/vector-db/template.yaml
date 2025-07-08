@@ -3,13 +3,13 @@ Transform: AWS::Serverless-2016-10-31
 Description: Vector DB proxy and handlers.
 
 Parameters:
-  MilvusHost:
+  VectorDbHost:
     Type: AWS::SSM::Parameter::Value<String>
     Default: /rag/milvus/host
-  MilvusPort:
+  VectorDbPort:
     Type: AWS::SSM::Parameter::Value<String>
     Default: /rag/milvus/port
-  MilvusCollection:
+  VectorDbCollection:
     Type: AWS::SSM::Parameter::Value<String>
     Default: /rag/milvus/collection
   ElasticsearchUrl:
@@ -62,9 +62,9 @@ Resources:
       Environment:
         Variables:
           DEFAULT_VECTOR_DB_BACKEND: !Ref DefaultVectorDbBackend
-          MILVUS_HOST: !Ref MilvusHost
-          MILVUS_PORT: !Ref MilvusPort
-          MILVUS_COLLECTION: !Ref MilvusCollection
+          MILVUS_HOST: !Ref VectorDbHost
+          MILVUS_PORT: !Ref VectorDbPort
+          MILVUS_COLLECTION: !Ref VectorDbCollection
           ELASTICSEARCH_URL: !Ref ElasticsearchUrl
           ELASTICSEARCH_INDEX_PREFIX: !Ref ElasticsearchIndexPrefix
           EPHEMERAL_TABLE: !Ref EphemeralTable
@@ -78,9 +78,9 @@ Resources:
         - !Ref CommonUtilsLayer
       Environment:
         Variables:
-          MILVUS_HOST: !Ref MilvusHost
-          MILVUS_PORT: !Ref MilvusPort
-          MILVUS_COLLECTION: !Ref MilvusCollection
+          MILVUS_HOST: !Ref VectorDbHost
+          MILVUS_PORT: !Ref VectorDbPort
+          MILVUS_COLLECTION: !Ref VectorDbCollection
 
   ElasticsearchHandlerFunction:
     Type: AWS::Serverless::Function
@@ -104,8 +104,8 @@ Resources:
       Environment:
         Variables:
           EPHEMERAL_TABLE: !Ref EphemeralTable
-          MILVUS_HOST: !Ref MilvusHost
-          MILVUS_PORT: !Ref MilvusPort
+          MILVUS_HOST: !Ref VectorDbHost
+          MILVUS_PORT: !Ref VectorDbPort
       Events:
         Daily:
           Type: Schedule
