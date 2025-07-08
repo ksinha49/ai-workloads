@@ -41,18 +41,20 @@ def _generate_token(entity: str) -> str:
 
 
 def _lookup_token(entity: str, etype: str, domain: str) -> str | None:
+    """Return stored token if a mapping exists."""
     try:
-        resp = _table.scan()
+        resp = _table.query(
+            IndexName="DomainIndex",
+            KeyConditionExpression="entity = :e AND domain = :d",
+            FilterExpression="entity_type = :t",
+            ExpressionAttributeValues={":e": entity, ":d": domain, ":t": etype},
+        )
     except (ClientError, BotoCoreError) as exc:  # pragma: no cover - runtime safeguard
-        logger.exception("DynamoDB scan failed")
+        logger.exception("DynamoDB query failed")
         return None
-    for item in resp.get("Items", []):
-        if (
-            item.get("entity") == entity
-            and item.get("entity_type") == etype
-            and item.get("domain") == domain
-        ):
-            return item.get("token")
+    items = resp.get("Items", [])
+    if items:
+        return items[0].get("token")
     return None
 
 

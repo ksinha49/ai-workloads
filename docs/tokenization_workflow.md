@@ -23,7 +23,7 @@ flowchart TD
 ## Consistent Token Generation
 
 1. Incoming requests provide an `entity`, its `entity_type` and optional `domain`.
-2. The Lambda checks the DynamoDB mapping table for an existing entry matching all three fields.
+2. The Lambda checks the DynamoDB mapping table for an existing entry matching all three fields. The table is keyed by ``entity`` and ``entity_type`` and includes a ``DomainIndex`` to query by domain.
 3. If a record is found the stored token is returned. Otherwise a new token is created by:
    - Prepending the value of the `TOKEN_SALT` environment variable to the entity text.
    - Hashing the result with SHA‑256 and taking the first eight characters.

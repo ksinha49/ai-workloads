@@ -13,6 +13,10 @@ UUID and stored in the table.
 | `TOKEN_PREFIX` | Prefix added to generated tokens. |
 | `TOKEN_SALT` | Optional salt for deterministic hashing. |
 
+The ``TOKEN_TABLE`` uses ``entity`` as the partition key and ``entity_type`` as
+the sort key. A ``DomainIndex`` global secondary index is provided with
+``entity`` as the partition key and ``domain`` as the sort key.
+
 ## Example
 
 Send a request to the API endpoint or invoke the Lambda directly:
