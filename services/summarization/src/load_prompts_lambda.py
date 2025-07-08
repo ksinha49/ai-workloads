@@ -10,11 +10,17 @@ except Exception:  # pragma: no cover - allow import without httpx
     class HTTPError(Exception):
         pass
 from common_utils import configure_logger
+from common_utils.get_ssm import get_config
 
 logger = configure_logger(__name__)
 
-PROMPT_ENGINE_ENDPOINT = os.environ.get("PROMPT_ENGINE_ENDPOINT")
-SYSTEM_WORKFLOW_ID = os.environ.get("SYSTEM_WORKFLOW_ID")
+PROMPT_ENGINE_ENDPOINT = (
+    get_config("PROMPT_ENGINE_ENDPOINT")
+    or os.environ.get("PROMPT_ENGINE_ENDPOINT")
+)
+SYSTEM_WORKFLOW_ID = get_config("SYSTEM_WORKFLOW_ID") or os.environ.get(
+    "SYSTEM_WORKFLOW_ID"
+)
 
 
 def lambda_handler(event: dict, context: object) -> dict:

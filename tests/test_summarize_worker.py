@@ -14,6 +14,10 @@ def load_lambda(name, path):
 def test_worker_prompt_engine(monkeypatch):
     monkeypatch.setenv("RAG_SUMMARY_FUNCTION_ARN", "arn")
     monkeypatch.setenv("PROMPT_ENGINE_ENDPOINT", "http://engine")
+    monkeypatch.setattr(
+        "common_utils.get_ssm.get_config",
+        lambda name, **_: None,
+    )
 
     invoked = {}
     success = {}
@@ -75,6 +79,10 @@ def test_worker_prompt_engine(monkeypatch):
 
 def test_worker_legacy_fallback(monkeypatch):
     monkeypatch.setenv("RAG_SUMMARY_FUNCTION_ARN", "arn")
+    monkeypatch.setattr(
+        "common_utils.get_ssm.get_config",
+        lambda name, **_: None,
+    )
 
     invoked = {}
     success = {}
