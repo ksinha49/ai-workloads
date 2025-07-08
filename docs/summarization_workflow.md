@@ -70,4 +70,6 @@ workflow input.  The APS wrapper forwards both `font_dir` and `labels_path`
 properties to the summarization state machine so custom fonts and labels can be
 used without modifying the underlying service.
 
-Together these components transform uploaded APS archives into searchable summaries packaged as a new ZIP.
+Together these components transform uploaded APS archives into searchable summaries packaged as a new ZIP. The wrapper
+workflow creates a temporary Milvus collection called `aps-summary-collection` which expires 24 hours after the
+execution starts. `DEFAULT_VECTOR_DB_BACKEND` is set to `milvus` so the retrieval steps use this backend by default.

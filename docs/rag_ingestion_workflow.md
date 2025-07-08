@@ -56,7 +56,9 @@ flowchart TD
 
 The chunk size and overlap come from `CHUNK_SIZE` and `CHUNK_OVERLAP` (defaults
 `1000` and `100`). When `EXTRACT_ENTITIES` is true, named entities are added to
-each chunk's metadata.
+each chunk's metadata. Every chunk also stores the originating `file_guid`, a
+`hash_key` of the text, the `file_name` and any detected `entities` so that
+queries can filter or trace results back to the source document.
 
 ## Embedding Strategy
 
