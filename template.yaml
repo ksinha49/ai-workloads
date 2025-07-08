@@ -18,6 +18,9 @@ Parameters:
   ElasticsearchIndexPrefix:
     Type: AWS::SSM::Parameter::Value<String>
     Default: /rag/elasticsearch/index
+  DefaultVectorDbBackend:
+    Type: String
+    Default: milvus
   BedrockOpenAIEndpoint:
     Type: String
     Default: ''
@@ -73,7 +76,7 @@ Resources:
         VectorDbCollection: !Ref VectorDbCollection
         ElasticsearchUrl: !Ref ElasticsearchUrl
         ElasticsearchIndexPrefix: !Ref ElasticsearchIndexPrefix
-        DefaultVectorDbBackend: milvus
+        DefaultVectorDbBackend: !Ref DefaultVectorDbBackend
 
   RagStackService:
     Type: AWS::Serverless::Application
