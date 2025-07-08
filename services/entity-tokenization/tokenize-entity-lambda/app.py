@@ -32,7 +32,10 @@ _table = _dynamo.Table(TABLE_NAME)
 def _generate_token(entity: str) -> str:
     """Return a token for ``entity`` using SALT or a random UUID."""
     if SALT:
-        digest = hashlib.sha256((SALT + entity).encode("utf-8")).hexdigest()[:8]
+        # Using blake2s offers good performance while still providing
+        # deterministic hashing. Only the first eight characters are used,
+        # matching the previous SHA-256 implementation's length.
+        digest = hashlib.blake2s((SALT + entity).encode("utf-8")).hexdigest()[:8]
     else:
         digest = uuid.uuid4().hex[:8]
     return PREFIX + digest

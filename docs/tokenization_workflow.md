@@ -8,7 +8,7 @@ flowchart TD
     A["Request with entity, type & domain"] --> B{"Mapping exists?"}
     B -- Yes --> C["Return stored token"]
     B -- No --> D["Prepend TOKEN_SALT"]
-    D --> E["Hash SHA-256"]
+    D --> E["Hash BLAKE2s"]
     E --> F["Take first 8 chars"]
     F --> G["Prefix with TOKEN_PREFIX"]
     G --> H["Store mapping"]
@@ -26,7 +26,7 @@ flowchart TD
 2. The Lambda checks the DynamoDB mapping table for an existing entry matching all three fields.
 3. If a record is found the stored token is returned. Otherwise a new token is created by:
    - Prepending the value of the `TOKEN_SALT` environment variable to the entity text.
-   - Hashing the result with SHA‑256 and taking the first eight characters.
+   - Hashing the result with BLAKE2s and taking the first eight characters.
    - Prefixing the digest with the string from `TOKEN_PREFIX`.
 4. The mapping of entity to token is stored in DynamoDB so subsequent calls return the same value.
 

@@ -39,7 +39,7 @@ def test_generate_token(monkeypatch):
     monkeypatch.setenv('TOKEN_SALT', 's')
     module = load_lambda('tokenize', 'services/entity-tokenization/tokenize-entity-lambda/app.py')
     out = module.lambda_handler({'entity': 'Bob', 'entity_type': 'NAME', 'domain': 'gen'}, {})
-    expected = 'tok-' + hashlib.sha256('sBob'.encode()).hexdigest()[:8]
+    expected = 'tok-' + hashlib.blake2s('sBob'.encode()).hexdigest()[:8]
     assert out['token'] == expected
     assert table.items[0]['entity'] == 'Bob'
 
