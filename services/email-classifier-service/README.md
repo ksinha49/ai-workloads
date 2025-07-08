@@ -2,8 +2,6 @@
 
 This service monitors an email inbox, applies dynamic rules to incoming
 messages and routes extracted data to the appropriate downstream workflow.
-It generalizes earlier DocuSign‑specific logic so that new email driven
-processes can be configured without code changes.
 
 ## Components
 
