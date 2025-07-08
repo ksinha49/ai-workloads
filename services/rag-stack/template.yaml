@@ -10,14 +10,6 @@ Parameters:
     Default: text-docs/
   VectorDbInsertFunctionArn:
     Type: String
-  VectorDbDeleteFunctionArn:
-    Type: String
-  VectorDbUpdateFunctionArn:
-    Type: String
-  VectorDbCreateCollectionFunctionArn:
-    Type: String
-  VectorDbDropCollectionFunctionArn:
-    Type: String
   AWSAccountName:
     Type: String
   LambdaSubnet1ID:
