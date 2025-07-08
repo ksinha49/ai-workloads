@@ -38,19 +38,21 @@ def test_kb_ingest(monkeypatch):
     monkeypatch.setattr(boto3, 'client', lambda name: FakeSFN())
     monkeypatch.setenv("STATE_MACHINE_ARN", "arn")
     monkeypatch.setenv("FILE_INGESTION_STATE_MACHINE_ARN", "filearn")
+    monkeypatch.setenv("KB_VECTOR_DB_BACKEND", "persistent")
     module = load_lambda('ingest', 'services/knowledge-base/src/ingest_lambda.py')
     module.sfn = FakeSFN()
     out = module.lambda_handler(
-        {'text': 't', 'docType': 'pdf', 'department': 'HR', 'collection_name': 'c'},
+        {'text': 't', 'docType': 'pdf', 'department': 'HR', 'collection_name': 'kb_c'},
         {}
     )
     assert out['started'] is True
     assert calls[0][0] == 'filearn'
     assert calls[1][0] == 'arn'
     assert calls[1][1]['text'] == 't'
-    assert calls[1][1]['collection_name'] == 'c'
+    assert calls[1][1]['collection_name'] == 'kb_c'
     assert calls[1][1]['docType'] == 'pdf'
     assert calls[1][1]['metadata']['department'] == 'HR'
+    assert calls[1][1]['storage_mode'] == 'persistent'
 
 
 def test_kb_ingest_missing_arn(monkeypatch):
@@ -102,11 +104,27 @@ def test_kb_ingest_error(monkeypatch):
     monkeypatch.setenv('FILE_INGESTION_STATE_MACHINE_ARN', 'filearn')
     module = load_lambda('ingest_err', 'services/knowledge-base/src/ingest_lambda.py')
     module.sfn = FakeSFN()
-    out = module.lambda_handler({'text': 't', 'collection_name': 'c'}, {})
+    out = module.lambda_handler({'text': 't', 'collection_name': 'kb_c'}, {})
     assert out['started'] is False
     assert 'bad' in out['error']
     assert calls[0] == 'filearn'
     assert calls[1] == 'arn'
+
+
+def test_kb_ingest_bad_prefix(monkeypatch):
+    class FakeSFN:
+        def start_execution(self, *a, **k):
+            raise AssertionError("should not be called")
+
+    import boto3
+    _stub_botocore(monkeypatch)
+    monkeypatch.setattr(boto3, 'client', lambda name: FakeSFN())
+    monkeypatch.setenv('STATE_MACHINE_ARN', 'arn')
+    monkeypatch.setenv('FILE_INGESTION_STATE_MACHINE_ARN', 'filearn')
+    module = load_lambda('ingest_badpref', 'services/knowledge-base/src/ingest_lambda.py')
+    module.sfn = FakeSFN()
+    out = module.lambda_handler({'text': 't', 'collection_name': 'bad'}, {})
+    assert out['started'] is False
 
 
 def test_kb_query(monkeypatch):

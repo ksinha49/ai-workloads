@@ -102,6 +102,7 @@ These settings configure the router and invocation Lambdas bundled with the gate
 - `STATE_MACHINE_ARN` – ARN of the main ingestion workflow.
 - `SUMMARY_QUEUE_URL` – queue URL consumed by the query Lambda.
 - `KNOWLEDGE_BASE_NAME` – optional name tag.
+- `KB_VECTOR_DB_BACKEND` – fallback backend for knowledge base ingestion.
 - `DELETE_AFTER_DAYS` – retention days for source files tagged `pending-delete=true`.
 - `CLEANUP_BUCKETS` – comma separated list of buckets scanned by the cleanup Lambda.
 

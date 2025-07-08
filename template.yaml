@@ -21,6 +21,9 @@ Parameters:
   DefaultVectorDbBackend:
     Type: String
     Default: milvus
+  KbVectorDbBackend:
+    Type: String
+    Default: persistent
   BedrockOpenAIEndpoint:
     Type: String
     Default: ''
@@ -76,7 +79,7 @@ Resources:
         VectorDbCollection: !Ref VectorDbCollection
         ElasticsearchUrl: !Ref ElasticsearchUrl
         ElasticsearchIndexPrefix: !Ref ElasticsearchIndexPrefix
-        DefaultVectorDbBackend: !Ref DefaultVectorDbBackend
+        KbVectorDbBackend: !Ref KbVectorDbBackend
 
   RagStackService:
     Type: AWS::Serverless::Application
@@ -117,6 +120,7 @@ Resources:
         IngestionStateMachineArn: !GetAtt RagStackService.Outputs.IngestionStateMachineArn
         FileIngestionStateMachineArn: !GetAtt FileIngestionService.Outputs.FileIngestionStateMachineArn
         SummarizeQueueUrl: !GetAtt SummarizationService.Outputs.SummaryQueueUrl
+        KbVectorDbBackend: !Ref KbVectorDbBackend
 
 
   AnonymizationService:
