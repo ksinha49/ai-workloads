@@ -3,6 +3,10 @@
 All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.16] - 2025-07-08
+### Added
+- `docker-compose.yml` for the vector-db service to simplify local testing.
+
 ## [1.0.15] - 2025-07-07
 ### Added
 - JSON logging option controlled by the `LOG_JSON` environment variable with
