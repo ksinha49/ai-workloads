@@ -3,13 +3,13 @@ Transform: AWS::Serverless-2016-10-31
 Description: Parent SAM template that includes individual service stacks.
 
 Parameters:
-  MilvusHost:
+  VectorDbHost:
     Type: AWS::SSM::Parameter::Value<String>
     Default: /rag/milvus/host
-  MilvusPort:
+  VectorDbPort:
     Type: AWS::SSM::Parameter::Value<String>
     Default: /rag/milvus/port
-  MilvusCollection:
+  VectorDbCollection:
     Type: AWS::SSM::Parameter::Value<String>
     Default: /rag/milvus/collection
   ElasticsearchUrl:
@@ -68,9 +68,9 @@ Resources:
     Properties:
       Location: services/vector-db/template.yaml
       Parameters:
-        MilvusHost: !Ref MilvusHost
-        MilvusPort: !Ref MilvusPort
-        MilvusCollection: !Ref MilvusCollection
+        VectorDbHost: !Ref VectorDbHost
+        VectorDbPort: !Ref VectorDbPort
+        VectorDbCollection: !Ref VectorDbCollection
         ElasticsearchUrl: !Ref ElasticsearchUrl
         ElasticsearchIndexPrefix: !Ref ElasticsearchIndexPrefix
         DefaultVectorDbBackend: milvus
@@ -80,11 +80,11 @@ Resources:
     Properties:
       Location: services/rag-stack/template.yaml
       Parameters:
-        MilvusInsertFunctionArn: !ImportValue VectorDbProxyFunctionArn
-        MilvusDeleteFunctionArn: !ImportValue VectorDbProxyFunctionArn
-        MilvusUpdateFunctionArn: !ImportValue VectorDbProxyFunctionArn
-        MilvusCreateCollectionFunctionArn: !ImportValue VectorDbProxyFunctionArn
-        MilvusDropCollectionFunctionArn: !ImportValue VectorDbProxyFunctionArn
+        VectorDbInsertFunctionArn: !ImportValue VectorDbProxyFunctionArn
+        VectorDbDeleteFunctionArn: !ImportValue VectorDbProxyFunctionArn
+        VectorDbUpdateFunctionArn: !ImportValue VectorDbProxyFunctionArn
+        VectorDbCreateCollectionFunctionArn: !ImportValue VectorDbProxyFunctionArn
+        VectorDbDropCollectionFunctionArn: !ImportValue VectorDbProxyFunctionArn
         BucketName: !GetAtt IDPService.Outputs.BucketName
         TextDocPrefix: !GetAtt IDPService.Outputs.TextDocPrefix
         VectorSearchFunctionArn: !ImportValue VectorDbProxyFunctionArn
