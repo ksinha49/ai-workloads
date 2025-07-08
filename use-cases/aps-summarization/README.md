@@ -80,6 +80,12 @@ summarization state machine for each PDF and finally assembles a new
 ZIP file.  After the archive is created the APS workflow invokes an
 optional post processing Lambda.
 
+The state machine creates a temporary Milvus collection named
+`aps-summary-collection` for storing embeddings. This collection is
+marked as ephemeral and expires 24&nbsp;hours after the workflow
+starts. `aps_workflow_lambda.py` sets `DEFAULT_VECTOR_DB_BACKEND` to
+`milvus` so the vector operations always target the Milvus backend.
+
 ## Environment variables
 
 `aps_workflow_lambda.py` and the underlying `file_summary_lambda`
@@ -91,6 +97,9 @@ The `file_summary_lambda` also searches this directory for a
 `summary_labels.json` file.  You can override the location or supply an
 SSM parameter name via the `labels_path` property on the workflow input.
 
+The workflow Lambda sets `DEFAULT_VECTOR_DB_BACKEND` to `milvus` so the
+proxy functions store and retrieve embeddings from Milvus by default.
+
 ## Parameters
 
 - `AWSAccountName` – prefix for stack resources.
@@ -98,6 +107,7 @@ SSM parameter name via the `labels_path` property on the workflow input.
 - `FileIngestionStateMachineArn` – ARN of the file ingestion workflow.
 - `PromptEngineEndpoint` – URL of the prompt engine service.
 - `RAGSummaryFunctionArn` – ARN of the retrieval summarization Lambda.
+- `VectorDbProxyFunctionArn` – ARN of the vector DB proxy Lambda.
 - `FileProcessingEmailId` – email address for ZIP processing failure reports.
 - `LambdaIAMRoleARN` – IAM role used by the Lambda function and state machine.
 - `LambdaSubnet1ID` / `LambdaSubnet2ID` – subnets for the Lambda function.
@@ -125,6 +135,7 @@ sam deploy \
     LambdaSubnet2ID=<subnet2> \
     LambdaSecurityGroupID1=<sg1> \
     LambdaSecurityGroupID2=<sg2> \
+    VectorDbProxyFunctionArn=<arn> \
     FileAssembleFunctionArn=<arn> \
     FileIngestionStateMachineArn=<arn> \
     PromptEngineEndpoint=<endpoint> \

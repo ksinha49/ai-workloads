@@ -57,8 +57,7 @@ Each service loads its configuration from Parameter Store or the Lambda environm
 - `TOP_K` – default number of search results.
 - `MILVUS_INDEX_PARAMS` – JSON index settings.
 - `MILVUS_METRIC_TYPE` – distance metric for embeddings.
-- `MILVUS_SEARCH_PARAMS` – JSON search parameters.
-- `DEFAULT_VECTOR_DB_BACKEND` – fallback backend for the vector DB proxy.
+- `DEFAULT_VECTOR_DB_BACKEND` – fallback backend for the vector DB proxy (default `milvus`).
 - `ELASTICSEARCH_URL` – Elasticsearch endpoint.
 - `ELASTICSEARCH_INDEX_PREFIX` – index name prefix used by the proxy.
 - `EPHEMERAL_TABLE` – DynamoDB table storing ephemeral collections.
