@@ -14,6 +14,7 @@ This directory contains individual microservices used to build end‑to‑end AI
 | **summarization** | Orchestrates summarization through a Step Function and outputs PDF or DOCX summaries. |
 | **vector-db** | Unified API for Milvus and Elasticsearch vector storage backends. |
 | **zip-processing** | Extracts PDFs from archives, runs processing for each file and assembles a new ZIP. |
+| **email-classifier-service** | Monitors an inbox, applies rules and routes extracted data. |
 
 Shared Lambda layers reside under `common/layers/` and are referenced by several services.
 

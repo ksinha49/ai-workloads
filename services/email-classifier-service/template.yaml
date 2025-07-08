@@ -1,0 +1,55 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Lambdas for classifying incoming emails using dynamic rules.
+
+Parameters:
+  RulesTable:
+    Type: String
+  InboxQueueUrl:
+    Type: String
+  OutputQueueUrl:
+    Type: String
+
+Resources:
+  EmailListenerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: email_listener_lambda.lambda_handler
+      Runtime: python3.13
+      Environment:
+        Variables:
+          RULES_QUEUE_URL: !Ref RulesQueue
+      Events:
+        Queue:
+          Type: SQS
+          Properties:
+            Queue: !Ref InboxQueue
+
+  RulesEngineFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: rules_engine_lambda.lambda_handler
+      Runtime: python3.13
+      Environment:
+        Variables:
+          RULES_TABLE: !Ref RulesTable
+          DEST_QUEUE_URL: !Ref OutputQueue
+
+  InboxQueue:
+    Type: AWS::SQS::Queue
+
+  RulesQueue:
+    Type: AWS::SQS::Queue
+
+  OutputQueue:
+    Type: AWS::SQS::Queue
+
+Outputs:
+  InboxQueueUrl:
+    Value: !Ref InboxQueue
+  RulesQueueUrl:
+    Value: !Ref RulesQueue
+  OutputQueueUrl:
+    Value: !Ref OutputQueue
