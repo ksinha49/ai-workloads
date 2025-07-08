@@ -6,7 +6,9 @@ RAG ingestion and retrieval components. When ingesting documents you may include
  metadata fields such as department, team and user. These values are stored with
  each chunk and can be used to filter queries. When entity extraction is enabled
  during ingestion, the detected entities are indexed per chunk and can also be
- used as filters when querying.
+  used as filters when querying.
+
+All endpoints require IAM authentication. Sign requests with AWS credentials or invoke the Lambdas from other AWS services using roles that grant access.
 
 ## Lambdas and API Endpoints
 

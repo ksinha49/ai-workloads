@@ -5,6 +5,8 @@ checks a DynamoDB table for an existing mapping and returns the token if found.
 When no mapping exists a new token is generated using a salted hash or random
 UUID and stored in the table.
 
+The API endpoint is secured with IAM authentication. HTTP requests must be signed using SigV4 credentials or issued from other AWS services with appropriate IAM roles.
+
 ## Environment Variables
 
 | Name | Description |
