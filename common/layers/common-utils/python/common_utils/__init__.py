@@ -31,6 +31,7 @@ from .milvus_client import MilvusClient, VectorItem, SearchResult, GetResult
 from .elasticsearch_client import ElasticsearchClient
 from .entity_extraction import extract_entities
 from .lambda_response import lambda_response
+from .error_utils import log_exception, error_response
 from .ner_models import load_ner_model
 from .s3_utils import iter_s3_records
 
@@ -48,6 +49,8 @@ __all__ = [
     "extract_entities",
     "configure_logger",
     "lambda_response",
+    "log_exception",
+    "error_response",
     "load_ner_model",
     "iter_s3_records",
 ]

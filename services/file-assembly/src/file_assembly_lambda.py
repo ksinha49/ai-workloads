@@ -21,6 +21,7 @@ from __future__ import annotations
 import json
 import logging
 from common_utils import configure_logger, lambda_response
+from common_utils.error_utils import error_response, log_exception
 import os
 import boto3
 from PyPDF2 import PdfReader, PdfWriter
@@ -66,8 +67,8 @@ def upload_to_s3(pdf_bytes: bytes, file_name: str, bucket_name: str, s3_client=s
         logger.info("Uploaded file %s to S3 successfully.", bucket_file_name)
         return {"summarized_file": f"s3://{bucket_name}/{bucket_file_name}"}
     except Exception as e:
-        logger.error("Error uploading to S3: %s", str(e))
-        raise ValueError(f"Failed to upload PDF to S3")
+        log_exception("Error uploading to S3", e, logger)
+        raise ValueError("Failed to upload PDF to S3")
 
 
 def assemble_files(event: FileAssemblyEvent, context, s3_client=s3_client) -> FileAssemblyResult:
@@ -117,8 +118,8 @@ def assemble_files(event: FileAssemblyEvent, context, s3_client=s3_client) -> Fi
             final_response['merged'] = False
         return final_response
     except Exception as e:
-        logger.error("Error assembling files: %s", str(e))
-        raise ValueError(f"Failed to assemble PDFs")
+        log_exception("Error assembling files", e, logger)
+        raise ValueError("Failed to assemble PDFs")
 
 
 def merge_pdfs(summary_file_content: bytes, organic_file_content: bytes) -> Optional[bytes]:
@@ -148,8 +149,8 @@ def merge_pdfs(summary_file_content: bytes, organic_file_content: bytes) -> Opti
         merge_pdf.seek(0)
         return merge_pdf.read()
     except Exception as e:
-        logger.error("Error merging PDFs: %s", str(e))
-        raise ValueError(f"Failed to merge PDFs")
+        log_exception("Error merging PDFs", e, logger)
+        raise ValueError("Failed to merge PDFs")
 
 
 
@@ -177,6 +178,4 @@ def lambda_handler(event: FileAssemblyEvent, context) -> LambdaResponse:
         final_response = assemble_files(event, context, s3_client)
         return lambda_response(200, final_response)
     except Exception as e:
-        logger.error("Error in Lambda handler: %s", str(e))
-        response_body = f"Error occurred: {str(e)}"
-        return lambda_response(500, {"error": response_body})
+        return error_response(logger, 500, f"Error occurred: {str(e)}", e)
