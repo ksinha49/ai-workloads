@@ -8,15 +8,15 @@ Parameters:
   TextDocPrefix:
     Type: String
     Default: text-docs/
-  MilvusInsertFunctionArn:
+  VectorDbInsertFunctionArn:
     Type: String
-  MilvusDeleteFunctionArn:
+  VectorDbDeleteFunctionArn:
     Type: String
-  MilvusUpdateFunctionArn:
+  VectorDbUpdateFunctionArn:
     Type: String
-  MilvusCreateCollectionFunctionArn:
+  VectorDbCreateCollectionFunctionArn:
     Type: String
-  MilvusDropCollectionFunctionArn:
+  VectorDbDropCollectionFunctionArn:
     Type: String
   AWSAccountName:
     Type: String
@@ -116,7 +116,7 @@ Resources:
           TextChunk:
             Type: Task
             Resource: arn:aws:states:::lambda:invoke
-            Output: '{% $states.result.Payload %}'
+            Output: '{% $merge([$states.input, $states.result.Payload]) %}'
             Arguments:
               FunctionName: !GetAtt TextChunkFunction.Arn
               Payload: '{% $states.input %}'
@@ -124,18 +124,18 @@ Resources:
           Embed:
             Type: Task
             Resource: arn:aws:states:::lambda:invoke
-            Output: '{% $states.result.Payload %}'
+            Output: '{% $merge([$states.input, $states.result.Payload]) %}'
             Arguments:
               FunctionName: !GetAtt EmbedFunction.Arn
               Payload: '{% $states.input %}'
-            Next: MilvusInsert
-          MilvusInsert:
+            Next: VectorDbInsert
+          VectorDbInsert:
             Type: Task
             Resource: arn:aws:states:::lambda:invoke
-            Output: '{% $states.result.Payload %}'
+            Output: '{% $merge([$states.input, $states.result.Payload]) %}'
             Arguments:
-              FunctionName: !Ref MilvusInsertFunctionArn
-              Payload: '{% $states.input %}'
+              FunctionName: !Ref VectorDbInsertFunctionArn
+              Payload: '{% $merge([$states.input, {"operation": "insert", "storage_mode": $states.input.storage_mode}]) %}'
             End: true
         QueryLanguage: JSONata
         Policies:
@@ -144,7 +144,7 @@ Resources:
           - LambdaInvokePolicy:
               FunctionName: !Ref EmbedFunction
           - LambdaInvokePolicy:
-              FunctionName: !Ref MilvusInsertFunctionArn
+              FunctionName: !Ref VectorDbInsertFunctionArn
         Events:
           NewTextDoc:
           Type: S3

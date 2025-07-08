@@ -172,6 +172,7 @@ def _process_event(event: RetrievalEvent) -> Dict[str, Any]:
         if val is not None:
             search_payload[key] = val
     search_payload["collection_name"] = event.collection_name
+    search_payload["operation"] = "search"
     if event.storage_mode:
         search_payload["storage_mode"] = event.storage_mode
     logger.info(
