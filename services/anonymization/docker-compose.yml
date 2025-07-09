@@ -12,5 +12,7 @@ services:
       TOKEN_API_URL: ""
       ANON_TIMEOUT: 3
       ANON_MODE: mask
+      PRESIDIO_LANGUAGE: en
+      PRESIDIO_CONFIDENCE: 0
     ports:
       - "9012:8080"

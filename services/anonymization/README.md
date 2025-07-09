@@ -43,6 +43,8 @@ services with appropriate IAM roles.
 | `AnonymizationMode` | `ANON_MODE` | `mask`, `pseudo` or `token`. |
 | `TokenApiUrl` | `TOKEN_API_URL` | URL of the tokenization Lambda. |
 | `AnonymizationTimeout` | `ANON_TIMEOUT` | Seconds before falling back to `[REMOVED]`. |
+| `PresidioLanguage` | `PRESIDIO_LANGUAGE` | Language code for Presidio. |
+| `PresidioConfidence` | `PRESIDIO_CONFIDENCE` | Confidence threshold for Presidio. |
 
 ### DynamoDB tables
 
@@ -57,6 +59,19 @@ sam deploy --template-file services/anonymization/template.yaml --stack-name ano
 ```
 
 The stack exports `DetectSensitiveInfoFunctionArn`, `TokenizeEntityFunctionArn`, `AnonymizeTextFunctionArn` and `TokenTableName` for use by other services.
+
+### Presidio workflow
+
+Set `USE_PRESIDIO_ANON=true` to apply the Presidio anonymizer when `ANON_MODE` is
+`mask`. The `PresidioLanguage` and `PresidioConfidence` parameters configure the
+language and confidence threshold used by Presidio.
+
+Example deployment:
+
+```bash
+sam deploy \
+  --parameter-overrides PresidioLanguage=en PresidioConfidence=0.85
+```
 
 
 ## Local testing
