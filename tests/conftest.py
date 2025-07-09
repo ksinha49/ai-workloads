@@ -156,6 +156,7 @@ def external_stubs():
             "convert_to_markdown": lambda t, n: f"## Page {n}\n\n{t}\n",
             "easyocr": DummyReader,
             "_perform_ocr": lambda reader, engine, img: ("text", 0.0),
+            "_ocrmypdf_hocr": lambda b: ("text", 0.0, b"<hocr></hocr>"),
         },
     )
     _stub_module("unidecode", {"unidecode": lambda x: x})

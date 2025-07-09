@@ -22,6 +22,12 @@ Environment variables
 ``TEXT_DOC_PREFIX``
     Destination prefix for the combined document JSON. Defaults to
     ``"text-docs/"``.
+``HOCR_PREFIX``
+    Destination prefix for combined hOCR outputs when ``OCR_ENGINE`` is
+    ``"ocrmypdf"``. Defaults to ``"hocr/"``.
+``OCR_ENGINE``
+    OCR engine used during extraction. hOCR combination only occurs when
+    this is set to ``"ocrmypdf"``.
 """
 
 from __future__ import annotations
@@ -82,6 +88,19 @@ def _page_key(bucket_name: str, text_page_prefix: str, doc_id: str, page_num: in
     return key
 
 
+def _hocr_page_key(bucket_name: str, hocr_prefix: str, doc_id: str, page_num: int) -> str | None:
+    """Return the hOCR S3 key for page ``page_num`` of ``doc_id`` if present."""
+
+    key = f"{hocr_prefix}{doc_id}/page_{page_num:03d}.hocr"
+    try:
+        s3_client.head_object(Bucket=bucket_name, Key=key)
+    except s3_client.exceptions.ClientError as exc:  # pragma: no cover - defensive
+        if exc.response.get("Error", {}).get("Code") == "404":
+            return None
+        raise
+    return key
+
+
 def _read_page(bucket_name: str, key: str) -> str:
     """Return the Markdown text for page ``key``."""
 
@@ -90,7 +109,22 @@ def _read_page(bucket_name: str, key: str) -> str:
     return body.decode("utf-8")
 
 
-def _combine_document(bucket_name: str, pdf_page_prefix: str, text_page_prefix: str, text_doc_prefix: str, doc_id: str) -> None:
+def _read_hocr(bucket_name: str, key: str) -> str:
+    """Return the hOCR HTML for page ``key``."""
+
+    obj = s3_client.get_object(Bucket=bucket_name, Key=key)
+    body = obj["Body"].read()
+    return body.decode("utf-8")
+
+
+def _combine_document(
+    bucket_name: str,
+    pdf_page_prefix: str,
+    text_page_prefix: str,
+    text_doc_prefix: str,
+    doc_id: str,
+    hocr_prefix: str | None = None,
+) -> None:
     """If all page outputs for ``doc_id`` exist, merge them and upload."""
 
     manifest = _load_manifest(bucket_name, pdf_page_prefix, doc_id)
@@ -100,6 +134,7 @@ def _combine_document(bucket_name: str, pdf_page_prefix: str, text_page_prefix: 
     page_count = int(manifest.get("pages", 0))
 
     page_keys: list[str] = []
+    hocr_keys: list[str] = []
     for idx in range(1, page_count + 1):
         key = _page_key(bucket_name, text_page_prefix, doc_id, idx)
         if not key:
@@ -116,8 +151,15 @@ def _combine_document(bucket_name: str, pdf_page_prefix: str, text_page_prefix: 
                     logger.warning("Failed to update audit record: %s", exc)
             return
         page_keys.append(key)
+        if hocr_prefix:
+            hkey = _hocr_page_key(bucket_name, hocr_prefix, doc_id, idx)
+            if not hkey:
+                logger.info("Waiting for hOCR page %03d of %s", idx, doc_id)
+                return
+            hocr_keys.append(hkey)
 
     pages = [_read_page(bucket_name, k) for k in page_keys]
+    hocr_pages = [_read_hocr(bucket_name, k) for k in hocr_keys] if hocr_keys else []
     payload = {
         "documentId": doc_id,
         "type": "pdf",
@@ -133,6 +175,16 @@ def _combine_document(bucket_name: str, pdf_page_prefix: str, text_page_prefix: 
         ContentType="application/json",
     )
     logger.info("Wrote %s", dest_key)
+    if hocr_pages:
+        combined_hocr = "<html><body>" + "\n".join(hocr_pages) + "</body></html>"
+        dest_hocr_key = f"{hocr_prefix}{doc_id}.hocr"
+        s3_client.put_object(
+            Bucket=bucket_name,
+            Key=dest_hocr_key,
+            Body=combined_hocr.encode("utf-8"),
+            ContentType="text/html",
+        )
+        logger.info("Wrote %s", dest_hocr_key)
     if _audit_table:
         try:
             _audit_table.update_item(
@@ -154,12 +206,21 @@ def _handle_record(record: dict) -> None:
     pdf_page_prefix = get_config("PDF_PAGE_PREFIX", bucket, key) or os.environ.get("PDF_PAGE_PREFIX")
     text_page_prefix = get_config("TEXT_PAGE_PREFIX", bucket, key) or os.environ.get("TEXT_PAGE_PREFIX")
     text_doc_prefix = get_config("TEXT_DOC_PREFIX", bucket, key) or os.environ.get("TEXT_DOC_PREFIX")
+    hocr_prefix = get_config("HOCR_PREFIX", bucket, key) or os.environ.get("HOCR_PREFIX")
+    engine = (
+        get_config("OCR_ENGINE", bucket, key)
+        or os.environ.get("OCR_ENGINE", "easyocr")
+    ).lower()
     if pdf_page_prefix and not pdf_page_prefix.endswith("/"):
         pdf_page_prefix += "/"
     if text_page_prefix and not text_page_prefix.endswith("/"):
         text_page_prefix += "/"
     if text_doc_prefix and not text_doc_prefix.endswith("/"):
         text_doc_prefix += "/"
+    if hocr_prefix and not hocr_prefix.endswith("/"):
+        hocr_prefix += "/"
+    if engine != "ocrmypdf":
+        hocr_prefix = None
     if bucket != bucket_name or not key:
         logger.info("Skipping record with bucket=%s key=%s", bucket, key)
         return
@@ -173,7 +234,14 @@ def _handle_record(record: dict) -> None:
         logger.info("Unexpected key structure: %s", key)
         return
     doc_id = parts[0]
-    _combine_document(bucket_name, pdf_page_prefix, text_page_prefix, text_doc_prefix, doc_id)
+    _combine_document(
+        bucket_name,
+        pdf_page_prefix,
+        text_page_prefix,
+        text_doc_prefix,
+        doc_id,
+        hocr_prefix,
+    )
 
 
 def lambda_handler(event: S3Event, context: dict) -> LambdaResponse:
