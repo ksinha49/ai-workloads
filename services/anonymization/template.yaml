@@ -42,6 +42,12 @@ Parameters:
   AnonymizationTimeout:
     Type: Number
     Default: 3
+  PresidioLanguage:
+    Type: String
+    Default: 'en'
+  PresidioConfidence:
+    Type: Number
+    Default: 0
 
 Globals:
   Function:
@@ -80,6 +86,7 @@ Resources:
           LEGAL_MODEL: !Ref LegalModel
           REGEX_PATTERNS: !Ref RegexPatterns
           LEGAL_REGEX_PATTERNS: !Ref LegalRegexPatterns
+          PRESIDIO_LANGUAGE: !Ref PresidioLanguage
       Events:
         Api:
           Type: Api
@@ -150,6 +157,8 @@ Resources:
           ANON_MODE: !Ref AnonymizationMode
           TOKEN_API_URL: !Ref TokenApiUrl
           ANON_TIMEOUT: !Ref AnonymizationTimeout
+          ANON_CONFIDENCE: !Ref PresidioConfidence
+          PRESIDIO_CONFIDENCE: !Ref PresidioConfidence
       Events:
         Api:
           Type: Api

@@ -23,6 +23,12 @@ from typing import Any, Dict, List
 from common_utils import configure_logger
 from common_utils.get_ssm import get_config
 
+# Configuration values for Presidio
+LANGUAGE = (
+    get_config("PRESIDIO_LANGUAGE")
+    or os.environ.get("PRESIDIO_LANGUAGE", "en")
+)
+
 # ─── Logging Configuration ────────────────────────────────────────────────────
 logger = configure_logger(__name__)
 
@@ -51,7 +57,7 @@ def _build_engine(spacy_env: str, hf_env: str) -> "AnalyzerEngine" | None:
         )
         conf = {
             "nlp_engine_name": "spacy",
-            "models": [{"lang_code": "en", "model_name": model_name}],
+            "models": [{"lang_code": LANGUAGE, "model_name": model_name}],
         }
     else:
         model_name = (
@@ -62,7 +68,7 @@ def _build_engine(spacy_env: str, hf_env: str) -> "AnalyzerEngine" | None:
         )
         conf = {
             "nlp_engine_name": "transformers",
-            "models": [{"lang_code": "en", "model_name": model_name}],
+            "models": [{"lang_code": LANGUAGE, "model_name": model_name}],
         }
 
     try:  # pragma: no cover - runtime safety
@@ -71,7 +77,9 @@ def _build_engine(spacy_env: str, hf_env: str) -> "AnalyzerEngine" | None:
 
         provider = NlpEngineProvider(nlp_configuration=conf)
         nlp_engine = provider.create_engine()
-        return AnalyzerEngine(nlp_engine=nlp_engine, supported_languages=["en"])
+        return AnalyzerEngine(
+            nlp_engine=nlp_engine, supported_languages=[LANGUAGE]
+        )
     except Exception as exc:  # pragma: no cover - runtime safety
         logger.exception("Failed to load AnalyzerEngine: %s", exc)
         return None
@@ -174,7 +182,7 @@ def _ml_entities(text: str, engine: "AnalyzerEngine" | None = None) -> List[Dict
         return []
 
     try:
-        results = engine.analyze(text=text, language="en")
+        results = engine.analyze(text=text, language=LANGUAGE)
     except Exception as exc:  # pragma: no cover - runtime safety
         logger.exception("ML entity extraction failed: %s", exc)
         return []

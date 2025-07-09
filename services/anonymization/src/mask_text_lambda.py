@@ -21,7 +21,10 @@ MODE = (get_config("ANON_MODE") or os.environ.get("ANON_MODE", "mask")).lower()
 TOKEN_API_URL = get_config("TOKEN_API_URL") or os.environ.get("TOKEN_API_URL", "")
 TIMEOUT = float(get_config("ANON_TIMEOUT") or os.environ.get("ANON_TIMEOUT", "3"))
 CONF_THRESHOLD = float(
-    get_config("ANON_CONFIDENCE") or os.environ.get("ANON_CONFIDENCE", "0")
+    get_config("PRESIDIO_CONFIDENCE")
+    or get_config("ANON_CONFIDENCE")
+    or os.environ.get("PRESIDIO_CONFIDENCE")
+    or os.environ.get("ANON_CONFIDENCE", "0")
 )
 
 USE_PRESIDIO = (

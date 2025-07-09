@@ -127,6 +127,8 @@ These settings configure the router and invocation Lambdas bundled with the gate
 - `ANON_MODE` – how to anonymize text: `mask`, `pseudo` or `token`.
 - `TOKEN_API_URL` – endpoint for tokenization when using token mode.
 - `ANON_TIMEOUT` – seconds before falling back to `[REMOVED]`.
+- `PRESIDIO_LANGUAGE` – language code passed to Presidio.
+- `PRESIDIO_CONFIDENCE` – confidence threshold when using Presidio.
 
 ### EFS Storage
 
