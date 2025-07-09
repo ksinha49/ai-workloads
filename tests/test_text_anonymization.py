@@ -58,7 +58,7 @@ def test_mask_mode(monkeypatch, load_app, config):
     monkeypatch.setenv("ANON_MODE", "mask")
     module = load_app()
     out = module.lambda_handler(_event(), {})
-    assert out == {"text": "***** met ***."}
+    assert out == {"text": "[PERSON] met [PERSON]."}
 
 
 def test_pseudonymization(monkeypatch, load_app, faker_stub, config):
@@ -111,3 +111,14 @@ def test_tokenization_timeout(monkeypatch, load_app, config):
     assert out["text"] == "[REMOVED] met [REMOVED]."
     repl = out.get("replacements", [])
     assert [r["replacement"] for r in repl] == ["[REMOVED]", "[REMOVED]"]
+
+
+def test_confidence_threshold(monkeypatch, load_app, config):
+    monkeypatch.setenv("ANON_MODE", "mask")
+    monkeypatch.setenv("ANON_CONFIDENCE", "0.9")
+    module = load_app()
+    event = _event()
+    event["entities"][0]["score"] = 0.8
+    event["entities"][1]["score"] = 0.95
+    out = module.lambda_handler(event, {})
+    assert out == {"text": "Alice met [PERSON]."}
