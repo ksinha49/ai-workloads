@@ -180,6 +180,42 @@ def test_pdf_ocr_extractor_trocr(monkeypatch, s3_stub, validate_schema, config):
     validate_schema(schema)
 
 
+def test_pdf_ocr_extractor_ocrmypdf(monkeypatch, s3_stub, validate_schema, config):
+    prefix = "/parameters/aio/ameritasAI/dev"
+    config["/parameters/aio/ameritasAI/SERVER_ENV"] = "dev"
+    config[f"{prefix}/BUCKET_NAME"] = "bucket"
+    pdf_scan_prefix = "scan-pages/"
+    text_page_prefix = "text-pages/"
+    hocr_prefix = "hocr/"
+    config[f"{prefix}/PDF_SCAN_PAGE_PREFIX"] = pdf_scan_prefix
+    config[f"{prefix}/TEXT_PAGE_PREFIX"] = text_page_prefix
+    config[f"{prefix}/HOCR_PREFIX"] = hocr_prefix
+    config[f"{prefix}/OCR_ENGINE"] = "ocrmypdf"
+    module = load_lambda("ocr_ocrmypdf", "services/idp/src/pdf_ocr_extractor_lambda.py")
+
+    s3_stub.objects[("bucket", f"{pdf_scan_prefix}doc1/page_001.pdf")] = b"data"
+
+    monkeypatch.setattr(module, "_ocrmypdf_hocr", lambda b: ("ocr", 0.9, b"<hocr></hocr>"))
+
+    event = {
+        "Records": [
+            {
+                "s3": {
+                    "bucket": {"name": "bucket"},
+                    "object": {"key": f"{pdf_scan_prefix}doc1/page_001.pdf"},
+                }
+            }
+        ]
+    }
+    module.lambda_handler(event, {})
+
+    md = s3_stub.objects[("bucket", f"{text_page_prefix}doc1/page_001.md")].decode()
+    hocr_html = s3_stub.objects[("bucket", f"{hocr_prefix}doc1/page_001.hocr")].decode()
+    schema = {"documentId": "doc1", "pageNumber": 1, "content": md}
+    validate_schema(schema)
+    assert "hocr" in hocr_html
+
+
 def test_pdf_ocr_extractor_docling(monkeypatch, s3_stub, validate_schema, config):
     prefix = "/parameters/aio/ameritasAI/dev"
     config["/parameters/aio/ameritasAI/SERVER_ENV"] = "dev"
@@ -427,6 +463,11 @@ def test_perform_ocr(monkeypatch):
     text, conf = mod._perform_ocr(None, "docling", b"1")
     assert text == "layout"
     assert conf == 0.6
+
+    monkeypatch.setattr(mod, "_ocrmypdf_hocr", lambda b: ("layout", 0.5, b"h"))
+    text, conf = mod._perform_ocr(None, "ocrmypdf", b"1")
+    assert text == "layout"
+    assert conf == 0.5
 
     with pytest.raises(ValueError):
         mod._perform_ocr(reader, "other", b"1")
