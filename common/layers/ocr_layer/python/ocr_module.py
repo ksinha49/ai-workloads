@@ -1,5 +1,9 @@
 import io
 from statistics import median
+import tempfile
+from pathlib import Path
+import re
+from html import unescape
 
 import fitz  # PyMuPDF
 import easyocr
@@ -7,6 +11,10 @@ from paddleocr import PaddleOCR
 import cv2
 import numpy as np
 import httpx
+try:  # pragma: no cover - optional dependency
+    import ocrmypdf
+except Exception:  # pragma: no cover - allow import without ocrmypdf
+    ocrmypdf = None
 try:  # pragma: no cover - optional dependency
     from httpx import HTTPError
 except Exception:  # pragma: no cover - allow import without httpx
@@ -21,6 +29,8 @@ __all__ = [
     "extract_text_from_pdf",
     "preprocess_image_cv2",
     "_perform_ocr",
+    "_ocrmypdf_sidecar",
+    "_ocrmypdf_hocr",
     "post_process_text",
     "convert_to_markdown",
 ]
@@ -156,8 +166,67 @@ def _remote_docling(img_bytes: bytes, url: str) -> tuple[str, float]:
     return text, confidence
 
 
+def _parse_hocr_text(hocr: str) -> tuple[str, float]:
+    """Return plain text and average confidence from *hocr* HTML."""
+
+    words = re.findall(
+        r"<span[^>]*class=['\"]ocrx_word['\"][^>]*title=['\"][^\"]*x_wconf (\d+)"
+        r"[^\"]*['\"][^>]*>(.*?)</span>",
+        hocr,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    texts: list[str] = []
+    confs: list[float] = []
+    for conf, txt in words:
+        texts.append(unescape(txt))
+        confs.append(float(conf))
+    text = " ".join(texts).strip()
+    avg_conf = float(sum(confs) / len(confs)) if confs else 0.0
+    return text, avg_conf
+
+
+def _ocrmypdf_hocr(pdf_bytes: bytes) -> tuple[str, float, bytes]:
+    """Run ``ocrmypdf`` with ``--pdf-renderer hocr`` and return text, confidence,
+    and hOCR bytes."""
+
+    if ocrmypdf is None:  # pragma: no cover - optional dependency
+        raise RuntimeError("ocrmypdf is not installed")
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        input_pdf = Path(tmpdir) / "input.pdf"
+        out_dir = Path(tmpdir)
+        input_pdf.write_bytes(pdf_bytes)
+        ocrmypdf.api._pdf_to_hocr(input_pdf, out_dir, progress_bar=False)
+        hocr_files = sorted(out_dir.glob("*_ocr_hocr.hocr"))
+        if not hocr_files:
+            return "", 0.0, b""
+        hocr_html = hocr_files[0].read_text("utf-8")
+        text, conf = _parse_hocr_text(hocr_html)
+        return text, conf, hocr_html.encode("utf-8")
+
+
+def _ocrmypdf_sidecar(pdf_bytes: bytes) -> tuple[str, float]:
+    """Run ``ocrmypdf`` with ``--sidecar`` and return text."""
+
+    if ocrmypdf is None:  # pragma: no cover - optional dependency
+        raise RuntimeError("ocrmypdf is not installed")
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        input_pdf = Path(tmpdir) / "input.pdf"
+        output_pdf = Path(tmpdir) / "out.pdf"
+        sidecar = Path(tmpdir) / "out.txt"
+        input_pdf.write_bytes(pdf_bytes)
+        ocrmypdf.ocr(input_pdf, output_pdf, sidecar=sidecar, progress_bar=False)
+        text = sidecar.read_text("utf-8")
+        return text, 0.0
+
+
 def _perform_ocr(ctx, engine: str, img_bytes: bytes) -> tuple[str, float]:
     """Run OCR on *img_bytes* using the specified *engine*."""
+
+    if engine.lower() == "ocrmypdf":
+        text, conf, _ = _ocrmypdf_hocr(img_bytes)
+        return text, conf
 
     img = preprocess_image_cv2(img_bytes)
 

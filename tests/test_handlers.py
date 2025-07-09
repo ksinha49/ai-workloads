@@ -228,9 +228,12 @@ def test_combine(monkeypatch, s3_stub, validate_schema, config):
     pdf_page_prefix = "pdf-pages/"
     text_page_prefix = "text-pages/"
     text_doc_prefix = "text-docs/"
+    hocr_prefix = "hocr/"
     config[f"{prefix}/PDF_PAGE_PREFIX"] = pdf_page_prefix
     config[f"{prefix}/TEXT_PAGE_PREFIX"] = text_page_prefix
     config[f"{prefix}/TEXT_DOC_PREFIX"] = text_doc_prefix
+    config[f"{prefix}/HOCR_PREFIX"] = hocr_prefix
+    config[f"{prefix}/OCR_ENGINE"] = "ocrmypdf"
     module = load_lambda("combine", "services/idp/src/combine_lambda.py")
 
     s3_stub.objects[("bucket", f"{pdf_page_prefix}doc1/manifest.json")] = json.dumps(
@@ -238,6 +241,8 @@ def test_combine(monkeypatch, s3_stub, validate_schema, config):
     ).encode()
     s3_stub.objects[("bucket", f"{text_page_prefix}doc1/page_001.md")] = b"## Page 1\n\none\n"
     s3_stub.objects[("bucket", f"{text_page_prefix}doc1/page_002.md")] = b"## Page 2\n\ntwo\n"
+    s3_stub.objects[("bucket", f"{hocr_prefix}doc1/page_001.hocr")] = b"<div>one</div>"
+    s3_stub.objects[("bucket", f"{hocr_prefix}doc1/page_002.hocr")] = b"<div>two</div>"
 
     event = {
         "Records": [
@@ -258,6 +263,8 @@ def test_combine(monkeypatch, s3_stub, validate_schema, config):
         validate_schema(
             {"documentId": output["documentId"], "pageNumber": i, "content": page}
         )
+    combined_hocr = s3_stub.objects[("bucket", f"{hocr_prefix}doc1.hocr")].decode()
+    assert "one" in combined_hocr and "two" in combined_hocr
 
 
 def test_output(monkeypatch, s3_stub, validate_schema, config):

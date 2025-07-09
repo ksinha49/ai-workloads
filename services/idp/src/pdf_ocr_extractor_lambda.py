@@ -28,6 +28,9 @@ Environment variables
     HTTP endpoint for the TrOCR engine when ``OCR_ENGINE`` is ``"trocr"``.
 ``DOCLING_ENDPOINT``
     HTTP endpoint for the Docling engine when ``OCR_ENGINE`` is ``"docling"``.
+``HOCR_PREFIX``
+    Destination prefix for hOCR outputs when ``OCR_ENGINE`` is ``"ocrmypdf"``.
+    Defaults to ``"hocr/"``.
 """
 
 from __future__ import annotations
@@ -55,6 +58,7 @@ from paddleocr import PaddleOCR
 from ocr_module import (
     easyocr,
     _perform_ocr,
+    _ocrmypdf_hocr,
     post_process_text,
     convert_to_markdown,
 )
@@ -120,6 +124,7 @@ def _handle_record(record: dict) -> None:
     bucket_name = get_config("BUCKET_NAME", bucket, key)
     pdf_scan_page_prefix = get_config("PDF_SCAN_PAGE_PREFIX", bucket, key) or os.environ.get("PDF_SCAN_PAGE_PREFIX")
     text_page_prefix = get_config("TEXT_PAGE_PREFIX", bucket, key) or os.environ.get("TEXT_PAGE_PREFIX")
+    hocr_prefix = get_config("HOCR_PREFIX", bucket, key) or os.environ.get("HOCR_PREFIX")
     dpi = int(get_config("DPI", bucket, key) or "300")
     engine = (get_config("OCR_ENGINE", bucket, key) or "easyocr").lower()
     trocr_endpoint = get_config("TROCR_ENDPOINT", bucket, key)
@@ -128,6 +133,8 @@ def _handle_record(record: dict) -> None:
         pdf_scan_page_prefix += "/"
     if text_page_prefix and not text_page_prefix.endswith("/"):
         text_page_prefix += "/"
+    if hocr_prefix and not hocr_prefix.endswith("/"):
+        hocr_prefix += "/"
     if bucket != bucket_name or not key:
         logger.info("Skipping record with bucket=%s key=%s", bucket, key)
         return
@@ -141,11 +148,14 @@ def _handle_record(record: dict) -> None:
     obj = s3_client.get_object(Bucket=bucket_name, Key=key)
     body = obj["Body"].read()
     try:
-        img = _rasterize_page(body, dpi)
-        if img is None:
-            logger.info("No pages in %s", key)
-            return
-        text = _ocr_image(img, engine, trocr_endpoint, docling_endpoint)
+        if engine == "ocrmypdf":
+            text, _, hocr_data = _ocrmypdf_hocr(body)
+        else:
+            img = _rasterize_page(body, dpi)
+            if img is None:
+                logger.info("No pages in %s", key)
+                return
+            text = _ocr_image(img, engine, trocr_endpoint, docling_endpoint)
     except (fitz.FileDataError, ValueError, TypeError) as exc:  # pragma: no cover - expected
         logger.error("Failed to OCR %s: %s", key, exc)
         return
@@ -162,6 +172,15 @@ def _handle_record(record: dict) -> None:
         ContentType="text/markdown",
     )
     logger.info("Wrote %s", dest_key)
+    if engine == "ocrmypdf":
+        hocr_key = hocr_prefix + os.path.splitext(rel_key)[0] + ".hocr"
+        s3_client.put_object(
+            Bucket=bucket_name,
+            Key=hocr_key,
+            Body=hocr_data,
+            ContentType="text/html",
+        )
+        logger.info("Wrote %s", hocr_key)
 
 def lambda_handler(event: S3Event, context: dict) -> LambdaResponse:
     """Triggered by scanned pages in ``PDF_SCAN_PAGE_PREFIX``.

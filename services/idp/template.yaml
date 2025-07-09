@@ -51,6 +51,9 @@ Parameters:
   TEXT_PAGE_PREFIX:
     Type: String
     Default: text-pages/
+  HOCR_PREFIX:
+    Type: String
+    Default: hocr/
   OCR_ENGINE:
     Type: String
     Default: easyocr
@@ -88,6 +91,7 @@ Globals:
         PDF_TEXT_PAGE_PREFIX: !Ref PDF_TEXT_PAGE_PREFIX
         PDF_SCAN_PAGE_PREFIX: !Ref PDF_SCAN_PAGE_PREFIX
         TEXT_PAGE_PREFIX: !Ref TEXT_PAGE_PREFIX
+        HOCR_PREFIX: !Ref HOCR_PREFIX
         OCR_ENGINE: !Ref OCR_ENGINE
         DOCUMENT_AUDIT_TABLE: !Ref DocumentAuditTableName
 
@@ -335,4 +339,7 @@ Outputs:
   TextDocPrefix:
     Description: Prefix for combined text documents
     Value: !Ref TEXT_DOC_PREFIX
+  HocrPrefix:
+    Description: Prefix for hOCR files
+    Value: !Ref HOCR_PREFIX
 
