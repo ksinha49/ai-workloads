@@ -28,3 +28,15 @@ This document describes the standard Markdown representation for text extracted 
 
 By standardizing on this format, text extracted by different IDP engines can be processed uniformly across downstream services.
 
+## hOCR/XML Output
+
+When using the `ocrmypdf` engine, the pipeline also emits hOCR files for each page.
+The HTML contains word-level coordinates that downstream services can parse to
+determine exact bounding boxes. A typical snippet looks like:
+
+```html
+<span class='ocrx_word' id='word_1_1' title='bbox 50 717 89 734; x_wconf 90'>Sample</span>
+```
+
+Consumers may extract the `bbox` values to map text to document locations.
+

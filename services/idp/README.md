@@ -54,7 +54,7 @@ helper. Key variables include:
 - `COMBINE_PREFIX` – location where combined page results are emitted.
 - `OUTPUT_PREFIX` – final output prefix used by the output Lambda.
 - `TEXT_DOC_PREFIX` – prefix for the merged document JSON files.
-- `OCR_ENGINE` – selected OCR engine (`easyocr`, `paddleocr` or `trocr`).
+- `OCR_ENGINE` – selected OCR engine (`easyocr`, `paddleocr`, `trocr`, `ocrmypdf`).
 
 Values are typically stored under `/parameters/aio/ameritasAI/<ENV>/` in
 Parameter Store and automatically loaded by each Lambda.
@@ -64,6 +64,16 @@ Optional variables for OCR engines:
 - `TROCR_ENDPOINT` – HTTP endpoint for TrOCR when `OCR_ENGINE="trocr"`.
 - `DOCLING_ENDPOINT` – HTTP endpoint for Docling when
   `OCR_ENGINE="docling"`.
+
+### OCR Engine
+
+The `OCR_ENGINE` variable controls which backend to run:
+
+- `easyocr` (default)
+- `paddleocr`
+- `trocr` – requires `TROCR_ENDPOINT`
+- `docling` – requires `DOCLING_ENDPOINT`
+- `ocrmypdf` – outputs hOCR files with word coordinates
 
 ## Deployment
 
