@@ -16,14 +16,12 @@ Modified By: Koushik Sinha
 from __future__ import annotations
 
 import json
-import logging
 import os
 import re
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List
 
 from common_utils import configure_logger
 from common_utils.get_ssm import get_config
-from common_utils.ner_models import load_ner_model
 
 # ─── Logging Configuration ────────────────────────────────────────────────────
 logger = configure_logger(__name__)
@@ -33,36 +31,77 @@ __author__ = "Koushik Sinha"
 __version__ = "1.0.0"
 __modified_by__ = "Koushik Sinha"
 
-_MODEL: Tuple[str, Any] | None = None
-_MEDICAL_MODEL: Tuple[str, Any] | None = None
-_LEGAL_MODEL: Tuple[str, Any] | None = None
+_ENGINE: "AnalyzerEngine" | None = None
+_MEDICAL_ENGINE: "AnalyzerEngine" | None = None
+_LEGAL_ENGINE: "AnalyzerEngine" | None = None
 
 
-def _load_model() -> Tuple[str, Any] | None:
-    """Return the default NER model."""
+def _build_engine(spacy_env: str, hf_env: str) -> "AnalyzerEngine" | None:
+    """Return an AnalyzerEngine using spaCy or HF based on configuration."""
 
-    global _MODEL
-    if _MODEL is None:
-        _MODEL = load_ner_model("SPACY_MODEL", "HF_MODEL")
-    return _MODEL
+    library = (
+        get_config("NER_LIBRARY") or os.environ.get("NER_LIBRARY", "spacy")
+    ).lower()
+    if library == "spacy":
+        model_name = (
+            get_config(spacy_env)
+            or os.environ.get(spacy_env)
+            or get_config("SPACY_MODEL")
+            or os.environ.get("SPACY_MODEL", "en_core_web_sm")
+        )
+        conf = {
+            "nlp_engine_name": "spacy",
+            "models": [{"lang_code": "en", "model_name": model_name}],
+        }
+    else:
+        model_name = (
+            get_config(hf_env)
+            or os.environ.get(hf_env)
+            or get_config("HF_MODEL")
+            or os.environ.get("HF_MODEL", "dslim/bert-base-NER")
+        )
+        conf = {
+            "nlp_engine_name": "transformers",
+            "models": [{"lang_code": "en", "model_name": model_name}],
+        }
+
+    try:  # pragma: no cover - runtime safety
+        from presidio_analyzer import AnalyzerEngine
+        from presidio_analyzer.nlp_engine import NlpEngineProvider
+
+        provider = NlpEngineProvider(nlp_configuration=conf)
+        nlp_engine = provider.create_engine()
+        return AnalyzerEngine(nlp_engine=nlp_engine, supported_languages=["en"])
+    except Exception as exc:  # pragma: no cover - runtime safety
+        logger.exception("Failed to load AnalyzerEngine: %s", exc)
+        return None
 
 
-def _load_medical_model() -> Tuple[str, Any] | None:
-    """Return the NER model for the Medical domain."""
+def _load_model() -> "AnalyzerEngine" | None:
+    """Return the default AnalyzerEngine."""
 
-    global _MEDICAL_MODEL
-    if _MEDICAL_MODEL is None:
-        _MEDICAL_MODEL = load_ner_model("MEDICAL_MODEL", "MEDICAL_MODEL")
-    return _MEDICAL_MODEL
+    global _ENGINE
+    if _ENGINE is None:
+        _ENGINE = _build_engine("SPACY_MODEL", "HF_MODEL")
+    return _ENGINE
 
 
-def _load_legal_model() -> Tuple[str, Any] | None:
-    """Return the NER model for the Legal domain."""
+def _load_medical_model() -> "AnalyzerEngine" | None:
+    """Return the AnalyzerEngine for the Medical domain."""
 
-    global _LEGAL_MODEL
-    if _LEGAL_MODEL is None:
-        _LEGAL_MODEL = load_ner_model("LEGAL_MODEL", "LEGAL_MODEL")
-    return _LEGAL_MODEL
+    global _MEDICAL_ENGINE
+    if _MEDICAL_ENGINE is None:
+        _MEDICAL_ENGINE = _build_engine("MEDICAL_MODEL", "MEDICAL_MODEL")
+    return _MEDICAL_ENGINE
+
+
+def _load_legal_model() -> "AnalyzerEngine" | None:
+    """Return the AnalyzerEngine for the Legal domain."""
+
+    global _LEGAL_ENGINE
+    if _LEGAL_ENGINE is None:
+        _LEGAL_ENGINE = _build_engine("LEGAL_MODEL", "LEGAL_MODEL")
+    return _LEGAL_ENGINE
 
 
 _DEFAULT_REGEX_PATTERNS = {
@@ -126,42 +165,30 @@ def _regex_entities(text: str, patterns: Dict[str, str] | None = None) -> List[D
     return matches
 
 
-def _ml_entities(text: str, model_info: Tuple[str, Any] | None = None) -> List[Dict[str, Any]]:
-    """Extract entities using the configured ML model."""
+def _ml_entities(text: str, engine: "AnalyzerEngine" | None = None) -> List[Dict[str, Any]]:
+    """Extract entities using the configured AnalyzerEngine."""
 
-    if model_info is None:
-        model_info = _load_model()
-    if model_info is None:
+    if engine is None:
+        engine = _load_model()
+    if engine is None:
         return []
 
-    kind, model = model_info
-    entities: List[Dict[str, Any]] = []
     try:
-        if kind == "spacy":
-            doc = model(text)
-            for ent in doc.ents:
-                entities.append(
-                    {
-                        "text": ent.text,
-                        "type": ent.label_,
-                        "start": ent.start_char,
-                        "end": ent.end_char,
-                    }
-                )
-        else:
-            results = model(text)
-            for ent in results:
-                entities.append(
-                    {
-                        "text": ent.get("word"),
-                        "type": ent.get("entity_group"),
-                        "start": ent.get("start"),
-                        "end": ent.get("end"),
-                    }
-                )
+        results = engine.analyze(text=text, language="en")
     except Exception as exc:  # pragma: no cover - runtime safety
         logger.exception("ML entity extraction failed: %s", exc)
         return []
+
+    entities: List[Dict[str, Any]] = []
+    for res in results:
+        entities.append(
+            {
+                "text": text[res.start : res.end],
+                "type": res.entity_type,
+                "start": res.start,
+                "end": res.end,
+            }
+        )
     return entities
 
 
@@ -176,17 +203,17 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         domain = (event.get("domain") or event.get("classification") or "").title()
 
         regex_patterns = _REGEX_PATTERNS
-        model_info: Tuple[str, Any] | None = None
+        engine: "AnalyzerEngine" | None = None
 
         if domain == "Medical":
-            model_info = _load_medical_model()
+            engine = _load_medical_model()
         elif domain == "Legal":
-            model_info = _load_legal_model()
+            engine = _load_legal_model()
             regex_patterns = {**_REGEX_PATTERNS, **_LEGAL_REGEX_PATTERNS}
         else:
-            model_info = _load_model()
+            engine = _load_model()
 
-        entities = _regex_entities(text, regex_patterns) + _ml_entities(text, model_info)
+        entities = _regex_entities(text, regex_patterns) + _ml_entities(text, engine)
         return {"entities": entities}
     except Exception as exc:  # pragma: no cover - runtime safety
         logger.exception("lambda_handler failed: %s", exc)

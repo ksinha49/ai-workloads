@@ -94,10 +94,8 @@ def _sanitize_payload(payload: Dict[str, Any]) -> Dict[str, Any]:
     if payload.get("backend") and payload["backend"] not in ALLOWED_BACKENDS:
         raise ValueError("unsupported backend")
 
-    try:
-        from markupsafe import escape as _escape  # type: ignore
-    except Exception:  # pragma: no cover - fallback when dependency missing
-        from html import escape as _escape
+    # always use the standard library HTML escaper for predictable output
+    from html import escape as _escape
 
     # Escape any HTML/JS content
     safe = str(_escape(prompt))

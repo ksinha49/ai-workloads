@@ -59,3 +59,16 @@ class BaseModel:
         out = {k: getattr(self, k) for k in hints}
         out.update(self.__extras__)
         return out
+
+
+def create_model(name: str, **fields):
+    """Return a simple dynamic model class."""
+    return type(name, (BaseModel,), fields)
+
+
+class Extra:
+    """Minimal placeholder for pydantic.Extra."""
+
+    ignore = "ignore"
+    forbid = "forbid"
+    allow = "allow"
