@@ -48,6 +48,9 @@ Parameters:
   PresidioConfidence:
     Type: Number
     Default: 0
+  UsePresidioAnon:
+    Type: String
+    Default: 'false'
 
 Globals:
   Function:
@@ -159,6 +162,7 @@ Resources:
           ANON_TIMEOUT: !Ref AnonymizationTimeout
           ANON_CONFIDENCE: !Ref PresidioConfidence
           PRESIDIO_CONFIDENCE: !Ref PresidioConfidence
+          USE_PRESIDIO_ANON: !Ref UsePresidioAnon
       Events:
         Api:
           Type: Api

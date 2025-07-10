@@ -45,6 +45,7 @@ services with appropriate IAM roles.
 | `AnonymizationTimeout` | `ANON_TIMEOUT` | Seconds before falling back to `[REMOVED]`. |
 | `PresidioLanguage` | `PRESIDIO_LANGUAGE` | Language code for Presidio. |
 | `PresidioConfidence` | `PRESIDIO_CONFIDENCE` | Confidence threshold for Presidio. |
+| `UsePresidioAnon` | `USE_PRESIDIO_ANON` | Enable Presidio anonymizer in `mask` mode. |
 
 ### DynamoDB tables
 
@@ -62,9 +63,10 @@ The stack exports `DetectSensitiveInfoFunctionArn`, `TokenizeEntityFunctionArn`,
 
 ### Presidio workflow
 
-Set `USE_PRESIDIO_ANON=true` to apply the Presidio anonymizer when `ANON_MODE` is
-`mask`. The `PresidioLanguage` and `PresidioConfidence` parameters configure the
-language and confidence threshold used by Presidio.
+Set the `UsePresidioAnon` parameter (or `USE_PRESIDIO_ANON=true`) to apply the
+Presidio anonymizer when `ANON_MODE` is `mask`. The `PresidioLanguage` and
+`PresidioConfidence` parameters configure the language and confidence threshold
+used by Presidio.
 
 Example deployment:
 
