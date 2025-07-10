@@ -129,6 +129,8 @@ These settings configure the router and invocation Lambdas bundled with the gate
 - `ANON_TIMEOUT` – seconds before falling back to `[REMOVED]`.
 - `PRESIDIO_LANGUAGE` – language code passed to Presidio.
 - `PRESIDIO_CONFIDENCE` – confidence threshold when using Presidio.
+- `ANON_CONFIDENCE` – overrides Presidio confidence for masking.
+- `USE_PRESIDIO_ANON` – enables Presidio-based anonymization when `ANON_MODE=mask`.
 
 ### EFS Storage
 
