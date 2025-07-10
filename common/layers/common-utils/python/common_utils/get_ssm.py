@@ -45,7 +45,7 @@ def get_values_from_ssm(name: str, decrypt: bool = False) -> Optional[str]:
             resp = _ssm_client.get_parameter(Name=name, WithDecryption=decrypt)
             value = resp["Parameter"]["Value"]
         _SSM_CACHE[name] = value
-        logger.info("Parameter Value for %s: %s", name, value)
+        logger.info("Loaded parameter %s", name)
         return value
     except (BotoCoreError, ClientError, Exception) as exc:
         logger.error("Error retrieving parameter %s: %s", name, exc)
