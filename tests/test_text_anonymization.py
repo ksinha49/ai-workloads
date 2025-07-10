@@ -122,3 +122,34 @@ def test_confidence_threshold(monkeypatch, load_app, config):
     event["entities"][1]["score"] = 0.95
     out = module.lambda_handler(event, {})
     assert out == {"text": "Alice met [PERSON]."}
+
+
+class _DummyPresidioRes:
+    def __init__(self, typ, start, end, score=1.0):
+        self.entity_type = typ
+        self.start = start
+        self.end = end
+        self.score = score
+
+
+def test_presidio_entities(monkeypatch, load_app, config):
+    monkeypatch.setenv("ANON_MODE", "mask")
+    module = load_app()
+    entities = [
+        _DummyPresidioRes("PERSON", 0, 5, 0.95),
+        _DummyPresidioRes("PERSON", 10, 13, 0.95),
+    ]
+    out = module.lambda_handler({"text": "Alice met Bob.", "entities": entities}, {})
+    assert out == {"text": "[PERSON] met [PERSON]."}
+
+
+def test_presidio_confidence(monkeypatch, load_app, config):
+    monkeypatch.setenv("ANON_MODE", "mask")
+    monkeypatch.setenv("ANON_CONFIDENCE", "0.9")
+    module = load_app()
+    entities = [
+        _DummyPresidioRes("PERSON", 0, 5, 0.8),
+        _DummyPresidioRes("PERSON", 10, 13, 0.95),
+    ]
+    out = module.lambda_handler({"text": "Alice met Bob.", "entities": entities}, {})
+    assert out == {"text": "Alice met [PERSON]."}

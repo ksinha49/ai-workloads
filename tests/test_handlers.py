@@ -1424,3 +1424,101 @@ def test_detect_pii_custom_regex(monkeypatch):
     monkeypatch.setattr(module, "_build_engine", lambda *a, **k: None)
     out = module.lambda_handler({"text": "foo123"}, {})
     assert any(e["type"] == "FOO" for e in out["entities"])
+
+
+class _DummyRes:
+    def __init__(self, typ, start, end, score=1.0):
+        self.entity_type = typ
+        self.start = start
+        self.end = end
+        self.score = score
+
+
+def test_detect_and_mask(monkeypatch):
+    import types, sys
+    class FakeGen:
+        def __init__(self):
+            self.count = 0
+        def name(self):
+            self.count += 1
+            return f"name{self.count}"
+        def company(self):
+            return "company"
+        def city(self):
+            return "city"
+        def address(self):
+            return "addr"
+        def phone_number(self):
+            return "phone"
+        def email(self):
+            return "email"
+        def word(self):
+            return "word"
+    fake = FakeGen()
+    monkeypatch.setitem(sys.modules, "faker", types.SimpleNamespace(Faker=lambda: fake))
+
+    detect = load_lambda(
+        "detect_mask", "services/anonymization/src/detect_sensitive_info_lambda.py"
+    )
+
+    class DummyEngine:
+        def analyze(self, text, language="en"):
+            return [_DummyRes("PERSON", 0, 5, 0.95), _DummyRes("PERSON", 10, 13, 0.95)]
+
+    monkeypatch.setattr(detect, "_build_engine", lambda *a, **k: DummyEngine())
+
+    entities = detect.lambda_handler({"text": "Alice met Bob."}, {})["entities"]
+
+    monkeypatch.setenv("ANON_MODE", "mask")
+    mask = load_lambda("mask", "services/anonymization/src/mask_text_lambda.py")
+
+    out = mask.lambda_handler({"text": "Alice met Bob.", "entities": entities}, {})
+    assert out["text"] == "[PERSON] met [PERSON]."
+
+
+def test_detect_and_mask_confidence(monkeypatch):
+    import types, sys
+    class FakeGen:
+        def __init__(self):
+            self.count = 0
+        def name(self):
+            self.count += 1
+            return f"name{self.count}"
+        def company(self):
+            return "company"
+        def city(self):
+            return "city"
+        def address(self):
+            return "addr"
+        def phone_number(self):
+            return "phone"
+        def email(self):
+            return "email"
+        def word(self):
+            return "word"
+    fake = FakeGen()
+    monkeypatch.setitem(sys.modules, "faker", types.SimpleNamespace(Faker=lambda: fake))
+
+    detect = load_lambda(
+        "detect_mask_conf", "services/anonymization/src/detect_sensitive_info_lambda.py"
+    )
+
+    monkeypatch.setattr(detect, "_build_engine", lambda *a, **k: None)
+
+    def fake_ml(text, engine=None):
+        return [
+            {"text": "Alice", "type": "PERSON", "start": 0, "end": 5, "score": 0.8},
+            {"text": "Bob", "type": "PERSON", "start": 10, "end": 13, "score": 0.95},
+        ]
+
+    monkeypatch.setattr(detect, "_ml_entities", fake_ml)
+    monkeypatch.setattr(detect, "_regex_entities", lambda *a, **k: [])
+
+    entities = detect.lambda_handler({"text": "Alice met Bob."}, {})["entities"]
+
+    monkeypatch.setenv("ANON_MODE", "mask")
+    monkeypatch.setenv("ANON_CONFIDENCE", "0.9")
+    mask = load_lambda("mask_conf", "services/anonymization/src/mask_text_lambda.py")
+
+    out = mask.lambda_handler({"text": "Alice met Bob.", "entities": entities}, {})
+    assert out["text"] == "Alice met [PERSON]."
