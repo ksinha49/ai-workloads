@@ -3,6 +3,7 @@ elasticsearch==8.12.0
 pydantic==2.7.1
 aws-lambda-powertools==2.34.1
 
+# Presidio packages
 presidio-analyzer
 presidio-anonymizer
 spacy
