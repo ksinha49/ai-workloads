@@ -75,6 +75,22 @@ sam deploy \
   --parameter-overrides PresidioLanguage=en PresidioConfidence=0.85
 ```
 
+## Installing spaCy models
+
+When `NER_LIBRARY=spacy`, the model defined by `SPACY_MODEL` (for example
+`en_core_web_lg`) must be available to the Lambda function. Ensure the model is
+included in the Lambda layer or placed in the directory specified by
+`MODEL_EFS_PATH` if using EFS.
+
+Install the model locally with:
+
+```bash
+python -m spacy download en_core_web_lg
+```
+
+If using EFS, copy the resulting model directory to the configured path so the
+function can load it at runtime.
+
 
 ## Local testing
 
