@@ -137,6 +137,7 @@ Resources:
         DetectPiiFunctionArn: !GetAtt AnonymizationService.Outputs.DetectSensitiveInfoFunctionArn
         SourceBucket: !GetAtt IDPService.Outputs.BucketName
         SourcePrefix: redact/
+        OcrRequestQueueArn: !GetAtt IDPService.Outputs.OcrRequestQueueArn
 
 Outputs:
   FileIngestionStateMachineArn:
@@ -157,4 +158,10 @@ Outputs:
   DocumentAuditTableName:
     Description: Name of the document audit table
     Value: !GetAtt FileIngestionService.Outputs.DocumentAuditTableName
+  RedactionFunctionArn:
+    Description: ARN of the redaction orchestrator Lambda
+    Value: !GetAtt RedactionService.Outputs.RedactionOrchestratorFunctionArn
+  RedactionStatusTableName:
+    Description: Name of the redaction status table
+    Value: !GetAtt RedactionService.Outputs.RedactionStatusTableName
 
