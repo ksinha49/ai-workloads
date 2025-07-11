@@ -35,6 +35,26 @@ All handlers accept the :class:`models.S3Event` dataclass and return a
    `TEXT_DOC_PREFIX` to an external API and stores any response under
    `OUTPUT_PREFIX`.
 
+The relationships between file types and Lambda functions are illustrated
+in the following diagram.
+
+```mermaid
+flowchart LR
+    A["Upload to RAW_PREFIX"] --> B(classifier)
+    B -- "DOCX/PPTX/XLSX" --> C(office-extractor)
+    B -- "PDF" --> D(pdf-split)
+    D --> E(pdf-page-classifier)
+    subgraph "per-page lambdas"
+        direction TB
+        E -- "text page" --> F(pdf-text-extractor)
+        E -- "scan page" --> G(pdf-ocr-extractor)
+    end
+    C --> H(combine)
+    F --> H
+    G --> H
+    H --> I(output)
+```
+
 ## Environment variables
 
 Several prefixes and options are provided via environment variables in
