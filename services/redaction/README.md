@@ -13,6 +13,17 @@ performs the following steps:
 4. **Invoke file redaction** – the original file, hOCR output and detected
    entities are forwarded to the file redaction Lambda.
 
+### Workflow Diagram
+
+```mermaid
+stateDiagram-v2
+    [*] --> CopyToIDP
+    CopyToIDP --> WaitForOcr
+    WaitForOcr --> DetectPII
+    DetectPII --> FileRedaction
+    FileRedaction --> [*]
+```
+
 Status updates are stored in the ``RedactionStatusTable`` DynamoDB table.
 Each document record includes a ``status`` attribute with one of
 ``PENDING``, ``IN_PROGRESS``, ``FAILED`` or ``COMPLETED``. When
