@@ -31,6 +31,10 @@ Parameters:
   LambdaIAMRoleARN:
     Type: String
     Description: IAM Role ARN for Lambda functions
+  RedactedPrefix:
+    Type: String
+    Default: redacted/
+    Description: Prefix where redacted files are stored
 
 Resources:
   FileAssembleLambdaLayer:
@@ -50,6 +54,16 @@ Resources:
       CompatibleRuntimes:
         - python3.13
       RetentionPolicy: Delete
+
+  FileRedactionLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: !Sub '${AWSAccountName}-${AWS::StackName}-file-redaction-layer'
+      Description: Layer for file redaction Lambda
+      ContentUri: ../../common/layers/file-redaction-lambda-layer/
+      RetentionPolicy: Delete
+      CompatibleRuntimes:
+        - python3.13
 
   FileAssembleLambdaFunction:
     Type: AWS::Serverless::Function
@@ -77,7 +91,36 @@ Resources:
         Variables:
           AWS_ACCOUNT_NAME: !Ref AWSAccountName
 
+  FileRedactionLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub '${AWSAccountName}-${AWS::StackName}-file-redaction'
+      Handler: redact_file_lambda.lambda_handler
+      Runtime: python3.13
+      CodeUri: ./src/
+      Role: !Ref LambdaIAMRoleARN
+      MemorySize: 1024
+      Timeout: 600
+      EphemeralStorage:
+        Size: 2068
+      Layers:
+        - !Ref FileRedactionLayer
+        - !Ref CommonUtilsLayer
+      VpcConfig:
+        SecurityGroupIds:
+          - !Ref LambdaSecurityGroupID1
+          - !Ref LambdaSecurityGroupID2
+        SubnetIds:
+          - !Ref LambdaSubnet1ID
+          - !Ref LambdaSubnet2ID
+      Environment:
+        Variables:
+          REDACTED_PREFIX: !Ref RedactedPrefix
+
 Outputs:
   FileAssembleFunctionArn:
     Description: ARN of the file assemble Lambda
     Value: !GetAtt FileAssembleLambdaFunction.Arn
+  FileRedactionFunctionArn:
+    Description: ARN of the file redaction Lambda
+    Value: !GetAtt FileRedactionLambdaFunction.Arn
