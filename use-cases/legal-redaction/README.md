@@ -13,7 +13,7 @@ flowchart LR
     B --> C[Copy to IDP bucket]
     C --> D(IDP OCR pipeline)
     D --> E[Extracted text & hOCR]
-    E --> F[/detect-pii API]
+    E --> F[/detect-pii API/]
     F --> G(File redaction Lambda)
     G --> H[Redacted PDF in S3]
     G --> I[Update status table]
