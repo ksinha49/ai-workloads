@@ -5,6 +5,22 @@ be combined to remove PII from subpoena documents.  Uploaded PDFs are processed
 through OCR, sensitive entities are detected using custom regex patterns and the
 final redacted files are written back to S3.
 
+## Configuration
+
+The anonymization service reads configuration from Parameter Store or the Lambda
+environment. Populate these variables before deployment:
+
+- `LEGAL_MODEL` – NER model for legal documents
+- `LEGAL_REGEX_PATTERNS` – JSON map of regex detectors
+- `ANON_MODE` – set to `mask`
+- `PRESIDIO_CONFIDENCE` – minimum score for Presidio
+
+Create parameters named as above under `/parameters/aio/ameritasAI/<ENV>/` or
+export them as environment variables. See
+[services/anonymization/README.md](../../services/anonymization/README.md) and
+[docs/environment_variables.md](../../docs/environment_variables.md#sensitive-info-detection)
+(lines 113‑129) for detailed descriptions.
+
 ## Deployment
 
 Deploy all required services with SAM.  The stack parameters provide network and
