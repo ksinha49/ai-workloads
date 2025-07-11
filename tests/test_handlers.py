@@ -1321,7 +1321,7 @@ def test_vector_search_guid_filter(monkeypatch, config):
     assert res["matches"][0]["metadata"]["file_guid"] == "g2"
 
 
-def test_detect_pii_ml(monkeypatch):
+def test_detect_pii_ml(monkeypatch, validate_pii_schema):
     module = load_lambda(
         "detect_pii_ml", "services/anonymization/src/detect_sensitive_info_lambda.py"
     )
@@ -1339,26 +1339,26 @@ def test_detect_pii_ml(monkeypatch):
     monkeypatch.setattr(module, "_build_engine", lambda *a, **k: DummyEngine())
 
     out = module.lambda_handler({"text": "John 123-45-6789"}, {})
-    assert {
-        "text": "John",
-        "type": "PERSON",
-        "start": 0,
-        "end": 4,
-    } in out["entities"]
+    validate_pii_schema(out)
+    assert any(
+        e.get("text") == "John" and e.get("type") == "PERSON" and e.get("start") == 0 and e.get("end") == 4
+        for e in out["entities"]
+    )
     assert any(e["type"] == "SSN" for e in out["entities"])
 
 
-def test_detect_pii_regex(monkeypatch):
+def test_detect_pii_regex(monkeypatch, validate_pii_schema):
     module = load_lambda(
         "detect_pii_regex", "services/anonymization/src/detect_sensitive_info_lambda.py"
     )
     monkeypatch.setattr(module, "_build_engine", lambda *a, **k: None)
 
     out = module.lambda_handler({"text": "Card 4111 1111 1111 1111"}, {})
+    validate_pii_schema(out)
     assert any(e["type"] == "CREDIT_CARD" for e in out["entities"])
 
 
-def test_detect_pii_medical_domain(monkeypatch):
+def test_detect_pii_medical_domain(monkeypatch, validate_pii_schema):
     module = load_lambda(
         "detect_pii_medical", "services/anonymization/src/detect_sensitive_info_lambda.py"
     )
@@ -1376,10 +1376,11 @@ def test_detect_pii_medical_domain(monkeypatch):
     monkeypatch.setattr(module, "_build_engine", lambda *a, **k: DummyEngine())
 
     out = module.lambda_handler({"text": "Jane", "domain": "Medical"}, {})
+    validate_pii_schema(out)
     assert any(e["type"] == "PATIENT" for e in out["entities"])
 
 
-def test_detect_pii_legal_regex(monkeypatch):
+def test_detect_pii_legal_regex(monkeypatch, validate_pii_schema):
     module = load_lambda(
         "detect_pii_legal", "services/anonymization/src/detect_sensitive_info_lambda.py"
     )
@@ -1387,10 +1388,11 @@ def test_detect_pii_legal_regex(monkeypatch):
     monkeypatch.setattr(module, "_build_engine", lambda *a, **k: None)
     text = "case 12-12345"
     out = module.lambda_handler({"text": text, "classification": "Legal"}, {})
+    validate_pii_schema(out)
     assert any(e["type"] == "CASE_NUMBER" for e in out["entities"])
 
 
-def test_detect_pii_legal_domain(monkeypatch):
+def test_detect_pii_legal_domain(monkeypatch, validate_pii_schema):
     module = load_lambda(
         "detect_pii_legal_domain", "services/anonymization/src/detect_sensitive_info_lambda.py"
     )
@@ -1415,11 +1417,12 @@ def test_detect_pii_legal_domain(monkeypatch):
     monkeypatch.setattr(module, "_load_model", lambda: (_ for _ in ()).throw(AssertionError()))
 
     out = module.lambda_handler({"text": "Bob", "domain": "Legal"}, {})
+    validate_pii_schema(out)
     assert called.get("loaded")
     assert any(e["type"] == "LAWYER" for e in out["entities"])
 
 
-def test_detect_pii_custom_regex(monkeypatch):
+def test_detect_pii_custom_regex(monkeypatch, validate_pii_schema):
     pattern = {"FOO": r"foo\d+"}
     monkeypatch.setenv("REGEX_PATTERNS", json.dumps(pattern))
     module = load_lambda(
@@ -1428,6 +1431,7 @@ def test_detect_pii_custom_regex(monkeypatch):
 
     monkeypatch.setattr(module, "_build_engine", lambda *a, **k: None)
     out = module.lambda_handler({"text": "foo123"}, {})
+    validate_pii_schema(out)
     assert any(e["type"] == "FOO" for e in out["entities"])
 
 

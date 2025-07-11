@@ -133,6 +133,24 @@ class ProcessingStatusEvent:
         return {k: v for k, v in data.items() if v is not None}
 
 
+@dataclass
+class DetectedEntity:
+    """Single PII entity returned by ``detect_sensitive_info_lambda``."""
+
+    text: str
+    type: str
+    start: int
+    end: int
+    score: float | None = None
+
+
+@dataclass
+class DetectPiiResponse:
+    """Output schema for ``detect_sensitive_info_lambda``."""
+
+    entities: List[DetectedEntity]
+
+
 __all__ = [
     "LambdaResponse",
     "FileAssemblyEvent",
@@ -143,5 +161,7 @@ __all__ = [
     "S3Event",
     "FileProcessingEvent",
     "ProcessingStatusEvent",
+    "DetectedEntity",
+    "DetectPiiResponse",
 ]
 

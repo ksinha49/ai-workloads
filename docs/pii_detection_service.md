@@ -27,3 +27,17 @@ A JSON object containing the detected entities is returned:
 ```
 
 Each entity includes the matched substring, its type and positional offsets within the original text.
+
+### Output schema
+
+The Lambda always returns an object matching the following schema:
+
+```json
+{
+  "entities": [
+    {"text": "...", "type": "...", "start": 0, "end": 0}
+  ]
+}
+```
+
+The `entities` array may be empty when no PII is detected.

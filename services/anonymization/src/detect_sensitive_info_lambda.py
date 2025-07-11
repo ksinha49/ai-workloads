@@ -18,10 +18,12 @@ from __future__ import annotations
 import json
 import os
 import re
+from dataclasses import asdict
 from typing import Any, Dict, List
 
 from common_utils import configure_logger
 from common_utils.get_ssm import get_config
+from models import DetectedEntity, DetectPiiResponse
 
 # Configuration values for Presidio
 LANGUAGE = (
@@ -206,7 +208,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         text = event.get("text", "")
         if not isinstance(text, str):
             logger.error("Invalid text input: %r", text)
-            return {"entities": []}
+            return asdict(DetectPiiResponse(entities=[]))
 
         domain = (event.get("domain") or event.get("classification") or "").title()
 
@@ -222,7 +224,17 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             engine = _load_model()
 
         entities = _regex_entities(text, regex_patterns) + _ml_entities(text, engine)
-        return {"entities": entities}
+        ent_objs = [
+            DetectedEntity(
+                text=e.get("text", ""),
+                type=e.get("type", ""),
+                start=int(e.get("start", 0)),
+                end=int(e.get("end", 0)),
+                score=(lambda s: float(s) if s is not None else None)(e.get("score")),
+            )
+            for e in entities
+        ]
+        return asdict(DetectPiiResponse(entities=ent_objs))
     except Exception as exc:  # pragma: no cover - runtime safety
         logger.exception("lambda_handler failed: %s", exc)
-        return {"entities": []}
+        return asdict(DetectPiiResponse(entities=[]))

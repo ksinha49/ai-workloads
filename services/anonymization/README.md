@@ -45,6 +45,16 @@ Example response:
 {"entities": [{"text": "Alice", "type": "PERSON", "start": 0, "end": 5}]}
 ```
 
+The response follows this schema:
+
+```json
+{
+  "entities": [
+    {"text": "...", "type": "...", "start": 0, "end": 0}
+  ]
+}
+```
+
 ### tokenize_entities_lambda
 
 | Parameter | Environment variable | Description |
