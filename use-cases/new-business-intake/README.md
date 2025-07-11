@@ -2,6 +2,17 @@
 
 This Usecase for Paper App to TPP processing processes new business submissions and generate ACORD XML for CaseImport.
 
+## Workflow
+
+```mermaid
+flowchart LR
+    A["Upload application PDF"] --> B(File ingestion)
+    B --> C(IDP OCR pipeline)
+    C --> D(Extract fields Lambda)
+    D --> E(ACORD XML generator)
+    E --> F[CaseImport API]
+```
+
 ## Parameters
 
 - `AWSAccountName` – prefix for stack resources.
