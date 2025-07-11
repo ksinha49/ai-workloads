@@ -1,0 +1,133 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Workflow for processing Life applications and generating ACORD XML.
+
+Globals:
+  Function:
+    Timeout: 3
+    Tracing: Active
+    Runtime: python3.13
+    Architectures:
+      - x86_64
+    LoggingConfig:
+      LogFormat: JSON
+
+Parameters:
+  AWSAccountName:
+    Type: String
+  LambdaIAMRoleARN:
+    Type: String
+  LambdaSubnet1ID:
+    Type: String
+  LambdaSubnet2ID:
+    Type: String
+  LambdaSecurityGroupID1:
+    Type: String
+  LambdaSecurityGroupID2:
+    Type: String
+  IdpBucketName:
+    Type: String
+  CaseImportEndpoint:
+    Type: String
+
+Resources:
+  NoOpStateMachine:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      Definition:
+        StartAt: Done
+        States:
+          Done:
+            Type: Pass
+            End: true
+      Role: !Ref LambdaIAMRoleARN
+      Type: STANDARD
+
+  FileIngestionService:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: ../../services/file-ingestion/template.yaml
+      Parameters:
+        AWSAccountName: !Ref AWSAccountName
+        LambdaSubnet1ID: !Ref LambdaSubnet1ID
+        LambdaSubnet2ID: !Ref LambdaSubnet2ID
+        LambdaSecurityGroupID1: !Ref LambdaSecurityGroupID1
+        LambdaSecurityGroupID2: !Ref LambdaSecurityGroupID2
+        LambdaIAMRoleARN: !Ref LambdaIAMRoleARN
+        FileIngestionStateMachineIAMRole: !Ref LambdaIAMRoleARN
+        IDPBucketName: !Ref IdpBucketName
+        IngestionStateMachineArn: !Ref NoOpStateMachine
+
+  IDPService:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: ../../services/idp/template.yaml
+      Parameters:
+        BUCKET_NAME: !Ref IdpBucketName
+        DocumentAuditTableName: !GetAtt FileIngestionService.Outputs.DocumentAuditTableName
+
+  AcordGeneratorService:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: ../../services/acord-generator/template.yaml
+      Parameters:
+        AWSAccountName: !Ref AWSAccountName
+        LambdaSubnet1ID: !Ref LambdaSubnet1ID
+        LambdaSubnet2ID: !Ref LambdaSubnet2ID
+        LambdaSecurityGroupID1: !Ref LambdaSecurityGroupID1
+        LambdaSecurityGroupID2: !Ref LambdaSecurityGroupID2
+        LambdaIAMRoleARN: !Ref LambdaIAMRoleARN
+        CaseImportEndpoint: !Ref CaseImportEndpoint
+
+  ExtractFieldsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub '${AWSAccountName}-${AWS::StackName}-extract-fields'
+      Handler: extract_acord_fields_lambda.lambda_handler
+      CodeUri: ./src/
+      Runtime: python3.13
+      Role: !Ref LambdaIAMRoleARN
+      MemorySize: 512
+      VpcConfig:
+        SecurityGroupIds:
+          - !Ref LambdaSecurityGroupID1
+          - !Ref LambdaSecurityGroupID2
+        SubnetIds:
+          - !Ref LambdaSubnet1ID
+          - !Ref LambdaSubnet2ID
+
+  IntakeStateMachine:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      Definition:
+        Comment: New Business intake workflow
+        StartAt: IngestFile
+        States:
+          IngestFile:
+            Type: Task
+            Resource: arn:aws:states:::states:startExecution.sync
+            Parameters:
+              StateMachineArn: !GetAtt FileIngestionService.Outputs.FileIngestionStateMachineArn
+              Input.$: $
+            Next: ExtractFields
+          ExtractFields:
+            Type: Task
+            Resource: !GetAtt ExtractFieldsFunction.Arn
+            ResultPath: $.fields
+            Next: GenerateXML
+          GenerateXML:
+            Type: Task
+            Resource: !GetAtt AcordGeneratorService.Outputs.AcordGeneratorFunctionArn
+            ResultPath: $.acord_xml
+            End: true
+        QueryLanguage: JSONata
+      Role: !Ref LambdaIAMRoleARN
+      Type: STANDARD
+
+Outputs:
+  IntakeStateMachineArn:
+    Description: ARN of the new business intake workflow
+    Value: !Ref IntakeStateMachine
+  ExtractFieldsFunctionArn:
+    Description: ARN of the field extraction Lambda
+    Value: !GetAtt ExtractFieldsFunction.Arn
