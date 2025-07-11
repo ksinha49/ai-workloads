@@ -1,6 +1,6 @@
 # New Business Intake Workflow
 
-This example shows how to combine several AI services to process new business submissions and generate ACORD XML for CaseImport.
+This Usecase for Paper App to TPP processing processes new business submissions and generate ACORD XML for CaseImport.
 
 ## Parameters
 
