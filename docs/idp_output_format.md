@@ -45,3 +45,27 @@ containing word-level bounding boxes. Files are written to
 The `bbox` values correspond to the coordinates from the original hOCR output
 (`x1`, `y1`, `x2`, `y2`).
 
+## On-Demand OCR Interface
+
+The `on-demand-ocr` Lambda can be invoked through SQS. Each message must contain
+the source bucket and document key:
+
+```json
+{
+  "bucket": "source-bucket",
+  "key": "uploads/doc.pdf"
+}
+```
+
+After processing, the Lambda writes the combined Markdown to
+`<TEXT_DOC_PREFIX><documentId>.json`. When the `ocrmypdf` engine is used, a
+corresponding hOCR JSON file is written to `<HOCR_PREFIX><documentId>.json`.
+The Lambda returns the keys of these objects:
+
+```json
+{
+  "text_doc_key": "text-docs/doc.json",
+  "hocr_key": "hocr/doc.json"
+}
+```
+

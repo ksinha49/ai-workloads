@@ -309,6 +309,34 @@ Resources:
                   - Name: prefix
                     Value: !Ref COMBINE_PREFIX
 
+  OcrRequestDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      MessageRetentionPeriod: 1209600
+
+  OcrRequestQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      VisibilityTimeout: 300
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt OcrRequestDLQ.Arn
+        maxReceiveCount: 5
+
+  OnDemandOcrFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./src/
+      Handler: on_demand_ocr_lambda.lambda_handler
+      Layers:
+        - !Ref OCRLayer
+        - !Ref CommonUtilsLayer
+      Events:
+        FromQueue:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt OcrRequestQueue.Arn
+            BatchSize: 1
+
 Outputs:
   ClassifierFunctionArn:
     Description: ARN of the classifier Lambda function
@@ -346,4 +374,10 @@ Outputs:
   HocrPrefix:
     Description: Prefix for hOCR files
     Value: !Ref HOCR_PREFIX
+  OcrRequestQueueUrl:
+    Description: URL of the on-demand OCR request queue
+    Value: !Ref OcrRequestQueue
+  OcrRequestQueueArn:
+    Description: ARN of the on-demand OCR request queue
+    Value: !GetAtt OcrRequestQueue.Arn
 

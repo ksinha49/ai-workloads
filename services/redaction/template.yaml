@@ -37,6 +37,8 @@ Parameters:
   RedactionStatusTable:
     Type: String
     Default: ''
+  OcrRequestQueueArn:
+    Type: String
 
 Resources:
   CommonUtilsLayer:
@@ -77,6 +79,7 @@ Resources:
           FILE_REDACTION_FUNCTION_ARN: !Ref FileRedactionFunctionArn
           DETECT_PII_FUNCTION_ARN: !Ref DetectPiiFunctionArn
           REDACTION_STATUS_TABLE: !Ref RedactionStatusTable
+          OCR_REQUEST_QUEUE_ARN: !Ref OcrRequestQueueArn
       Events:
         Upload:
           Type: S3
@@ -94,6 +97,19 @@ Resources:
             Path: /redact
             Method: post
             RestApiId: !Ref SecureApi
+
+  SendOcrQueuePolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Sub '${AWSAccountName}-${AWS::StackName}-ocr-send'
+      Roles:
+        - !Select [1, !Split ['/', !Ref LambdaIAMRoleARN]]
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action: sqs:SendMessage
+            Resource: !Ref OcrRequestQueueArn
 
 Outputs:
   RedactionOrchestratorFunctionArn:
