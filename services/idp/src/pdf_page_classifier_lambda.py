@@ -82,6 +82,9 @@ def _handle_record(record: dict) -> None:
     pdf_page_prefix = get_config("PDF_PAGE_PREFIX", bucket, key) or os.environ.get("PDF_PAGE_PREFIX", "")
     pdf_text_page_prefix = get_config("PDF_TEXT_PAGE_PREFIX", bucket, key) or os.environ.get("PDF_TEXT_PAGE_PREFIX")
     pdf_scan_page_prefix = get_config("PDF_SCAN_PAGE_PREFIX", bucket, key) or os.environ.get("PDF_SCAN_PAGE_PREFIX")
+    force_ocr = (
+        get_config("FORCE_OCR", bucket, key) or os.environ.get("FORCE_OCR", "false")
+    ).lower() == "true"
     if pdf_page_prefix and not pdf_page_prefix.endswith("/"):
         pdf_page_prefix += "/"
     if pdf_text_page_prefix and not pdf_text_page_prefix.endswith("/"):
@@ -101,8 +104,11 @@ def _handle_record(record: dict) -> None:
     obj = s3_client.get_object(Bucket=bucket_name, Key=key)
     body = obj["Body"].read()
     has_text = _page_has_text(body)
-    prefix = pdf_text_page_prefix if has_text else pdf_scan_page_prefix
-    logger.info("Page %s has text: %s", key, has_text)
+    if force_ocr:
+        prefix = pdf_scan_page_prefix
+    else:
+        prefix = pdf_text_page_prefix if has_text else pdf_scan_page_prefix
+    logger.info("Page %s has text: %s force_ocr=%s", key, has_text, force_ocr)
     _copy_page(bucket_name, pdf_page_prefix, key, body, prefix)
 
 def lambda_handler(event: S3Event, context: dict) -> LambdaResponse:
