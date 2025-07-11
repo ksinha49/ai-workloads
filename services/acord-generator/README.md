@@ -29,3 +29,18 @@ Example output for a minimal payload might look like:
 The accompanying `template.yaml` defines the Lambda function and a
 parameter for the CaseImport API endpoint used by downstream
 integrations.
+
+## Environment variables
+
+`template.yaml` exposes one parameter that becomes a Lambda environment
+variable:
+
+- `CASEIMPORT_ENDPOINT` – API endpoint for the CaseImport service.
+
+The optional signature verification helper honours two additional
+settings:
+
+- `SIGNATURE_MODEL_ENDPOINT` – HTTP endpoint of a model returning a
+  JSON object with a `score` field.
+- `SIGNATURE_THRESHOLD` – confidence threshold used by
+  `verify_signature` (default: `0.2`).
