@@ -30,10 +30,12 @@ All handlers accept the :class:`models.S3Event` dataclass and return a
    output in `TEXT_PREFIX`.
 6. **pdf-ocr-extractor** – `src/pdf_ocr_extractor_lambda.py` performs OCR
    on scanned pages using the engine specified by `OCR_ENGINE` and writes
-   results to `OCR_PREFIX`.
+   results to `OCR_PREFIX`. When `ocrmypdf` is selected, per-page hOCR
+   word-coordinate JSON files are stored under `HOCR_PREFIX`.
 7. **combine** – `src/combine_lambda.py` waits until all page outputs
    exist and combines them into a single JSON document under
-   `COMBINE_PREFIX` / `TEXT_DOC_PREFIX`.
+   `COMBINE_PREFIX` / `TEXT_DOC_PREFIX`. If hOCR files are present, they
+   are merged into a document-level JSON under `HOCR_PREFIX`.
 8. **output** – `src/output_lambda.py` posts the final JSON from
    `TEXT_DOC_PREFIX` to an external API and stores any response under
    `OUTPUT_PREFIX`.
@@ -71,6 +73,7 @@ helper. Key variables include:
 - `PAGE_PREFIX` – prefix containing individual page PDFs.
 - `TEXT_PREFIX` – prefix for Markdown created from text-based pages.
 - `OCR_PREFIX` – prefix for OCR results.
+- `HOCR_PREFIX` – prefix for hOCR word-coordinate JSON files.
 - `COMBINE_PREFIX` – location where combined page results are emitted.
 - `OUTPUT_PREFIX` – final output prefix used by the output Lambda.
 - `TEXT_DOC_PREFIX` – prefix for the merged document JSON files.
