@@ -63,6 +63,9 @@ Parameters:
   DOCLING_ENDPOINT:
     Type: String
     Default: ''
+  FORCE_OCR:
+    Type: String
+    Default: 'false'
   DocumentAuditTableName:
     Type: String
     Default: document-audit
@@ -93,6 +96,7 @@ Globals:
         TEXT_PAGE_PREFIX: !Ref TEXT_PAGE_PREFIX
         HOCR_PREFIX: !Ref HOCR_PREFIX
         OCR_ENGINE: !Ref OCR_ENGINE
+        FORCE_OCR: !Ref FORCE_OCR
         DOCUMENT_AUDIT_TABLE: !Ref DocumentAuditTableName
 
 Resources:

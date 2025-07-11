@@ -33,6 +33,7 @@ Each service loads its configuration from Parameter Store or the Lambda environm
 - `OCR_ENGINE` – selected OCR engine (`easyocr`, `paddleocr`, `trocr`, `docling`, `ocrmypdf`).
 - `TROCR_ENDPOINT` – TrOCR service URL when using `trocr`.
 - `DOCLING_ENDPOINT` – Docling service URL when using `docling`.
+- `FORCE_OCR` – set to `true` to treat all PDF pages as scanned.
 - `PDF_RAW_PREFIX`, `PDF_PAGE_PREFIX`, `PDF_TEXT_PAGE_PREFIX`, `PDF_SCAN_PAGE_PREFIX`, `TEXT_PAGE_PREFIX` – internal prefixes used by the pipeline.
 - `DPI` – image resolution for OCR.
 - `EDI_SEARCH_API_URL` / `EDI_SEARCH_API_KEY` – external API for IDP output.
