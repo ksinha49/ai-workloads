@@ -49,6 +49,16 @@ The IDP Lambdas are triggered by standard S3 events. Each event contains a list 
 }
 ```
 
+## File Redaction Payload
+
+```json
+{
+  "file": "s3://bucket/path/doc.pdf",
+  "hocr": {"documentId": "doc", "pages": []},
+  "entities": [{"text": "Jane", "type": "PERSON", "start": 0, "end": 4}]
+}
+```
+
 ## LLM Gateway Payload
 
 ```json
