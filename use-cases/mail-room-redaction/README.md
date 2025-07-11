@@ -1,6 +1,6 @@
 # Mail Room Redaction Workflow
 
-This example deploys the IDP, anonymization and redaction services to sanitize
+This use case deploys the IDP, anonymization and redaction services to sanitize
 letters uploaded to the Ameritas mail room. Incoming PDFs are processed through
 OCR, PII/PHI is detected using configurable regex patterns and the final
 redacted file is written back to S3.
@@ -9,7 +9,7 @@ redacted file is written back to S3.
 
 ```mermaid
 flowchart LR
-    A["Upload PDF to redact/ prefix"] --> B(Redaction orchestrator)
+    A["Upload Mail Room PDF to redact/ prefix"] --> B(Redaction orchestrator)
     B --> C[Copy to IDP bucket]
     C --> D(IDP OCR pipeline)
     D --> E[Extracted text & hOCR]
