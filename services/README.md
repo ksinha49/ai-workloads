@@ -15,6 +15,8 @@ This directory contains individual microservices used to build end‑to‑end AI
 | **vector-db** | Unified API for Milvus and Elasticsearch vector storage backends. |
 | **zip-processing** | Extracts PDFs from archives, runs processing for each file and assembles a new ZIP. |
 | **email-classifier-service** | Monitors an inbox, applies rules and routes extracted data. |
+| **email-parser-service** | Parses raw email files from S3 and stores attachments. |
+| **redaction** | Coordinates OCR extraction, PII detection and file redaction. |
 
 Shared Lambda layers reside under `common/layers/` and are referenced by several services.
 
