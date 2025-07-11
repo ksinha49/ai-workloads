@@ -1,9 +1,23 @@
 # Legal Subpoena Redaction
 
 This use case demonstrates how the IDP, anonymization and redaction services can
-be combined to remove PII from subpoena documents.  Uploaded PDFs are processed
+be combined to remove PII from subpoena documents. Uploaded PDFs are processed
 through OCR, sensitive entities are detected using custom regex patterns and the
 final redacted files are written back to S3.
+
+## Workflow
+
+```mermaid
+flowchart LR
+    A["Upload PDF to redact/ prefix"] --> B(Redaction orchestrator)
+    B --> C[Copy to IDP bucket]
+    C --> D(IDP OCR pipeline)
+    D --> E[Extracted text & hOCR]
+    E --> F[/detect-pii API]
+    F --> G(File redaction Lambda)
+    G --> H[Redacted PDF in S3]
+    G --> I[Update status table]
+```
 
 ## Configuration
 
