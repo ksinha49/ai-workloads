@@ -23,6 +23,7 @@ logger = configure_logger(__name__)
 
 s3_client = boto3.client("s3")
 lambda_client = boto3.client("lambda")
+sns_client = boto3.client("sns")
 try:  # DynamoDB may be stubbed in tests
     dynamo = boto3.resource("dynamodb")
 except Exception:  # pragma: no cover - boto3 missing
@@ -34,21 +35,29 @@ TEXT_DOC_PREFIX = get_config("TEXT_DOC_PREFIX") or os.environ.get(
     "TEXT_DOC_PREFIX", "text-docs/"
 )
 HOCR_PREFIX = get_config("HOCR_PREFIX") or os.environ.get("HOCR_PREFIX", "hocr/")
-FILE_REDACTION_FUNCTION_ARN = (
-    get_config("FILE_REDACTION_FUNCTION_ARN")
-    or os.environ.get("FILE_REDACTION_FUNCTION_ARN")
+FILE_REDACTION_FUNCTION_ARN = get_config(
+    "FILE_REDACTION_FUNCTION_ARN"
+) or os.environ.get("FILE_REDACTION_FUNCTION_ARN")
+DETECT_PII_FUNCTION_ARN = get_config("DETECT_PII_FUNCTION_ARN") or os.environ.get(
+    "DETECT_PII_FUNCTION_ARN"
 )
-DETECT_PII_FUNCTION_ARN = (
-    get_config("DETECT_PII_FUNCTION_ARN") or os.environ.get("DETECT_PII_FUNCTION_ARN")
+STATUS_TABLE = get_config("REDACTION_STATUS_TABLE") or os.environ.get(
+    "REDACTION_STATUS_TABLE"
 )
-STATUS_TABLE = get_config("REDACTION_STATUS_TABLE") or os.environ.get("REDACTION_STATUS_TABLE")
+ALERT_TOPIC_ARN = get_config("ALERT_TOPIC_ARN") or os.environ.get("ALERT_TOPIC_ARN")
 
 _status_table = dynamo.Table(STATUS_TABLE) if dynamo and STATUS_TABLE else None
+
+PENDING = "PENDING"
+IN_PROGRESS = "IN_PROGRESS"
+FAILED = "FAILED"
+COMPLETED = "COMPLETED"
 
 
 # ---------------------------------------------------------------------------
 # Helper functions
 # ---------------------------------------------------------------------------
+
 
 def _update_status(doc_id: str, status: str, info: str | None = None) -> None:
     """Update the status record for *doc_id* if a table is configured."""
@@ -69,6 +78,37 @@ def _update_status(doc_id: str, status: str, info: str | None = None) -> None:
         )
     except Exception as exc:  # pragma: no cover - best effort
         logger.warning("Failed to update status: %s", exc)
+
+
+def _notify_failure(doc_id: str, message: str) -> None:
+    """Publish *message* to SNS if a topic is configured."""
+    if not ALERT_TOPIC_ARN:
+        return
+    try:
+        sns_client.publish(TopicArn=ALERT_TOPIC_ARN, Message=f"{doc_id}: {message}")
+    except Exception as exc:  # pragma: no cover - best effort
+        logger.warning("Failed to publish SNS alert: %s", exc)
+
+
+def _invoke_lambda(
+    function_arn: str, payload: Dict[str, Any], attempts: int = 3
+) -> Dict[str, Any]:
+    """Invoke Lambda with simple retry."""
+    delay = 1
+    for i in range(attempts):
+        try:
+            resp = lambda_client.invoke(
+                FunctionName=function_arn,
+                Payload=json.dumps(payload).encode("utf-8"),
+            )
+            body = resp.get("Payload")
+            return json.loads(body.read()) if body else {}
+        except Exception as exc:
+            if i == attempts - 1:
+                raise
+            logger.warning("Retrying %s due to %s", function_arn, exc)
+            time.sleep(delay)
+            delay *= 2
 
 
 def _iter_records(event: Dict[str, Any]) -> Iterable[tuple[str, str]]:
@@ -122,6 +162,7 @@ def _wait_for_object(key: str, timeout: int = 300, interval: int = 5) -> bytes |
 # Lambda handler
 # ---------------------------------------------------------------------------
 
+
 def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     """Handle S3 or API events to start document redaction."""
 
@@ -130,12 +171,17 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     for bucket, key in _iter_records(event):
         doc_id = os.path.splitext(os.path.basename(key))[0]
         dest_key = f"{RAW_PREFIX}{os.path.basename(key)}"
+        _update_status(doc_id, PENDING)
         try:
             _copy_to_idp(bucket, key, dest_key)
-            _update_status(doc_id, "UPLOADED")
+            _update_status(doc_id, IN_PROGRESS)
         except Exception as exc:
             logger.exception("Failed to copy %s/%s", bucket, key)
-            results.append({"document_id": doc_id, "error": str(exc)})
+            _update_status(doc_id, FAILED, str(exc))
+            _notify_failure(doc_id, "copy failed")
+            results.append(
+                {"document_id": doc_id, "error": {"step": "copy", "message": str(exc)}}
+            )
             continue
 
         text_key = f"{TEXT_DOC_PREFIX}{doc_id}.json"
@@ -144,33 +190,43 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         text_bytes = _wait_for_object(text_key)
         if text_bytes is None:
             logger.error("Timed out waiting for %s", text_key)
-            _update_status(doc_id, "TIMEOUT")
-            results.append({"document_id": doc_id, "error": "timeout"})
+            _update_status(doc_id, FAILED, "timeout")
+            _notify_failure(doc_id, "ocr timeout")
+            results.append(
+                {"document_id": doc_id, "error": {"step": "ocr", "message": "timeout"}}
+            )
             continue
 
-        _update_status(doc_id, "OCR_COMPLETE")
+        _update_status(doc_id, IN_PROGRESS)
 
         try:
             payload = json.loads(text_bytes.decode("utf-8"))
             text_content = "\n".join(payload.get("pages", []))
         except Exception as exc:  # pragma: no cover - invalid json
             logger.exception("Invalid text document for %s", doc_id)
-            results.append({"document_id": doc_id, "error": str(exc)})
+            _update_status(doc_id, FAILED, str(exc))
+            _notify_failure(doc_id, "invalid text")
+            results.append(
+                {"document_id": doc_id, "error": {"step": "parse", "message": str(exc)}}
+            )
             continue
 
         try:
-            resp = lambda_client.invoke(
-                FunctionName=DETECT_PII_FUNCTION_ARN,
-                Payload=json.dumps({"text": text_content}).encode("utf-8"),
+            resp = _invoke_lambda(
+                DETECT_PII_FUNCTION_ARN,
+                {"text": text_content},
             )
-            pii = json.loads(resp["Payload"].read()).get("entities", [])
+            pii = resp.get("entities", [])
         except Exception as exc:  # pragma: no cover - runtime
             logger.exception("PII detection failed for %s", doc_id)
-            _update_status(doc_id, "PII_ERROR", str(exc))
-            results.append({"document_id": doc_id, "error": str(exc)})
+            _update_status(doc_id, FAILED, str(exc))
+            _notify_failure(doc_id, "pii detection failed")
+            results.append(
+                {"document_id": doc_id, "error": {"step": "pii", "message": str(exc)}}
+            )
             continue
 
-        _update_status(doc_id, "PII_DETECTED")
+        _update_status(doc_id, IN_PROGRESS)
 
         try:
             redaction_payload = {
@@ -179,17 +235,22 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 "hocr_key": hocr_key,
                 "entities": pii,
             }
-            lambda_client.invoke(
-                FunctionName=FILE_REDACTION_FUNCTION_ARN,
-                InvocationType="Event",
-                Payload=json.dumps(redaction_payload).encode("utf-8"),
+            _invoke_lambda(
+                FILE_REDACTION_FUNCTION_ARN,
+                redaction_payload,
             )
-            _update_status(doc_id, "REDACTION_STARTED")
+            _update_status(doc_id, COMPLETED)
             results.append({"document_id": doc_id, "started": True})
         except Exception as exc:  # pragma: no cover - runtime
             logger.exception("Failed to invoke redaction for %s", doc_id)
-            _update_status(doc_id, "REDACTION_ERROR", str(exc))
-            results.append({"document_id": doc_id, "error": str(exc)})
+            _update_status(doc_id, FAILED, str(exc))
+            _notify_failure(doc_id, "redaction invoke failed")
+            results.append(
+                {
+                    "document_id": doc_id,
+                    "error": {"step": "redaction", "message": str(exc)},
+                }
+            )
     if not results:
         return error_response(logger, 400, "No records in event")
     return {"statusCode": 200, "body": results}

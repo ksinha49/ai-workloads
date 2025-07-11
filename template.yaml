@@ -137,7 +137,6 @@ Resources:
         DetectPiiFunctionArn: !GetAtt AnonymizationService.Outputs.DetectSensitiveInfoFunctionArn
         SourceBucket: !GetAtt IDPService.Outputs.BucketName
         SourcePrefix: redact/
-        RedactionStatusTable: !GetAtt FileIngestionService.Outputs.DocumentAuditTableName
 
 Outputs:
   FileIngestionStateMachineArn:
