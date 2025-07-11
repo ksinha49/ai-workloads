@@ -128,6 +128,17 @@ Resources:
     Properties:
       Location: services/anonymization/template.yaml
 
+  RedactionService:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: services/redaction/template.yaml
+      Parameters:
+        FileRedactionFunctionArn: !GetAtt FileAssemblyService.Outputs.FileAssembleFunctionArn
+        DetectPiiFunctionArn: !GetAtt AnonymizationService.Outputs.DetectSensitiveInfoFunctionArn
+        SourceBucket: !GetAtt IDPService.Outputs.BucketName
+        SourcePrefix: redact/
+        RedactionStatusTable: !GetAtt FileIngestionService.Outputs.DocumentAuditTableName
+
 Outputs:
   FileIngestionStateMachineArn:
     Description: ARN of the file ingestion state machine
