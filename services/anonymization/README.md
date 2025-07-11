@@ -28,6 +28,23 @@ services with appropriate IAM roles.
 | `RegexPatterns` | `REGEX_PATTERNS` | JSON map of regex detectors. |
 | `LegalRegexPatterns` | `LEGAL_REGEX_PATTERNS` | JSON map for legal domain. |
 
+### /detect-pii endpoint
+
+Invoke `detect_sensitive_info_lambda.py` through the `/detect-pii` API route.
+The Lambda only returns detected entities and does not modify the input text.
+
+Example request:
+
+```json
+{"text": "Alice met Bob."}
+```
+
+Example response:
+
+```json
+{"entities": [{"text": "Alice", "type": "PERSON", "start": 0, "end": 5}]}
+```
+
 ### tokenize_entities_lambda
 
 | Parameter | Environment variable | Description |
