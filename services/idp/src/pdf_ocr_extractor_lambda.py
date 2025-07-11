@@ -37,6 +37,8 @@ from __future__ import annotations
 
 import json
 import os
+import re
+from html import unescape
 from typing import Iterable
 from models import S3Event, LambdaResponse
 
@@ -116,6 +118,19 @@ def _ocr_image(img: np.ndarray, engine: str, trocr_endpoint: str | None, docling
     return convert_to_markdown(text, 1)
 
 
+def _hocr_to_words(hocr_html: str) -> list[dict[str, object]]:
+    """Return a list of word dictionaries extracted from *hocr_html*."""
+
+    pattern = re.compile(
+        r"<span[^>]*class=['\"]ocrx_word['\"][^>]*title=['\"][^'\"]*bbox (\d+) (\d+) (\d+) (\d+)[^'\"]*['\"][^>]*>(.*?)</span>",
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    words: list[dict[str, object]] = []
+    for x1, y1, x2, y2, text in pattern.findall(hocr_html):
+        words.append({"bbox": [int(x1), int(y1), int(x2), int(y2)], "text": unescape(text).strip()})
+    return words
+
+
 def _handle_record(record: dict) -> None:
     """Process a single S3 event record."""
 
@@ -173,12 +188,13 @@ def _handle_record(record: dict) -> None:
     )
     logger.info("Wrote %s", dest_key)
     if engine == "ocrmypdf":
-        hocr_key = hocr_prefix + os.path.splitext(rel_key)[0] + ".hocr"
+        words = _hocr_to_words(hocr_data.decode("utf-8"))
+        hocr_key = hocr_prefix + os.path.splitext(rel_key)[0] + ".json"
         s3_client.put_object(
             Bucket=bucket_name,
             Key=hocr_key,
-            Body=hocr_data,
-            ContentType="text/html",
+            Body=json.dumps({"words": words}).encode("utf-8"),
+            ContentType="application/json",
         )
         logger.info("Wrote %s", hocr_key)
 
