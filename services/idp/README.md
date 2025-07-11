@@ -48,17 +48,30 @@ flowchart LR
     A["Upload to RAW_PREFIX"] --> B(classifier)
     B -- "DOCX/PPTX/XLSX" --> C(office-extractor)
     B -- "PDF" --> D(pdf-split)
-    D --> E(pdf-page-classifier)
-    subgraph "per-page lambdas"
-        direction TB
-        E -- "text page" --> F(pdf-text-extractor)
-        E -- "scan page" --> G(pdf-ocr-extractor)
-        G --> J[hOCR JSON]
-    end
+    D -- "page_NNN.pdf + manifest.json" --> E(pdf-page-classifier)
+    E -- "text page" --> F(pdf-text-extractor)
+    E -- "scan page" --> G(pdf-ocr-extractor)
     C --> H(combine)
     F --> H
     G --> H
+    G -- "hOCR (ocrmypdf)" --> J(HOCR_PREFIX)
     H --> I(output)
+```
+
+### On-demand OCR
+
+An additional Lambda called **on-demand-ocr** can process any document when a
+message is placed on the `OcrRequestQueue`. The queue payload must specify the
+`bucket` and `key` of the source file. The Lambda downloads the PDF, runs OCR on
+each page and writes the merged Markdown to `TEXT_DOC_PREFIX`. When the
+`ocrmypdf` engine is used, a document-level hOCR JSON is also stored under
+`HOCR_PREFIX`.
+
+```mermaid
+flowchart LR
+    Q(OcrRequestQueue) --> L(on-demand-ocr)
+    L --> T(TEXT_DOC_PREFIX)
+    L -->|"hOCR (ocrmypdf)"| H(HOCR_PREFIX)
 ```
 
 ## Environment variables
