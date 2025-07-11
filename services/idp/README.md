@@ -17,8 +17,11 @@ All handlers accept the :class:`models.S3Event` dataclass and return a
 2. **office-extractor** – `src/office_extractor_lambda.py` converts DOCX,
    PPTX and XLSX files from `CLASSIFIED_PREFIX` into Markdown pages
    stored in `TEXT_DOC_PREFIX`.
-3. **pdf-split** – `src/pdf_split_lambda.py` splits PDFs into per page
-   files and writes a `manifest.json` under `PAGE_PREFIX`.
+3. **pdf-split** – `src/pdf_split_lambda.py` splits PDFs into individual
+   pages saved as `page_NNN.pdf` inside `PAGE_PREFIX/<documentId>/`. A
+   `manifest.json` written alongside these pages records the
+   `documentId` and total `pages`. See the implementation in
+   `pdf_split_lambda.py` for details.
 4. **pdf-page-classifier** – `src/pdf_page_classifier_lambda.py` checks
    each page and routes it to `PAGE_PREFIX` when text is present or to an
    OCR prefix for scanning.
@@ -31,7 +34,8 @@ All handlers accept the :class:`models.S3Event` dataclass and return a
    used, word bounding boxes are stored under `HOCR_PREFIX`.
 7. **combine** – `src/combine_lambda.py` waits until all page outputs
    exist and combines them into a single JSON document under
-   `COMBINE_PREFIX` / `TEXT_DOC_PREFIX`.
+   `COMBINE_PREFIX` / `TEXT_DOC_PREFIX`. If hOCR files are present, they
+   are merged into a document-level JSON under `HOCR_PREFIX`.
 8. **output** – `src/output_lambda.py` posts the final JSON from
    `TEXT_DOC_PREFIX` to an external API and stores any response under
    `OUTPUT_PREFIX`.
