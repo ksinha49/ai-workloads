@@ -34,7 +34,10 @@ Parameters:
     Type: String
   DetectPiiFunctionArn:
     Type: String
-  RedactionStatusTable:
+  RedactionStatusTableName:
+    Type: String
+    Default: redaction-status
+  AlertTopicArn:
     Type: String
     Default: ''
   OcrRequestQueueArn:
@@ -48,6 +51,18 @@ Resources:
       CompatibleRuntimes:
         - python3.13
       RetentionPolicy: Delete
+
+  RedactionStatusTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Ref RedactionStatusTableName
+      AttributeDefinitions:
+        - AttributeName: document_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: document_id
+          KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
 
   SecureApi:
     Type: AWS::Serverless::Api
@@ -78,7 +93,8 @@ Resources:
         Variables:
           FILE_REDACTION_FUNCTION_ARN: !Ref FileRedactionFunctionArn
           DETECT_PII_FUNCTION_ARN: !Ref DetectPiiFunctionArn
-          REDACTION_STATUS_TABLE: !Ref RedactionStatusTable
+          REDACTION_STATUS_TABLE: !Ref RedactionStatusTableName
+          ALERT_TOPIC_ARN: !Ref AlertTopicArn
           OCR_REQUEST_QUEUE_ARN: !Ref OcrRequestQueueArn
       Events:
         Upload:
@@ -111,7 +127,25 @@ Resources:
             Action: sqs:SendMessage
             Resource: !Ref OcrRequestQueueArn
 
+  RedactionDynamoPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Sub '${AWSAccountName}-${AWS::StackName}-redaction-dynamo'
+      Roles:
+        - !Select [1, !Split ['/', !Ref LambdaIAMRoleARN]]
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - dynamodb:PutItem
+              - dynamodb:UpdateItem
+            Resource: !GetAtt RedactionStatusTable.Arn
+
 Outputs:
   RedactionOrchestratorFunctionArn:
     Description: ARN of the redaction orchestrator Lambda
     Value: !GetAtt RedactionOrchestratorFunction.Arn
+  RedactionStatusTableName:
+    Description: Name of the redaction status table
+    Value: !Ref RedactionStatusTable

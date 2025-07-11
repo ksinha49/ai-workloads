@@ -13,8 +13,11 @@ performs the following steps:
 4. **Invoke file redaction** – the original file, hOCR output and detected
    entities are forwarded to the file redaction Lambda.
 
-Status updates may be written to a DynamoDB table when the
-`REDACTION_STATUS_TABLE` environment variable is supplied.
+Status updates are stored in the ``RedactionStatusTable`` DynamoDB table.
+Each document record includes a ``status`` attribute with one of
+``PENDING``, ``IN_PROGRESS``, ``FAILED`` or ``COMPLETED``. When
+``ALERT_TOPIC_ARN`` is configured the Lambda also publishes an SNS
+notification if a job fails.
 
 ## API Payload
 
