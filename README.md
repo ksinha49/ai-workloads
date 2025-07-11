@@ -17,6 +17,9 @@ The repository includes the following directories under `services/`:
 - `llm-gateway` – renders templates and routes requests to the selected LLM backend
 - `knowledge-base` – ingest text snippets and query them through the retrieval stack
 - `anonymization` – detects sensitive entities, generates tokens and masks or pseudonymizes text
+- `redaction` – orchestrates OCR extraction, PII detection and file redaction with DynamoDB tracking
+- `email-parser-service` – extracts attachments from raw emails stored in S3
+- `email-classifier-service` – monitors a mailbox and routes messages based on dynamic rules
 
 Shared dependencies are packaged as layers in `common/layers/`.
 
