@@ -89,9 +89,9 @@ def _page_key(bucket_name: str, text_page_prefix: str, doc_id: str, page_num: in
 
 
 def _hocr_page_key(bucket_name: str, hocr_prefix: str, doc_id: str, page_num: int) -> str | None:
-    """Return the hOCR S3 key for page ``page_num`` of ``doc_id`` if present."""
+    """Return the hOCR JSON key for page ``page_num`` of ``doc_id`` if present."""
 
-    key = f"{hocr_prefix}{doc_id}/page_{page_num:03d}.hocr"
+    key = f"{hocr_prefix}{doc_id}/page_{page_num:03d}.json"
     try:
         s3_client.head_object(Bucket=bucket_name, Key=key)
     except s3_client.exceptions.ClientError as exc:  # pragma: no cover - defensive
@@ -109,12 +109,15 @@ def _read_page(bucket_name: str, key: str) -> str:
     return body.decode("utf-8")
 
 
-def _read_hocr(bucket_name: str, key: str) -> str:
-    """Return the hOCR HTML for page ``key``."""
+def _read_hocr(bucket_name: str, key: str) -> list[dict]:
+    """Return the list of words for page ``key``."""
 
     obj = s3_client.get_object(Bucket=bucket_name, Key=key)
     body = obj["Body"].read()
-    return body.decode("utf-8")
+    try:
+        return json.loads(body)
+    except Exception:
+        return []
 
 
 def _combine_document(
@@ -176,13 +179,12 @@ def _combine_document(
     )
     logger.info("Wrote %s", dest_key)
     if hocr_pages:
-        combined_hocr = "<html><body>" + "\n".join(hocr_pages) + "</body></html>"
-        dest_hocr_key = f"{hocr_prefix}{doc_id}.hocr"
+        dest_hocr_key = f"{hocr_prefix}{doc_id}.json"
         s3_client.put_object(
             Bucket=bucket_name,
             Key=dest_hocr_key,
-            Body=combined_hocr.encode("utf-8"),
-            ContentType="text/html",
+            Body=json.dumps({"documentId": doc_id, "pages": hocr_pages}).encode("utf-8"),
+            ContentType="application/json",
         )
         logger.info("Wrote %s", dest_hocr_key)
     if _audit_table:

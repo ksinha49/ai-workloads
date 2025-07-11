@@ -210,10 +210,12 @@ def test_pdf_ocr_extractor_ocrmypdf(monkeypatch, s3_stub, validate_schema, confi
     module.lambda_handler(event, {})
 
     md = s3_stub.objects[("bucket", f"{text_page_prefix}doc1/page_001.md")].decode()
-    hocr_html = s3_stub.objects[("bucket", f"{hocr_prefix}doc1/page_001.hocr")].decode()
+    hocr_json = json.loads(
+        s3_stub.objects[("bucket", f"{hocr_prefix}doc1/page_001.json")].decode()
+    )
     schema = {"documentId": "doc1", "pageNumber": 1, "content": md}
     validate_schema(schema)
-    assert "hocr" in hocr_html
+    assert isinstance(hocr_json.get("words"), list)
 
 
 def test_pdf_ocr_extractor_docling(monkeypatch, s3_stub, validate_schema, config):
@@ -277,8 +279,8 @@ def test_combine(monkeypatch, s3_stub, validate_schema, config):
     ).encode()
     s3_stub.objects[("bucket", f"{text_page_prefix}doc1/page_001.md")] = b"## Page 1\n\none\n"
     s3_stub.objects[("bucket", f"{text_page_prefix}doc1/page_002.md")] = b"## Page 2\n\ntwo\n"
-    s3_stub.objects[("bucket", f"{hocr_prefix}doc1/page_001.hocr")] = b"<div>one</div>"
-    s3_stub.objects[("bucket", f"{hocr_prefix}doc1/page_002.hocr")] = b"<div>two</div>"
+    s3_stub.objects[("bucket", f"{hocr_prefix}doc1/page_001.json")] = json.dumps({"words": []}).encode()
+    s3_stub.objects[("bucket", f"{hocr_prefix}doc1/page_002.json")] = json.dumps({"words": []}).encode()
 
     event = {
         "Records": [
@@ -299,8 +301,11 @@ def test_combine(monkeypatch, s3_stub, validate_schema, config):
         validate_schema(
             {"documentId": output["documentId"], "pageNumber": i, "content": page}
         )
-    combined_hocr = s3_stub.objects[("bucket", f"{hocr_prefix}doc1.hocr")].decode()
-    assert "one" in combined_hocr and "two" in combined_hocr
+    combined_hocr = json.loads(
+        s3_stub.objects[("bucket", f"{hocr_prefix}doc1.json")].decode()
+    )
+    assert combined_hocr["documentId"] == "doc1"
+    assert len(combined_hocr["pages"]) == 2
 
 
 def test_output(monkeypatch, s3_stub, validate_schema, config):
