@@ -1,0 +1,115 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Deploy services for Ameritas Mail Room redaction
+
+Globals:
+  Function:
+    Timeout: 3
+    Tracing: Active
+    Runtime: python3.13
+    Architectures:
+      - x86_64
+    LoggingConfig:
+      LogFormat: JSON
+
+Parameters:
+  AWSAccountName:
+    Type: String
+  LambdaIAMRoleARN:
+    Type: String
+  LambdaSubnet1ID:
+    Type: String
+  LambdaSubnet2ID:
+    Type: String
+  LambdaSecurityGroupID1:
+    Type: String
+  LambdaSecurityGroupID2:
+    Type: String
+  IdpBucketName:
+    Type: String
+  RegexPatterns:
+    Type: String
+    Default: '{}'
+
+Resources:
+  NoOpStateMachine:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      Definition:
+        StartAt: Done
+        States:
+          Done:
+            Type: Pass
+            End: true
+      Role: !Ref LambdaIAMRoleARN
+      Type: STANDARD
+
+  FileAssemblyService:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: ../../services/file-assembly/template.yaml
+      Parameters:
+        AWSAccountName: !Ref AWSAccountName
+        LambdaSubnet1ID: !Ref LambdaSubnet1ID
+        LambdaSubnet2ID: !Ref LambdaSubnet2ID
+        LambdaSecurityGroupID1: !Ref LambdaSecurityGroupID1
+        LambdaSecurityGroupID2: !Ref LambdaSecurityGroupID2
+        LambdaIAMRoleARN: !Ref LambdaIAMRoleARN
+
+  FileIngestionService:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: ../../services/file-ingestion/template.yaml
+      Parameters:
+        AWSAccountName: !Ref AWSAccountName
+        LambdaSubnet1ID: !Ref LambdaSubnet1ID
+        LambdaSubnet2ID: !Ref LambdaSubnet2ID
+        LambdaSecurityGroupID1: !Ref LambdaSecurityGroupID1
+        LambdaSecurityGroupID2: !Ref LambdaSecurityGroupID2
+        LambdaIAMRoleARN: !Ref LambdaIAMRoleARN
+        FileIngestionStateMachineIAMRole: !Ref LambdaIAMRoleARN
+        IDPBucketName: !Ref IdpBucketName
+        IngestionStateMachineArn: !Ref NoOpStateMachine
+
+  IDPService:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: ../../services/idp/template.yaml
+      Parameters:
+        BUCKET_NAME: !Ref IdpBucketName
+        DocumentAuditTableName: !GetAtt FileIngestionService.Outputs.DocumentAuditTableName
+
+  AnonymizationService:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: ../../services/anonymization/template.yaml
+      Parameters:
+        RegexPatterns: !Ref RegexPatterns
+
+  RedactionService:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: ../../services/redaction/template.yaml
+      Parameters:
+        AWSAccountName: !Ref AWSAccountName
+        LambdaSubnet1ID: !Ref LambdaSubnet1ID
+        LambdaSubnet2ID: !Ref LambdaSubnet2ID
+        LambdaSecurityGroupID1: !Ref LambdaSecurityGroupID1
+        LambdaSecurityGroupID2: !Ref LambdaSecurityGroupID2
+        LambdaIAMRoleARN: !Ref LambdaIAMRoleARN
+        FileRedactionFunctionArn: !GetAtt FileAssemblyService.Outputs.FileRedactionFunctionArn
+        DetectPiiFunctionArn: !GetAtt AnonymizationService.Outputs.DetectSensitiveInfoFunctionArn
+        SourceBucket: !Ref IdpBucketName
+        SourcePrefix: redact/
+        OcrRequestQueueArn: !GetAtt IDPService.Outputs.OcrRequestQueueArn
+
+Outputs:
+  BucketName:
+    Description: Name of the IDP bucket containing redacted files
+    Value: !Ref IdpBucketName
+  RedactionStatusTableName:
+    Description: Name of the redaction status table
+    Value: !GetAtt RedactionService.Outputs.RedactionStatusTableName
+  RedactionFunctionArn:
+    Description: ARN of the redaction orchestrator Lambda
+    Value: !GetAtt RedactionService.Outputs.RedactionOrchestratorFunctionArn
