@@ -331,6 +331,25 @@ def validate_schema():
 
 
 @pytest.fixture
+def validate_pii_schema():
+    def _check(obj):
+        assert isinstance(obj, dict)
+        assert set(obj.keys()) == {"entities"}
+        assert isinstance(obj["entities"], list)
+        for ent in obj["entities"]:
+            assert set(ent.keys()) <= {"text", "type", "start", "end", "score"}
+            for key in ["text", "type", "start", "end"]:
+                assert key in ent
+            assert isinstance(ent["text"], str)
+            assert isinstance(ent["type"], str)
+            assert isinstance(ent["start"], int)
+            assert isinstance(ent["end"], int)
+            if "score" in ent and ent["score"] is not None:
+                assert isinstance(ent["score"], float)
+    return _check
+
+
+@pytest.fixture
 def config(monkeypatch, s3_stub):
     import sys, os
     sys.path.insert(0, os.path.join(os.getcwd(), 'common/layers/common-utils/python'))
