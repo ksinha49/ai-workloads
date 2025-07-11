@@ -1,0 +1,101 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Lambda to orchestrate document redaction using IDP and anonymization services.
+
+Globals:
+  Function:
+    Timeout: 300
+    Runtime: python3.13
+    Tracing: Active
+    Architectures:
+      - x86_64
+    LoggingConfig:
+      LogFormat: JSON
+
+Parameters:
+  AWSAccountName:
+    Type: String
+  LambdaSubnet1ID:
+    Type: String
+  LambdaSubnet2ID:
+    Type: String
+  LambdaSecurityGroupID1:
+    Type: String
+  LambdaSecurityGroupID2:
+    Type: String
+  LambdaIAMRoleARN:
+    Type: String
+  SourceBucket:
+    Type: String
+  SourcePrefix:
+    Type: String
+    Default: ''
+  FileRedactionFunctionArn:
+    Type: String
+  DetectPiiFunctionArn:
+    Type: String
+  RedactionStatusTable:
+    Type: String
+    Default: ''
+
+Resources:
+  CommonUtilsLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      ContentUri: ../../common/layers/common-utils/
+      CompatibleRuntimes:
+        - python3.13
+      RetentionPolicy: Delete
+
+  SecureApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: prod
+      Auth:
+        DefaultAuthorizer: AWS_IAM
+
+  RedactionOrchestratorFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub '${AWSAccountName}-${AWS::StackName}-redaction-orchestrator'
+      CodeUri: ./src/
+      Handler: redaction_orchestrator_lambda.lambda_handler
+      Role: !Ref LambdaIAMRoleARN
+      Layers:
+        - !Ref CommonUtilsLayer
+      MemorySize: 512
+      Timeout: 900
+      VpcConfig:
+        SecurityGroupIds:
+          - !Ref LambdaSecurityGroupID1
+          - !Ref LambdaSecurityGroupID2
+        SubnetIds:
+          - !Ref LambdaSubnet1ID
+          - !Ref LambdaSubnet2ID
+      Environment:
+        Variables:
+          FILE_REDACTION_FUNCTION_ARN: !Ref FileRedactionFunctionArn
+          DETECT_PII_FUNCTION_ARN: !Ref DetectPiiFunctionArn
+          REDACTION_STATUS_TABLE: !Ref RedactionStatusTable
+      Events:
+        Upload:
+          Type: S3
+          Properties:
+            Bucket: !Ref SourceBucket
+            Events: s3:ObjectCreated:*
+            Filter:
+              S3Key:
+                Rules:
+                  - Name: prefix
+                    Value: !Ref SourcePrefix
+        Api:
+          Type: Api
+          Properties:
+            Path: /redact
+            Method: post
+            RestApiId: !Ref SecureApi
+
+Outputs:
+  RedactionOrchestratorFunctionArn:
+    Description: ARN of the redaction orchestrator Lambda
+    Value: !GetAtt RedactionOrchestratorFunction.Arn
