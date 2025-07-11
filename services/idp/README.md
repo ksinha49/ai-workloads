@@ -17,8 +17,11 @@ All handlers accept the :class:`models.S3Event` dataclass and return a
 2. **office-extractor** – `src/office_extractor_lambda.py` converts DOCX,
    PPTX and XLSX files from `CLASSIFIED_PREFIX` into Markdown pages
    stored in `TEXT_DOC_PREFIX`.
-3. **pdf-split** – `src/pdf_split_lambda.py` splits PDFs into per page
-   files and writes a `manifest.json` under `PAGE_PREFIX`.
+3. **pdf-split** – `src/pdf_split_lambda.py` splits PDFs into individual
+   pages saved as `page_NNN.pdf` inside `PAGE_PREFIX/<documentId>/`. A
+   `manifest.json` written alongside these pages records the
+   `documentId` and total `pages`. See the implementation in
+   `pdf_split_lambda.py` for details.
 4. **pdf-page-classifier** – `src/pdf_page_classifier_lambda.py` checks
    each page and routes it to `PAGE_PREFIX` when text is present or to an
    OCR prefix for scanning.
