@@ -5,12 +5,18 @@ Description: Lambdas for detecting and anonymizing sensitive information.
 Parameters:
   NerLibrary:
     Type: String
+    Description: NLP library used for entity recognition.
+    AllowedValues:
+      - spacy
+      - hf
     Default: 'spacy'
   SpacyModel:
     Type: String
+    Description: spaCy model name when NerLibrary is "spacy".
     Default: 'en_core_web_sm'
   HFModel:
     Type: String
+    Description: HuggingFace model identifier when NerLibrary is "hf".
     Default: 'dslim/bert-base-NER'
   MedicalModel:
     Type: String

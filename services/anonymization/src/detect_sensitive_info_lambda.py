@@ -48,18 +48,7 @@ def _build_engine(spacy_env: str, hf_env: str) -> "AnalyzerEngine" | None:
     library = (
         get_config("NER_LIBRARY") or os.environ.get("NER_LIBRARY", "spacy")
     ).lower()
-    if library == "spacy":
-        model_name = (
-            get_config(spacy_env)
-            or os.environ.get(spacy_env)
-            or get_config("SPACY_MODEL")
-            or os.environ.get("SPACY_MODEL", "en_core_web_sm")
-        )
-        conf = {
-            "nlp_engine_name": "spacy",
-            "models": [{"lang_code": LANGUAGE, "model_name": model_name}],
-        }
-    else:
+    if library.startswith("hf"):
         model_name = (
             get_config(hf_env)
             or os.environ.get(hf_env)
@@ -68,6 +57,17 @@ def _build_engine(spacy_env: str, hf_env: str) -> "AnalyzerEngine" | None:
         )
         conf = {
             "nlp_engine_name": "transformers",
+            "models": [{"lang_code": LANGUAGE, "model_name": model_name}],
+        }
+    else:
+        model_name = (
+            get_config(spacy_env)
+            or os.environ.get(spacy_env)
+            or get_config("SPACY_MODEL")
+            or os.environ.get("SPACY_MODEL", "en_core_web_sm")
+        )
+        conf = {
+            "nlp_engine_name": "spacy",
             "models": [{"lang_code": LANGUAGE, "model_name": model_name}],
         }
 

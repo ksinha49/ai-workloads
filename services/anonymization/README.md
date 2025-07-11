@@ -108,6 +108,21 @@ python -m spacy download en_core_web_lg
 If using EFS, copy the resulting model directory to the configured path so the
 function can load it at runtime.
 
+### Using HuggingFace models
+
+Set `NerLibrary=hf` and provide the desired transformer via `HFModel` to use a
+HuggingFace model instead of spaCy. Any model available on the HuggingFace Hub
+can be specified.
+
+Example:
+
+```bash
+sam deploy \
+  --template-file services/anonymization/template.yaml \
+  --stack-name anonymization \
+  --parameter-overrides NerLibrary=hf HFModel=dbmdz/bert-large-cased-finetuned-conll03-english
+```
+
 
 ## Local testing
 
