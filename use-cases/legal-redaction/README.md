@@ -42,12 +42,40 @@ sam deploy \
     LegalRegexPatterns="$(cat use-cases/legal-redaction/config/legal_regex_patterns.json)"
 ```
 
+## Uploading subpoena documents
+
+Subpoena PDFs can be submitted either via the ingestion API or by uploading
+directly to the IDP bucket. The SAM template connects the Redaction Service to
+`s3:ObjectCreated:*` events so any file placed under the configured
+`SourcePrefix` (default `redact/`) triggers the orchestrator:
+
+```yaml
+SourceBucket: !Ref IdpBucketName
+SourcePrefix: redact/
+Events:
+  Upload:
+    Type: S3
+    Properties:
+      Bucket: !Ref SourceBucket
+      Events: s3:ObjectCreated:*
+      Filter:
+        S3Key:
+          Rules:
+            - Name: prefix
+              Value: !Ref SourcePrefix
+```
+
+When the event fires, the workflow copies the uploaded PDF to the IDP bucket so
+OCR can run before redaction begins.
+
 ## Retrieving redacted PDFs
 
-Documents uploaded to the redaction API or S3 trigger are copied to the IDP
-bucket for OCR extraction.  Once processing is complete the `redact_file_lambda`
-from **file-assembly** stores the output under the prefix defined by
-`RedactedPrefix` (defaults to `redacted/`).  Locate the final PDF at:
+Documents uploaded via either method are copied to the IDP bucket for OCR
+extraction. Once processing is complete the `redact_file_lambda` from
+**file-assembly** writes the PDF back to the same bucket using the prefix from
+the `REDACTED_PREFIX` environment variable (see
+[services/file-assembly/README.md](../../services/file-assembly/README.md#environment-variable)).
+Locate the final PDF at:
 
 ```
 s3://<IDP bucket>/<RedactedPrefix><original filename>
