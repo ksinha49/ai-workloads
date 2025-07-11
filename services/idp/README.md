@@ -48,13 +48,15 @@ flowchart LR
     A["Upload to RAW_PREFIX"] --> B(classifier)
     B -- "DOCX/PPTX/XLSX" --> C(office-extractor)
     B -- "PDF" --> D(pdf-split)
-    D -- "page_NNN.pdf + manifest.json" --> E(pdf-page-classifier)
-    E -- "text page" --> F(pdf-text-extractor)
-    E -- "scan page" --> G(pdf-ocr-extractor)
+    D --> E(pdf-page-classifier)
+    subgraph "per-page lambdas"
+        direction TB
+        E -- "text page" --> F(pdf-text-extractor)
+        E -- "scan page" --> G(pdf-ocr-extractor)
+    end
     C --> H(combine)
     F --> H
     G --> H
-    G -- "hOCR (ocrmypdf)" --> J(HOCR_PREFIX)
     H --> I(output)
 ```
 
