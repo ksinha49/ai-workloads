@@ -14,6 +14,10 @@ Send a JSON payload with a `text` field and optional `domain` value:
 
 The domain selects a specialized model when provided (`Medical` or `Legal`).
 
+The Lambda supports both spaCy and HuggingFace models. Choose the library with
+the `NerLibrary` parameter and specify the model using either `SpacyModel` or
+`HFModel`.
+
 ## Response
 
 A JSON object containing the detected entities is returned:
